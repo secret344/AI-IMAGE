@@ -199,7 +199,7 @@ graph LR
 #### 4.1.3 处理流程
 
 ```javascript
-// 伪代码示例
+// V1 概念示例（实际实现使用 browser-image-compression 库）
 async function processImage(file: File): Promise<ProcessedImage> {
   // 1. 格式校验
   if (!SUPPORTED_FORMATS.includes(file.type)) {
@@ -209,27 +209,18 @@ async function processImage(file: File): Promise<ProcessedImage> {
   // 2. 读取原始 EXIF（用于展示，不发送给 AI）
   const exif = await extractEXIF(file);
 
-  // 3. Canvas 重绘与压缩
-  const canvas = document.createElement('canvas');
-  const img = await loadImage(file);
-  const maxDimension = 4096;
-  const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
-
-  canvas.width = img.width * scale;
-  canvas.height = img.height * scale;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-  // 4. 导出为 JPEG（自动剥离 EXIF）
-  const blob = await canvasToBlob(canvas, 'image/jpeg', 0.85);
-  const base64 = await blobToBase64(blob);
+  // 3. 压缩处理（实际实现使用 browser-image-compression）
+  const maxEdge = isMobileDevice() ? 2048 : 4096;
+  const compressedBlob = await compress(file, { maxEdge, quality: 0.85, format: 'jpeg' });
+  const base64 = await blobToBase64(compressedBlob);
+  const bitmap = await createImageBitmap(compressedBlob);
 
   return {
     originalName: file.name,
-    processedBlob: blob,
+    processedBlob: compressedBlob,
     base64: base64,
     exif: exif,
-    dimensions: { width: canvas.width, height: canvas.height }
+    dimensions: { width: bitmap.width, height: bitmap.height }
   };
 }
 ```
@@ -246,27 +237,18 @@ async function processImage(file: File): Promise<ProcessedImage> {
 
 为后续角色推荐提供数据支撑，通过多标签分类识别图片的主要风格。
 
-#### 4.2.2 技术方案选择
+#### 4.2.2 技术方案（V1：规则引擎版）
 
-**方案 A：轻量级规则引擎（快速启动）**
+**V1 实现：轻量级规则引擎**
 
 - 基于 EXIF 参数（焦距、光圈）与简单的图像特征（亮度分布、边缘密度）推断风格。
 - 优点：无需模型加载，响应速度快。
 - 缺点：准确率有限，仅适用于 MVP 阶段。
 
-**方案 B：浏览器内轻量模型（推荐）**
+**未来版本增强方案（V2+）**
 
-- 使用 MobileNetV2 + 自定义分类头（10 个风格类别）。
-- 模型大小：约 5–10MB，首次加载后可缓存。
-- 推理时间：200–500ms（取决于设备性能）。
-
-**方案 C：直连云端视觉 API（高准确率）**
-
-- 使用 OpenAI Vision、Google Cloud Vision 或 Gemini Pro Vision。
-- 优点：准确率最高，支持复杂场景。
-- 缺点：增加 API 调用成本，依赖网络。
-
-**V1 推荐策略**：方案 B 作为默认，方案 C 作为可选增强（用户可在设置中切换）。
+- **方案 B**：浏览器内轻量模型（MobileNetV2，~5–10MB，200–500ms 推理时间）
+- **方案 C**：直连云端视觉 API（OpenAI Vision / Gemini，最高准确率但有 API 成本）
 
 #### 4.2.3 风格标签体系
 
@@ -654,6 +636,7 @@ interface TaskRecord {
 #### 5.4.1 EXIF 参数整合
 
 ```javascript
+// V1 概念示例 - 仅用于说明目的
 function buildExifContext(exif: ExifData): string {
   return `
 【拍摄参数】
@@ -672,6 +655,7 @@ function buildExifContext(exif: ExifData): string {
 #### 5.4.2 风格标签上下文
 
 ```javascript
+// V1 概念示例 - 仅用于说明目的
 function buildStyleContext(tags: StyleTag[]): string {
   const topTags = tags.slice(0, 3).map(t => t.name).join('、');
   return `
@@ -685,6 +669,7 @@ function buildStyleContext(tags: StyleTag[]): string {
 #### 5.4.3 完整提示词组装
 
 ```javascript
+// V1 概念示例 - 仅用于说明目的
 function assemblePrompt(
   systemPrompt: string,
   agentPrompt: string,

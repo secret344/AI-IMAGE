@@ -207,7 +207,7 @@ graph LR
 #### 4.1.3 Processing Pipeline
 
 ```javascript
-// Pseudocode example
+// V1 Conceptual Example (Actual implementation uses browser-image-compression library)
 async function processImage(file: File): Promise<ProcessedImage> {
   // 1. Format validation
   if (!SUPPORTED_FORMATS.includes(file.type)) {
@@ -217,27 +217,18 @@ async function processImage(file: File): Promise<ProcessedImage> {
   // 2. Read raw EXIF (for display, not sent to AI)
   const exif = await extractEXIF(file);
 
-  // 3. Canvas redraw and compression
-  const canvas = document.createElement('canvas');
-  const img = await loadImage(file);
-  const maxDimension = 4096;
-  const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
-
-  canvas.width = img.width * scale;
-  canvas.height = img.height * scale;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-  // 4. Export to JPEG (auto-strips EXIF)
-  const blob = await canvasToBlob(canvas, 'image/jpeg', 0.85);
-  const base64 = await blobToBase64(blob);
+  // 3. Compression (actual implementation uses browser-image-compression)
+  const maxEdge = isMobileDevice() ? 2048 : 4096;
+  const compressedBlob = await compress(file, { maxEdge, quality: 0.85, format: 'jpeg' });
+  const base64 = await blobToBase64(compressedBlob);
+  const bitmap = await createImageBitmap(compressedBlob);
 
   return {
     originalName: file.name,
-    processedBlob: blob,
+    processedBlob: compressedBlob,
     base64: base64,
     exif: exif,
-    dimensions: { width: canvas.width, height: canvas.height }
+    dimensions: { width: bitmap.width, height: bitmap.height }
   };
 }
 ```
@@ -254,27 +245,18 @@ async function processImage(file: File): Promise<ProcessedImage> {
 
 Support agent recommendation by multi-label classification identifying primary image styles.
 
-#### 4.2.2 Technical Approach Selection
+#### 4.2.2 Technical Approach (V1: Rule Engine)
 
-**Option A: Lightweight Rule Engine (Fast Startup)**
+**V1 Implementation: Lightweight Rule Engine**
 
 - Based on EXIF (focal length, aperture) and simple image features (brightness histogram, edge density).
-- Pros: No model loading, instant response.
-- Cons: ~60–70% accuracy, MVP-only.
+- Pros: No model loading, instant response, low complexity.
+- Current Accuracy: ~60–70%, suitable for MVP.
 
-**Option B: Browser-Local Lightweight Model (Recommended)**
+**Future Options for Enhancement (V2+)**
 
-- MobileNetV2 + custom classification head (10 style categories).
-- Model size: ~5–10MB, cached after first load.
-- Inference: 200–500ms (device-dependent).
-
-**Option C: Direct Cloud Vision API (Highest Accuracy)**
-
-- OpenAI Vision, Google Cloud Vision, or Gemini Pro Vision.
-- Pros: Best accuracy, complex scenarios.
-- Cons: Additional API cost, network-dependent.
-
-**V1 Recommended Strategy**: Option B as default, Option C as optional upgrade (user switchable in settings).
+- **Option B**: Browser-Local Lightweight Model (MobileNetV2, ~5–10MB, 200–500ms inference)
+- **Option C**: Cloud Vision API Integration (OpenAI Vision, Gemini, highest accuracy but with API cost)
 
 #### 4.2.3 Style Tag Taxonomy
 
@@ -663,6 +645,7 @@ You are a "Film Color" evaluator, simulating Kodak Portra's soft color palette a
 #### 5.4.1 EXIF Parameter Integration
 
 ```javascript
+// V1 Conceptual Example - for illustration purposes
 function buildExifContext(exif: ExifData): string {
   return `
 【Shooting Parameters】
@@ -681,6 +664,7 @@ function buildExifContext(exif: ExifData): string {
 #### 5.4.2 Style Tag Context
 
 ```javascript
+// V1 Conceptual Example - for illustration purposes
 function buildStyleContext(tags: StyleTag[]): string {
   const topTags = tags.slice(0, 3).map(t => t.name).join(', ');
   return `
@@ -694,6 +678,7 @@ Please evaluate based on these style characteristics and judge compatibility wit
 #### 5.4.3 Complete Prompt Assembly
 
 ```javascript
+// V1 Conceptual Example - for illustration purposes
 function assemblePrompt(
   systemPrompt: string,
   agentPrompt: string,
