@@ -1590,9 +1590,79 @@ function deleteAllUserData(): void {
 | 版本   | 日期       | 变更内容         |
 | :----- | :--------- | :--------------- |
 | v0.1.0 | 2026-01-28 | 初始技术规范文档 |
+| v0.2.0 | 2026-02-07 | 实现状态更新     |
+
+---
+
+## 10. 实现状态
+
+### ✅ 第 1 阶段：MVP 核心功能（已完成）
+
+- ✅ 项目初始化 (Vite + React + TypeScript)
+- ✅ UI 框架集成 (Tailwind CSS + ShadcnUI)
+- ✅ 上传与拖拽组件
+- ✅ Canvas 图片预处理（压缩、格式转换）
+- ✅ EXIF 提取与清洗（使用 exif-js）
+- ✅ LocalStorage API 密钥管理（Web Crypto AES-GCM 加密）
+- ✅ 风格识别（规则引擎 MVP）
+- ✅ 5 个角色配置与推荐算法
+- ✅ OpenAI Vision API 调用封装
+- ✅ 评价结果 JSON 解析与校验（含兜底）
+- ✅ 基础 UI 展示（评分卡片、维度雷达图）
+
+### ✅ 第 2 阶段：体验优化与扩展（已完成）
+
+- ✅ 加载状态与进度条优化
+- ✅ 错误处理与兜底策略
+- ✅ XMP 侧车文件生成与下载
+- ✅ IndexedDB 本地历史记录
+- ✅ 历史记录列表与详情查看（含智能去重：每张图片+Agent 组合保留一条记录）
+- ✅ 任务迭代功能（parentTaskId 链接）
+- ✅ 多 AI 提供商支持（OpenAI Vision、Google Gemini、Claude 3）
+- ✅ 响应式移动端布局
+- ✅ 国际化 (i18n) 支持：英语、简体中文、日语
+- ✅ 自定义 Agent 创建（标签权重配置）
+- ✅ 表单化 UI 配置（react-hook-form 集成）
+
+### 🟡 第 3 阶段：高级功能与优化（部分完成）
+
+**已完成的功能：**
+- ✅ CORS 代理处理（支持浏览器直连 API 调用）
+- ✅ 自定义 Agent 提示词管理（含国际化支持）
+
+**未实现的功能：**
+- ❌ RAW 格式支持（.ARW 转码）
+- ❌ HEIC 格式支持（heic2any.js）
+- ❌ SSE/WebSocket 实时进度反馈
+- ❌ PWA 支持（Service Worker + manifest.json）
+- ❌ 离线缓存（AI 模型、历史记录）
+- ❌ 图片哈希去重与缓存（性能优化）
+- ❌ A/B 测试框架
+- ❌ 性能监控与埋点（Sentry + Google Analytics）
+- ❌ 风格识别升级（MobileNet 浏览器模型）
+- ❌ Lightroom Preset (.lrtemplate) 导出
+
+### 🚫 未实现功能（延期至 V2）
+
+- **RAW/HEIC 格式支持**：需要外部转码库
+- **PWA 离线支持**：需要 Service Worker 配置和离线缓存
+- **图片哈希去重缓存**：性能优化，适用于重复图片
+- **高级风格识别**：MobileNet 深度学习模型集成
+- **实时反馈**：SSE/WebSocket 流式输出
+- **性能分析**：埋点和监控基础设施
+- **Lightroom 预设**：高级导出格式支持
+- **基于机器学习的风格识别**：深度学习模型集成
+
+### 配置调整与清理
+
+- ✅ 删除冗余 Vite 配置文件（仅保留 vite.config.ts）
+- ✅ 将 TypeScript 构建缓存加入 .gitignore
+- ✅ 组织 i18n 结构（移至 `/src/i18n/locales/`）
+- ✅ 动态区域设置加载（import.meta.glob）
+- ✅ Agent 国际化（名称、描述、摄影师、提示词）
 
 ---
 
 **文档维护者**：AI Image Quality Analysis Team  
-**最后更新**：2026 年 1 月 28 日  
-**文档状态**：Draft（草稿）
+**最后更新**：2026 年 2 月 7 日  
+**文档状态**：实现状态已验证
