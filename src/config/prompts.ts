@@ -3,7 +3,9 @@
  * 所有提示词统一管理，支持动态语言切换
  */
 
-export type Language = 'zh' | 'en';
+import { type LanguageCode } from '@/config/i18n-config';
+
+export type Language = LanguageCode;
 
 export interface PromptTemplates {
   system: string;
@@ -33,6 +35,7 @@ You must strictly follow the output format below, returning ONLY valid JSON with
 const USER_BASE_ZH = `请根据以下信息评价这张摄影作品：
 
 主要风格：{styles}
+风格描述：{styleDescription}
 相机参数：{exif}
 
 重点分析维度：
@@ -47,6 +50,7 @@ const USER_BASE_ZH = `请根据以下信息评价这张摄影作品：
 const USER_BASE_EN = `Please evaluate this photography based on the following information:
 
 Main styles: {styles}
+Style summary: {styleDescription}
 Camera parameters: {exif}
 
 Analysis dimensions:
@@ -206,12 +210,14 @@ export function buildUserPrompt(
   agentPrompt: string,
   styles: string,
   exif: string,
+  styleDescription: string,
   language: Language
 ): string {
   const templates = getPromptsByLanguage(language);
 
   const userBase = templates.userBase
     .replace('{styles}', styles || 'Unknown')
+    .replace('{styleDescription}', styleDescription || 'None')
     .replace('{exif}', exif || 'None');
 
   return [

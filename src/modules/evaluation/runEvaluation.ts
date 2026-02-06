@@ -1,7 +1,8 @@
 import type { ProcessedImage } from '@/modules/upload/processImage';
 import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
 import type { AgentProfile } from '@/config/agents';
-import { assemblePromptV2 } from '@/modules/prompt/assemblePromptV2';
+import type { LanguageCode } from '@/config/i18n-config';
+import { assemblePrompt } from '@/modules/prompt/assemblePrompt';
 import { callAiProvider } from '@/modules/ai/client';
 import { validateResult } from '@/modules/validation/validateResult';
 import { wrapMemorySafeAiCall } from '@/modules/ai/memoryOptimization';
@@ -17,16 +18,17 @@ export interface RunEvaluationInput {
   temperature: number;
   maxTokens: number;
   timeoutMs: number;
-  language?: 'zh' | 'en';
+  language?: LanguageCode;
 }
 
 export async function runEvaluation(input: RunEvaluationInput) {
   // 使用新的 V2 版本，支持中英双语
-  const assembled = assemblePromptV2(
+  const assembled = assemblePrompt(
     input.agent,
     {
       exif: input.processedImage.exif,
-      styleTags: input.styleResult.styleTags
+      styleTags: input.styleResult.styleTags,
+      styleDescription: input.styleResult.styleDescription
     },
     input.language || 'en',
     false // 生产环境不需要调试信息

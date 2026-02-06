@@ -12,7 +12,7 @@ import { StatusMessages } from '@/components/result/StatusMessages';
 import { useResultActions } from '@/components/result/useResultActions';
 
 export function ResultPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [passphrase, setPassphrase] = useState('');
   const [runError, setRunError] = useState<string | null>(null);
   const [highlightRun, setHighlightRun] = useState(false);
@@ -84,7 +84,11 @@ export function ResultPanel() {
         return;
       }
       const settings = loadProviderSettings();
-      const agents = recommendAgents(styleResult.styleTags, { limit: settings.topAgents });
+      const agents = recommendAgents(
+        styleResult.styleTags,
+        { limit: settings.topAgents },
+        i18n.language
+      );
       setRecommendedAgents(agents);
       setSelectedAgentId(agents[0]?.id ?? null);
     };

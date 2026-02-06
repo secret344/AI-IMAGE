@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import type { TaskRecord } from '@/modules/storage/db';
 import { getAgentById } from '@/modules/agent/recommendAgents';
+import { resolveAgentLocale } from '@/config/agents';
 
 interface HistoryComparePanelProps {
   tasks: TaskRecord[];
 }
 
 export function HistoryComparePanel({ tasks }: HistoryComparePanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (tasks.length !== 2) {
     return null;
@@ -26,7 +27,13 @@ export function HistoryComparePanel({ tasks }: HistoryComparePanelProps) {
             </p>
             <p className="mt-1 text-2xl font-semibold text-foreground">{task.evaluation.score}</p>
             <p className="text-xs text-muted-foreground">
-              {getAgentById(task.agentId ?? '')?.name ?? task.agentId ?? t('history.unknownAgent')}
+              {(() => {
+                const agent = getAgentById(task.agentId ?? '');
+                if (agent) {
+                  return resolveAgentLocale(agent, i18n.language).name;
+                }
+                return task.agentId ?? t('history.unknownAgent');
+              })()}
             </p>
             <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
               {task.evaluation.dimensions.map((dimension) => (

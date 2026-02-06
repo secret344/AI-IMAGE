@@ -534,11 +534,13 @@ For AI-assisted coding (GitHub Copilot, etc.):
 - **Integration Testing**: Ensure generated code integrates properly
 - **Performance Check**: Verify performance implications
 - **Security Audit**: Check for potential security issues
+- **Type Errors**: After each change, resolve any TypeScript/type errors before finishing
 
 - **手动验证**：始终审查和测试生成的代码
 - **集成测试**：确保生成的代码正确集成
 - **性能检查**：验证性能影响
 - **安全审计**：检查潜在安全问题
+- **类型错误**：每次修改后先修复所有 TypeScript/类型错误再结束
 
 This style guide should be followed by all contributors and AI agents to maintain code quality and consistency.
 

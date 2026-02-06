@@ -1,41 +1,34 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import zhMessages from './zh.json';
-import enMessages from './en.json';
-
-const resources = {
-  zh: {
-    translation: zhMessages
-  },
-  en: {
-    translation: enMessages
-  }
-};
+import {
+  fallbackLanguage,
+  languageCodeSet,
+  resources
+} from '@/i18n/resources';
+import {
+  LANGUAGE_FALLBACK,
+  normalizeLanguage,
+  type LanguageCode
+} from '@/config/i18n-config';
 
 // Detect user language preference
-const getInitialLanguage = (): 'zh' | 'en' => {
+const getInitialLanguage = (): LanguageCode => {
   // Check localStorage first
   const stored = localStorage.getItem('i18n-language');
-  if (stored === 'zh' || stored === 'en') {
-    return stored;
+  if (stored && languageCodeSet.has(stored)) {
+    return stored as LanguageCode;
   }
 
   // Check browser language
-  const browserLang = navigator.language.toLowerCase();
-  if (browserLang.startsWith('zh')) {
-    localStorage.setItem('i18n-language', 'zh');
-    return 'zh';
-  }
-
-  // Default to English
-  localStorage.setItem('i18n-language', 'en');
-  return 'en';
+  const browserLang = normalizeLanguage(navigator.language);
+  localStorage.setItem('i18n-language', browserLang);
+  return browserLang ?? fallbackLanguage ?? LANGUAGE_FALLBACK;
 };
 
 i18n.use(initReactI18next).init({
   resources,
   lng: getInitialLanguage(),
-  fallbackLng: 'en',
+  fallbackLng: fallbackLanguage ?? LANGUAGE_FALLBACK,
   interpolation: {
     escapeValue: false
   },

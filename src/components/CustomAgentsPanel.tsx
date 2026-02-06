@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -8,53 +9,111 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { STYLE_TAGS, type StyleTag } from '@/config/style-tags';
 import {
   addCustomAgent,
   getAllAgents,
   loadCustomAgents,
   removeCustomAgent,
+  resolveAgentLocale,
+  resolveAgentPrompt,
   updateCustomAgent,
   type AgentProfile
 } from '@/config/agents';
 
-const createEmptyAgent = (): AgentProfile => ({
+interface FormValues {
+  id: string;
+  name: string;
+  description: string;
+  photographer: string;
+  prompts: string;
+  tagWeights: TagWeightEntry[];
+}
+
+interface TagWeightEntry {
+  tag: StyleTag;
+  weight: string;
+}
+
+const createEmptyValues = (): FormValues => ({
   id: '',
   name: '',
   description: '',
   photographer: '',
-  tagWeights: {},
-  prompt: ''
+  prompts: '',
+  tagWeights: []
 });
 
 export function CustomAgentsPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [customAgents, setCustomAgents] = useState<AgentProfile[]>(loadCustomAgents());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formAgent, setFormAgent] = useState<AgentProfile>(createEmptyAgent());
-  const [tagWeightsInput, setTagWeightsInput] = useState('{}');
-  const [formError, setFormError] = useState<string | null>(null);
+  const form = useForm<FormValues>({ defaultValues: createEmptyValues() });
+  const [tagToAdd, setTagToAdd] = useState<StyleTag | ''>('');
+  const [weightToAdd, setWeightToAdd] = useState('');
+  const watchedTagWeights = useWatch({ control: form.control, name: 'tagWeights' }) ?? [];
+  const availableTags = useMemo(
+    () => STYLE_TAGS.map((tag) => `${tag} (${t(`styleTags.${tag}`)})`).join(', '),
+    [t, i18n.language]
+  );
+  const selectedTagSet = useMemo(
+    () => new Set(watchedTagWeights.map((entry) => entry.tag)),
+    [watchedTagWeights]
+  );
+  const tagOptions = useMemo(
+    () => STYLE_TAGS.filter((tag) => !selectedTagSet.has(tag)),
+    [selectedTagSet]
+  );
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
 
   const openNewAgent = () => {
     setEditingId(null);
-    setFormAgent(createEmptyAgent());
-    setTagWeightsInput('{}');
-    setFormError(null);
+    form.reset(createEmptyValues());
+    setTagToAdd('');
+    setWeightToAdd('');
+    form.clearErrors();
     setIsDialogOpen(true);
   };
 
   const openEditAgent = (agent: AgentProfile) => {
+    const locale = resolveAgentLocale(agent, i18n.language);
     setEditingId(agent.id);
-    setFormAgent(agent);
-    setTagWeightsInput(JSON.stringify(agent.tagWeights ?? {}, null, 2));
-    setFormError(null);
+    form.reset({
+      id: agent.id,
+      name: locale.name,
+      description: locale.description,
+      photographer: locale.photographer,
+      prompts: resolveAgentPrompt(agent, i18n.language)
+    });
+    const entries = Object.entries(agent.tagWeights ?? {}).map(([tag, weight]) => ({
+      tag: tag as StyleTag,
+      weight: String(weight)
+    }));
+    form.setValue('tagWeights', entries, { shouldDirty: false });
+    setTagToAdd('');
+    setWeightToAdd('');
+    form.clearErrors();
     setIsDialogOpen(true);
   };
 
@@ -69,30 +128,55 @@ export function CustomAgentsPanel() {
   };
 
   const handleSave = () => {
-    if (!formAgent.id || !formAgent.name || !formAgent.photographer || !formAgent.prompt) {
-      setFormError(t('customAgents.requiredField'));
+    const values = form.getValues();
+    const trimmedId = values.id.trim();
+    form.setValue('id', trimmedId);
+    form.clearErrors();
+    if (
+      !trimmedId
+      || !values.name
+      || !values.photographer
+      || !values.prompts
+    ) {
+      if (!trimmedId) {
+        form.setError('id', { message: t('customAgents.requiredField') });
+        return;
+      }
+      if (!values.name) {
+        form.setError('name', { message: t('customAgents.requiredField') });
+        return;
+      }
+      if (!values.photographer) {
+        form.setError('photographer', { message: t('customAgents.requiredField') });
+        return;
+      }
+      form.setError('prompts', { message: t('customAgents.requiredField') });
       return;
     }
 
     const allAgents = getAllAgents();
-    const duplicate = allAgents.some((agent) => agent.id === formAgent.id && agent.id !== editingId);
+    const duplicate = allAgents.some((agent) => agent.id === trimmedId && agent.id !== editingId);
     if (duplicate) {
-      setFormError(t('customAgents.duplicateId'));
+      form.setError('id', { message: t('customAgents.duplicateId') });
       return;
     }
 
-    let parsedWeights: AgentProfile['tagWeights'] = {};
-    if (tagWeightsInput.trim()) {
-      try {
-        parsedWeights = JSON.parse(tagWeightsInput) as AgentProfile['tagWeights'];
-      } catch {
-        setFormError(t('customAgents.invalidJson'));
+    const parsedWeights: AgentProfile['tagWeights'] = {};
+    for (const entry of values.tagWeights ?? []) {
+      const parsed = Number.parseFloat(entry.weight);
+      if (!Number.isFinite(parsed)) {
+        form.setError('tagWeights', { message: t('customAgents.invalidWeight') });
         return;
       }
+      parsedWeights[entry.tag] = parsed;
     }
 
     const nextAgent: AgentProfile = {
-      ...formAgent,
+      id: trimmedId,
+      name: values.name,
+      description: values.description,
+      photographer: values.photographer,
+      prompts: values.prompts,
       tagWeights: parsedWeights
     };
 
@@ -121,27 +205,30 @@ export function CustomAgentsPanel() {
           <p className="text-xs text-muted-foreground">{t('customAgents.empty')}</p>
         ) : (
           <div className="space-y-2">
-            {customAgents.map((agent) => (
-              <Card key={agent.id} className="border-border/50">
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground">{agent.photographer}</p>
+            {customAgents.map((agent) => {
+              const locale = resolveAgentLocale(agent, i18n.language);
+              return (
+                <Card key={agent.id} className="border-border/50">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{locale.name}</p>
+                        <p className="text-xs text-muted-foreground">{locale.photographer}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => openEditAgent(agent)}>
+                          {t('customAgents.edit')}
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(agent.id)}>
+                          {t('customAgents.delete')}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditAgent(agent)}>
-                        {t('customAgents.edit')}
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(agent.id)}>
-                        {t('customAgents.delete')}
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{agent.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+                    <p className="text-xs text-muted-foreground">{locale.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </CardContent>
@@ -152,96 +239,204 @@ export function CustomAgentsPanel() {
             <DialogTitle>
               {isEditing ? t('customAgents.editTitle') : t('customAgents.createTitle')}
             </DialogTitle>
+            <DialogDescription>{t('customAgents.description')}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {formError && (
-              <Alert variant="destructive">
-                <AlertDescription>{formError}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="agent-id">{t('customAgents.idLabel')}</Label>
-              <Input
-                id="agent-id"
-                value={formAgent.id}
-                onChange={(event) =>
-                  setFormAgent((prev) => ({ ...prev, id: event.target.value.trim() }))
-                }
-                placeholder={t('customAgents.idPlaceholder')}
-                disabled={isEditing}
+          <Form {...form}>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('customAgents.idLabel')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        onChange={(event) => field.onChange(event.target.value.trim())}
+                        placeholder={t('customAgents.idPlaceholder')}
+                        disabled={isEditing}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="agent-name">{t('customAgents.nameLabel')}</Label>
-              <Input
-                id="agent-name"
-                value={formAgent.name}
-                onChange={(event) =>
-                  setFormAgent((prev) => ({ ...prev, name: event.target.value }))
-                }
-                placeholder={t('customAgents.namePlaceholder')}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('customAgents.nameLabel')}</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder={t('customAgents.namePlaceholder')} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="agent-photographer">{t('customAgents.photographerLabel')}</Label>
-              <Input
-                id="agent-photographer"
-                value={formAgent.photographer}
-                onChange={(event) =>
-                  setFormAgent((prev) => ({ ...prev, photographer: event.target.value }))
-                }
-                placeholder={t('customAgents.photographerPlaceholder')}
+              <FormField
+                control={form.control}
+                name="photographer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('customAgents.photographerLabel')}</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder={t('customAgents.photographerPlaceholder')} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="agent-description">{t('customAgents.descriptionLabel')}</Label>
-              <Textarea
-                id="agent-description"
-                value={formAgent.description}
-                onChange={(event) =>
-                  setFormAgent((prev) => ({ ...prev, description: event.target.value }))
-                }
-                placeholder={t('customAgents.descriptionPlaceholder')}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('customAgents.descriptionLabel')}</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder={t('customAgents.descriptionPlaceholder')} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="agent-prompt">{t('customAgents.promptLabel')}</Label>
-              <Textarea
-                id="agent-prompt"
-                value={formAgent.prompt}
-                onChange={(event) =>
-                  setFormAgent((prev) => ({ ...prev, prompt: event.target.value }))
-                }
-                placeholder={t('customAgents.promptPlaceholder')}
+              <FormField
+                control={form.control}
+                name="prompts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('customAgents.promptLabel')}</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder={t('customAgents.promptPlaceholder')} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="agent-weights">{t('customAgents.tagWeightsLabel')}</Label>
-              <Textarea
-                id="agent-weights"
-                value={tagWeightsInput}
-                onChange={(event) => setTagWeightsInput(event.target.value)}
-                placeholder={t('customAgents.tagWeightsPlaceholder')}
+              <FormField
+                control={form.control}
+                name="tagWeights"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('customAgents.tagWeightsLabel')}</FormLabel>
+                    <FormControl>
+                      <Card className="border-border/50">
+                        <CardContent className="p-3 space-y-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <Select
+                              value={tagToAdd}
+                              onValueChange={(value) => setTagToAdd(value as StyleTag)}
+                            >
+                              <SelectTrigger className="sm:flex-1">
+                                <SelectValue placeholder={t('customAgents.tagSelectPlaceholder')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {tagOptions.map((tag) => (
+                                  <SelectItem key={tag} value={tag}>
+                                    {tag} ({t(`styleTags.${tag}`)})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              value={weightToAdd}
+                              onChange={(event) => setWeightToAdd(event.target.value)}
+                              placeholder={t('customAgents.tagWeightPlaceholder')}
+                              className="sm:w-40"
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                if (!tagToAdd) {
+                                  return;
+                                }
+                                const parsed = Number.parseFloat(weightToAdd);
+                                if (!Number.isFinite(parsed)) {
+                                  form.setError('tagWeights', {
+                                    message: t('customAgents.invalidWeight')
+                                  });
+                                  return;
+                                }
+                                const nextValues = [...(field.value ?? []), {
+                                  tag: tagToAdd,
+                                  weight: weightToAdd
+                                }];
+                                field.onChange(nextValues);
+                                form.clearErrors('tagWeights');
+                                setTagToAdd('');
+                                setWeightToAdd('');
+                              }}
+                              disabled={!tagToAdd || tagOptions.length === 0}
+                            >
+                              {t('customAgents.addTagButton')}
+                            </Button>
+                          </div>
+
+                          {(field.value ?? []).length > 0 && (
+                            <div className="space-y-2">
+                              {(field.value ?? []).map((entry) => (
+                                <Card key={entry.tag} className="border-border/50">
+                                  <CardContent className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
+                                    <div className="text-sm text-foreground sm:flex-1">
+                                      {entry.tag} ({t(`styleTags.${entry.tag}`)})
+                                    </div>
+                                    <Input
+                                      value={entry.weight}
+                                      onChange={(event) => {
+                                        const nextValue = event.target.value;
+                                        const nextEntries = (field.value ?? []).map((item) =>
+                                          item.tag === entry.tag
+                                            ? { ...item, weight: nextValue }
+                                            : item
+                                        );
+                                        field.onChange(nextEntries);
+                                      }}
+                                      placeholder={t('customAgents.tagWeightPlaceholder')}
+                                      className="sm:w-40"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      onClick={() => {
+                                        const nextEntries = (field.value ?? []).filter(
+                                          (item) => item.tag !== entry.tag
+                                        );
+                                        field.onChange(nextEntries);
+                                      }}
+                                    >
+                                      {t('customAgents.removeTag')}
+                                    </Button>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </FormControl>
+                    <FormMessage />
+                    <FormDescription>
+                      {t('customAgents.tagWeightsHelp', { tags: availableTags })}
+                    </FormDescription>
+                  </FormItem>
+                )}
               />
-              <p className="text-xs text-muted-foreground">{t('customAgents.tagWeightsHelp')}</p>
-            </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setIsDialogOpen(false)}>
-                {t('customAgents.cancel')}
-              </Button>
-              <Button className="flex-1" onClick={handleSave}>
-                {t('customAgents.save')}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setIsDialogOpen(false)}>
+                  {t('customAgents.cancel')}
+                </Button>
+                <Button className="flex-1" onClick={handleSave}>
+                  {t('customAgents.save')}
+                </Button>
+              </div>
             </div>
-          </div>
+          </Form>
         </DialogContent>
       </Dialog>
     </Card>

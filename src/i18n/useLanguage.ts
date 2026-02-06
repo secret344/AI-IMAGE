@@ -1,36 +1,29 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-
-interface Language {
-  code: 'zh' | 'en';
-  name: string;
-}
+import { getAvailableLanguages, normalizeLanguage, type LanguageCode } from '@/config/i18n-config';
 
 interface UseLanguageReturn {
-  currentLanguage: 'zh' | 'en';
-  switchLanguage: (code: 'zh' | 'en') => void;
-  availableLanguages: Language[];
+  currentLanguage: LanguageCode;
+  switchLanguage: (code: LanguageCode) => void;
+  availableLanguages: { code: LanguageCode; name: string }[];
 }
 
 export function useLanguage(): UseLanguageReturn {
   const { i18n } = useTranslation();
 
   const switchLanguage = useCallback(
-    (lang: 'zh' | 'en') => {
+    (lang: LanguageCode) => {
       i18n.changeLanguage(lang);
       localStorage.setItem('i18n-language', lang);
     },
     [i18n]
   );
 
-  const currentLanguage = (i18n.language as 'zh' | 'en') || 'en';
+  const currentLanguage = normalizeLanguage(i18n.language);
 
   return {
     currentLanguage,
     switchLanguage,
-    availableLanguages: [
-      { code: 'zh', name: '中文' },
-      { code: 'en', name: 'English' }
-    ] as const
+    availableLanguages: getAvailableLanguages()
   };
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { EvaluationResult } from '@/types/evaluation';
+import type { LanguageCode } from '@/config/i18n-config';
 
 const dimensionSchema = z.object({
   name: z.enum(['Composition', 'Lighting', 'Color', 'Subject']),
@@ -22,7 +23,7 @@ const resultSchema = z.object({
   retouchPlan: z.array(retouchSchema).optional().default([])
 });
 
-export function validateResult(payload: unknown, language: 'zh' | 'en' = 'en'): EvaluationResult {
+export function validateResult(payload: unknown, language: LanguageCode = 'en'): EvaluationResult {
   const parsed = resultSchema.safeParse(payload);
   if (parsed.success) {
     return { ...normalizeResult(parsed.data), raw: payload };
@@ -46,7 +47,7 @@ function normalizeResult(result: EvaluationResult): EvaluationResult {
  * @param {'zh'|'en'} language User language preference (for future i18n fallback messages)
  * @return {EvaluationResult} Best-effort EvaluationResult with safe defaults
  */
-function bestEffortResult(payload: unknown, language: 'zh' | 'en'): EvaluationResult {
+function bestEffortResult(payload: unknown, language: LanguageCode): EvaluationResult {
   if (payload && typeof payload === 'object') {
     const data = payload as Record<string, unknown>;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

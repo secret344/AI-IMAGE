@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const i18nDir = path.join(__dirname, '../src/i18n');
+const i18nDir = path.join(__dirname, '../src/i18n/locales');
 
 function getKeys(obj, prefix = '') {
   const keys = [];

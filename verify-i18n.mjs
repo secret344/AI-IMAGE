@@ -33,8 +33,8 @@ const tags = match[1]
 console.log(`✓ 找到 ${tags.length} 个风格标签`);
 
 // 读取翻译文件
-const zhPath = path.join(__dirname, 'src/i18n/zh.json');
-const enPath = path.join(__dirname, 'src/i18n/en.json');
+const zhPath = path.join(__dirname, 'src/i18n/locales/zh.json');
+const enPath = path.join(__dirname, 'src/i18n/locales/en.json');
 
 const zh = JSON.parse(fs.readFileSync(zhPath, 'utf-8'));
 const en = JSON.parse(fs.readFileSync(enPath, 'utf-8'));

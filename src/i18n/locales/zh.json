@@ -1,6 +1,12 @@
 {
   "meta": {
-    "languageCode": "zh"
+    "languageCode": "zh",
+    "displayName": "中文",
+    "promptLanguageLabel": "Simplified Chinese"
+  },
+  "styleRecognition": {
+    "mockDescription": "初步风格偏向城市纪实与街头叙事，强调环境与人物关系。",
+    "descriptionPrefix": "初步风格："
   },
   "header": {
     "title": "AI 图像质量分析",
@@ -460,14 +466,18 @@
     "descriptionPlaceholder": "该评价重点关注什么",
     "promptLabel": "提示词",
     "promptPlaceholder": "填写评价指令",
-    "tagWeightsLabel": "标签权重（JSON）",
-    "tagWeightsPlaceholder": "{\n  \"City\": 0.8,\n  \"Architecture\": 1.0\n}",
-    "tagWeightsHelp": "可选。键为风格标签，值为 0-1 权重。",
+    "tagWeightsLabel": "标签权重",
+    "tagSelectPlaceholder": "选择风格标签",
+    "tagWeightPlaceholder": "权重（0-1）",
+    "addTagButton": "添加标签",
+    "removeTag": "移除",
+    "tagWeightsHelp": "可选。每次选择一个标签并填写权重。可用标签：{{tags}}",
     "cancel": "取消",
     "save": "保存",
     "requiredField": "ID、名称、摄影师与提示词为必填项。",
     "duplicateId": "该 ID 已存在，请使用唯一 ID。",
-    "invalidJson": "标签权重必须是有效的 JSON。"
+    "invalidJson": "标签权重必须是有效的 JSON。",
+    "invalidWeight": "请输入有效的权重数值。"
   },
   "dimensions": {
     "composition": "构图",

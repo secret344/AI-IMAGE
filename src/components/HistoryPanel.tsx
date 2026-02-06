@@ -13,6 +13,7 @@ import { loadProviderSettings } from '@/modules/storage/settings';
 import { processedImageFromDataUrl } from '@/modules/upload/processedImageFromDataUrl';
 import { buildXmp } from '@/modules/export/xmp';
 import { getAgentById, recommendAgents } from '@/modules/agent/recommendAgents';
+import { resolveAgentLocale } from '@/config/agents';
 import { useAppStore } from '@/state/useAppStore';
 import { HistoryFilters } from '@/components/history/HistoryFilters';
 import { HistoryActionsBar } from '@/components/history/HistoryActionsBar';
@@ -36,6 +37,7 @@ interface TaskItemActionFactory {
 
 const buildTaskItemActions = (
   t: (key: string) => string,
+  language: string,
   setEvaluation: (val: EvaluationResult | null) => void,
   setSelectedAgentId: (id: string | null) => void,
   setStyleResult: (val: StyleRecognitionResult | null) => void,
@@ -80,7 +82,7 @@ const buildTaskItemActions = (
 
       const settings = loadProviderSettings();
       setRecommendedAgents(
-        recommendAgents(task.styleResult.styleTags, { limit: settings.topAgents })
+        recommendAgents(task.styleResult.styleTags, { limit: settings.topAgents }, language)
       );
     } else {
       console.warn('⚠️ [LoadTaskToState] No styleResult found in task');
@@ -117,7 +119,7 @@ const buildTaskItemActions = (
 };
 
 export function HistoryPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<'time' | 'score'>('time');
@@ -202,9 +204,11 @@ export function HistoryPanel() {
   const filteredTasks = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const filtered = normalized
-      ? tasks.filter((task) =>
-          buildSearchHaystack(task, getAgentById(task.agentId ?? '')?.name).includes(normalized)
-        )
+      ? tasks.filter((task) => {
+          const agent = getAgentById(task.agentId ?? '');
+          const agentName = agent ? resolveAgentLocale(agent, i18n.language).name : undefined;
+          return buildSearchHaystack(task, agentName).includes(normalized);
+        })
       : tasks;
 
     const filteredWithFlags = filtered.filter((task) => {
@@ -373,7 +377,10 @@ export function HistoryPanel() {
         <HistoryTaskGrid
           tasks={pagedTasks}
           selectedIds={selectedIds}
-          getAgentName={(agentId) => getAgentById(agentId ?? '')?.name ?? null}
+          getAgentName={(agentId) => {
+            const agent = getAgentById(agentId ?? '');
+            return agent ? resolveAgentLocale(agent, i18n.language).name : null;
+          }}
           onToggleSelected={(id, checked) => {
             const next = new Set(selectedIds);
             if (checked) {
@@ -386,6 +393,7 @@ export function HistoryPanel() {
           buildActions={(task) =>
             buildTaskItemActions(
               t,
+              i18n.language,
               setEvaluation,
               setSelectedAgentId,
               setStyleResult,

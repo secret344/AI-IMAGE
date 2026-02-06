@@ -1,6 +1,12 @@
 {
   "meta": {
-    "languageCode": "en"
+    "languageCode": "en",
+    "displayName": "English",
+    "promptLanguageLabel": "English"
+  },
+  "styleRecognition": {
+    "mockDescription": "Preliminary style leans toward urban documentary and street narrative with an emphasis on subject-environment context.",
+    "descriptionPrefix": "Preliminary style: "
   },
   "header": {
     "title": "AI Image Quality Analyzer",
@@ -462,14 +468,18 @@
     "descriptionPlaceholder": "What this critic focuses on",
     "promptLabel": "Prompt",
     "promptPlaceholder": "Write the critique instructions",
-    "tagWeightsLabel": "Tag weights (JSON)",
-    "tagWeightsPlaceholder": "{\n  \"City\": 0.8,\n  \"Architecture\": 1.0\n}",
-    "tagWeightsHelp": "Optional. Use style tag names as keys and 0-1 weights as values.",
+    "tagWeightsLabel": "Tag weights",
+    "tagSelectPlaceholder": "Select a style tag",
+    "tagWeightPlaceholder": "Weight (0-1)",
+    "addTagButton": "Add tag",
+    "removeTag": "Remove",
+    "tagWeightsHelp": "Optional. Add tags one by one. Available tags: {{tags}}",
     "cancel": "Cancel",
     "save": "Save",
     "requiredField": "ID, name, photographer, and prompt are required.",
     "duplicateId": "This ID already exists. Choose a unique ID.",
-    "invalidJson": "Tag weights must be valid JSON."
+    "invalidJson": "Tag weights must be valid JSON.",
+    "invalidWeight": "Please enter a valid number for the weight."
   },
   "dimensions": {
     "composition": "Composition",

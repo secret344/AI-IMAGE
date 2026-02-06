@@ -1,4 +1,4 @@
-import { getAllAgents, type AgentProfile } from '@/config/agents';
+import { getAllAgents, resolveAgentLocale, type AgentProfile } from '@/config/agents';
 import type { StyleTagScore } from '@/config/style-tags';
 
 export interface AgentRecommendation {
@@ -15,7 +15,8 @@ export interface RecommendOptions {
 
 export function recommendAgents(
   styleTags: StyleTagScore[],
-  options: RecommendOptions = {}
+  options: RecommendOptions = {},
+  language?: string
 ): AgentRecommendation[] {
   const normalized = [...styleTags].sort(
     (a, b) => b.weight - a.weight || a.name.localeCompare(b.name)
@@ -25,6 +26,7 @@ export function recommendAgents(
   return getAllAgents().map((agent) => {
     let score = 0;
     const matchedTags: string[] = [];
+    const locale = resolveAgentLocale(agent, language);
 
     normalized.forEach((tag) => {
       const weight = agent.tagWeights[tag.name];
@@ -36,10 +38,10 @@ export function recommendAgents(
 
     return {
       id: agent.id,
-      name: agent.name,
+      name: locale.name,
       score: Number(score.toFixed(2)),
       matchedTags,
-      description: agent.description
+      description: locale.description
     };
   })
     .sort((a, b) => {

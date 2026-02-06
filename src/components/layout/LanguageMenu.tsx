@@ -5,16 +5,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { getLanguageDisplayName, type LanguageCode } from '@/config/i18n-config';
 
 interface LanguageOption {
-  code: 'zh' | 'en';
+  code: LanguageCode;
   name: string;
 }
 
 interface LanguageMenuProps {
-  currentLanguage: 'zh' | 'en';
+  currentLanguage: LanguageCode;
   availableLanguages: LanguageOption[];
-  onSelectLanguage: (code: 'zh' | 'en') => void;
+  onSelectLanguage: (code: LanguageCode) => void;
 }
 
 export function LanguageMenu({
@@ -26,7 +27,7 @@ export function LanguageMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm">
-          <span>{currentLanguage === 'zh' ? '中文' : 'English'}</span>
+          <span>{getLanguageDisplayName(currentLanguage)}</span>
           <svg className="ml-2 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"

@@ -1,16 +1,54 @@
 import type { StyleTag, StyleTagScore } from '@/config/style-tags';
 import { STYLE_TAGS } from '@/config/style-tags';
+import {
+  getLanguagePromptLabel,
+  getStyleRecognitionI18n,
+  type LanguageCode
+} from '@/config/i18n-config';
 import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
 import { callAiProvider } from '@/modules/ai/client';
 
 export interface StyleRecognitionResult {
   styleTags: StyleTagScore[];
+  styleDescription: string;
   inferenceTime: number;
   modelUsed: string;
 }
 
 const STYLE_TAG_SET = new Set(STYLE_TAGS);
+
+const STYLE_SYSTEM_PROMPT_STATIC = [
+  'You are a professional photography style analyzer.',
+  'Analyze the image and identify photographic style tags.',
+  'CRITICAL: Return ONLY valid JSON. No explanation, no markdown, no code fences, no text before or after the JSON.',
+  'Use this exact schema: {"styleTags":[{"name":"TagName","weight":0.5,"confidence":0.9}],"description":"..."}'
+];
+
+const STYLE_USER_PROMPT_STATIC = [
+  'Analyze this image and return only JSON with 3-5 style tags.',
+  'Weights must sum to ~1.0. Confidence is 0.0-1.0.',
+  'Do not translate tag names; if you add any explanatory text, keep it in the required language.'
+];
+
+function buildStyleSystemPrompt(languageLabel: string): string {
+  return [
+    STYLE_SYSTEM_PROMPT_STATIC[0],
+    STYLE_SYSTEM_PROMPT_STATIC[1],
+    `Any human-readable text must be written in ${languageLabel}.`,
+    STYLE_SYSTEM_PROMPT_STATIC[2],
+    STYLE_SYSTEM_PROMPT_STATIC[3]
+  ].join('\n');
+}
+
+function buildStyleUserPrompt(): string {
+  return [
+    STYLE_USER_PROMPT_STATIC[0],
+    `Tags (choose ONLY from this list): ${STYLE_TAGS.join(', ')}.`,
+    STYLE_USER_PROMPT_STATIC[1],
+    STYLE_USER_PROMPT_STATIC[2]
+  ].join('\n');
+}
 
 type RawStyleTag = {
   name: string;
@@ -149,11 +187,11 @@ function extractAndParseJSON(text: string): unknown {
 
 export async function recognizeStyle(
   base64Image: string,
-  userLanguage: 'zh' | 'en',
+  userLanguage: LanguageCode,
   passphrase?: string
 ): Promise<StyleRecognitionResult> {
   const start = performance.now();
-  const languageLabel = userLanguage === 'zh' ? 'Simplified Chinese' : 'English';
+  const languageLabel = getLanguagePromptLabel(userLanguage);
 
   const settings = loadProviderSettings();
 
@@ -167,6 +205,7 @@ export async function recognizeStyle(
 
     return {
       styleTags,
+      styleDescription: getStyleRecognitionI18n(userLanguage).mockDescription,
       inferenceTime: Math.round(performance.now() - start),
       modelUsed: 'mock'
     };
@@ -182,20 +221,8 @@ export async function recognizeStyle(
   }
 
   // Create the style recognition prompt - keep it short to prevent excessive thinking
-  const systemPrompt = [
-    'You are a professional photography style analyzer.',
-    'Analyze the image and identify photographic style tags.',
-    `Any human-readable text must be written in ${languageLabel}.`,
-    'CRITICAL: Return ONLY valid JSON. No explanation, no markdown, no code fences, no text before or after the JSON.',
-    'Use this exact schema: {"styleTags":[{"name":"TagName","weight":0.5,"confidence":0.9}]}'
-  ].join('\n');
-
-  const userPrompt = [
-    'Analyze this image and return only JSON with 3-5 style tags.',
-    `Tags (choose ONLY from this list): ${STYLE_TAGS.join(', ')}.`,
-    'Weights must sum to ~1.0. Confidence is 0.0-1.0.',
-    'Do not translate tag names; if you add any explanatory text, keep it in the required language.'
-  ].join('\n');
+  const systemPrompt = buildStyleSystemPrompt(languageLabel);
+  const userPrompt = buildStyleUserPrompt();
 
   const response = await callAiProvider({
     base64Image,
@@ -221,6 +248,9 @@ export async function recognizeStyle(
   const rawTags = parsed && Array.isArray((parsed as Record<string, unknown>)?.styleTags)
     ? ((parsed as Record<string, unknown>).styleTags as Record<string, unknown>[])
     : [];
+  const rawDescription = parsed && typeof (parsed as Record<string, unknown>)?.description === 'string'
+    ? ((parsed as Record<string, unknown>).description as string)
+    : '';
 
   // Validate and normalize the response
   const styleTags: StyleTagScore[] = rawTags
@@ -246,6 +276,13 @@ export async function recognizeStyle(
     styleTags.push(...deriveStyleTagsFromText(response));
   }
 
+  const fallbackStyleI18n = getStyleRecognitionI18n(userLanguage);
+  const styleDescription = rawDescription.trim()
+    ? rawDescription.trim()
+    : `${fallbackStyleI18n.descriptionPrefix}${styleTags
+        .map((tag) => tag.name)
+        .join(userLanguage === 'zh' ? '、' : ', ')}`;
+
   // Normalize weights to sum to approximately 1.0
   const totalWeight = styleTags.reduce((sum, tag) => sum + tag.weight, 0);
   if (totalWeight > 0) {
@@ -256,6 +293,7 @@ export async function recognizeStyle(
 
   return {
     styleTags,
+    styleDescription,
     inferenceTime: Math.round(performance.now() - start),
     modelUsed: settings.model
   };

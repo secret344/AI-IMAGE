@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/state/useAppStore';
+import { normalizeLanguage } from '@/config/i18n-config';
 import { buildMockEvaluation } from '@/modules/ai/mockEvaluation';
 import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
@@ -144,7 +145,7 @@ export function useResultActions({
           temperature: settings.temperature,
           maxTokens: settings.maxTokens,
           timeoutMs: settings.timeoutMs,
-          language: t('meta.languageCode') as 'zh' | 'en'
+          language: normalizeLanguage(t('meta.languageCode'))
         });
 
       let result;

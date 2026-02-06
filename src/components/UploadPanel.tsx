@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { LanguageCode } from '@/config/i18n-config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { StyleTagScore } from '@/config/style-tags';
 import { useAppStore } from '@/state/useAppStore';
@@ -83,7 +84,7 @@ export function UploadPanel() {
         setPreviewImageBase64(processed.base64);
 
         setProcessingStage(t('upload.styleRecognition'));
-        const userLanguage: 'zh' | 'en' = i18n.language?.toLowerCase().startsWith('zh')
+        const userLanguage: LanguageCode = i18n.language?.toLowerCase().startsWith('zh')
           ? 'zh'
           : 'en';
         const style = await recognizeStyle(processed.base64, userLanguage, passphrase);

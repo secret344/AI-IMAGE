@@ -20,12 +20,16 @@ export interface SaveTaskInput {
 
 export async function saveTask(input: SaveTaskInput) {
   const imageHash = await computeImageHash(input.processedImage?.base64 ?? input.thumbnailBase64);
+  
+  // Delete existing records with same imageHash + agentId to avoid duplicates
+  // This ensures each image+agent combination only has one (latest) evaluation
   if (imageHash && input.agentId) {
-    const cached = await findCachedTaskByImageHash(imageHash, input.agentId);
-    if (cached) {
-      return cached;
-    }
+    await db.tasks
+      .where('[imageHash+agentId]')
+      .equals([imageHash, input.agentId])
+      .delete();
   }
+  
   const record: TaskRecord = {
     id: crypto.randomUUID(),
     parentTaskId: input.parentTaskId,
