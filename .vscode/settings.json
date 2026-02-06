@@ -1,0 +1,9 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "npm i": true,
+    "npm install": true,
+    "npx tsc": true
+  },
+  "i18n-ally.localesPaths": ["src/i18n"],
+  "i18n-ally.keystyle": "nested"
+}
