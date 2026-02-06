@@ -65,19 +65,24 @@ export function useResultActions({
     if (!evaluation || !processedImage) {
       return;
     }
-    await saveTask({
-      evaluation,
-      thumbnailBase64: processedImage.base64,
-      fileName: selectedFileName ?? undefined,
-      agentId: selectedAgentId ?? undefined,
-      styleResult: styleResult ?? undefined,
-      processedImage: {
-        base64: processedImage.base64,
-        exif: processedImage.exif,
-        dimensions: processedImage.dimensions
-      }
-    });
-    window.dispatchEvent(new Event('history-updated'));
+    try {
+      const savedTask = await saveTask({
+        evaluation,
+        thumbnailBase64: processedImage.base64,
+        fileName: selectedFileName ?? undefined,
+        agentId: selectedAgentId ?? undefined,
+        styleResult: styleResult ?? undefined,
+        processedImage: {
+          base64: processedImage.base64,
+          exif: processedImage.exif,
+          dimensions: processedImage.dimensions
+        }
+      });
+      console.log('Task saved successfully:', savedTask);
+      window.dispatchEvent(new Event('history-updated'));
+    } catch (error) {
+      console.error('Failed to save task:', error);
+    }
   }, [evaluation, processedImage, selectedFileName, selectedAgentId, styleResult]);
 
   const handleRun = useCallback(async () => {
@@ -148,6 +153,25 @@ export function useResultActions({
       }
       setLastLatencyMs(Math.round(performance.now() - start));
       setEvaluation(result);
+      // Auto-save to history after successful evaluation
+      try {
+        await saveTask({
+          evaluation: result,
+          thumbnailBase64: processedImage.base64,
+          fileName: selectedFileName ?? undefined,
+          agentId: agent.id,
+          styleResult: styleResult ?? undefined,
+          processedImage: {
+            base64: processedImage.base64,
+            exif: processedImage.exif,
+            dimensions: processedImage.dimensions
+          }
+        });
+        console.log('Evaluation automatically saved to history');
+        window.dispatchEvent(new Event('history-updated'));
+      } catch (saveError) {
+        console.error('Failed to auto-save to history:', saveError);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : t('result.evaluationFailed');
       if (message.includes('429') || message.toLowerCase().includes('rate')) {
