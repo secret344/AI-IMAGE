@@ -73,7 +73,7 @@ async function sendJsonRequest(options: JsonRequestOptions): Promise<Response> {
 async function readSseStream(
   response: Response,
   extractContentFn: (data: Record<string, unknown>) => string | null,
-  provider: string
+  _provider: string
 ): Promise<string> {
   if (!response.body) {
     throw new Error('Response body is missing');
@@ -90,7 +90,7 @@ async function readSseStream(
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
-        console.log(`[Stream:${provider}] completed. Total length: ${contentBuffer.getLength()}`);
+
         break;
       }
 
@@ -455,7 +455,7 @@ async function callClaude(request: AiRequest): Promise<string> {
 async function callOllama(request: AiRequest): Promise<string> {
   const { data } = extractDataUrl(request.base64Image);
 
-  console.log('[Ollama] Request model:', request.model);
+
 
   const response = await sendJsonRequest({
     url: `${request.baseUrl}/api/chat`,

@@ -17,9 +17,13 @@ export function ActiveAgentDisplay({ agent }: ActiveAgentDisplayProps) {
       <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
         {t('result.activeAgent')}
       </p>
-      <p className="mt-2 text-lg">{t(`agents.${agent.id}`)}</p>
-      <p className="text-xs text-muted-foreground">{t(`agents.${agent.id}-photographer`)}</p>
-      <p className="mt-3 text-xs text-muted-foreground">{t(`agents.${agent.id}-description`)}</p>
+      <p className="mt-2 text-lg">{t(`agents.${agent.id}`, { defaultValue: agent.name })}</p>
+      <p className="text-xs text-muted-foreground">
+        {t(`agents.${agent.id}-photographer`, { defaultValue: agent.photographer })}
+      </p>
+      <p className="mt-3 text-xs text-muted-foreground">
+        {t(`agents.${agent.id}-description`, { defaultValue: agent.description })}
+      </p>
     </div>
   );
 }

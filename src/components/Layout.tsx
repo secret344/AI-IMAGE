@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/i18n/useLanguage';
@@ -15,30 +15,22 @@ export function Layout({ children }: PropsWithChildren) {
   const { currentLanguage, switchLanguage, availableLanguages } = useLanguage();
   const { theme, setTheme } = useThemeConfig();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const buildModelInfo = useCallback(() => {
+    const settings = loadProviderSettings();
+    const providerLabel = t(`settings.providers.${settings.provider}`);
+    return `${providerLabel}: ${settings.model}`;
+  }, [t]);
+  const [modelInfo, setModelInfo] = useState(buildModelInfo);
 
   useEffect(() => {
-    const handler = () => {
-      // Trigger model info refresh on settings change
-      window.dispatchEvent(new Event('model-info-changed'));
-    };
+    setModelInfo(buildModelInfo());
+  }, [buildModelInfo]);
+
+  useEffect(() => {
+    const handler = () => setModelInfo(buildModelInfo());
     window.addEventListener('settings-updated', handler);
     return () => window.removeEventListener('settings-updated', handler);
-  }, []);
-
-  const modelInfo = useMemo(() => {
-    const settings = loadProviderSettings();
-    const providerName =
-      settings.provider === 'openai'
-        ? 'OpenAI'
-        : settings.provider === 'gemini'
-          ? 'Gemini'
-          : settings.provider === 'claude'
-            ? 'Claude'
-            : settings.provider === 'ollama'
-              ? 'Ollama'
-              : 'Mock';
-    return `${providerName}: ${settings.model}`;
-  }, []);
+  }, [buildModelInfo]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">

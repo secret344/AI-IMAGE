@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { UploadPanel } from '@/components/UploadPanel';
 import { ResultPanel } from '@/components/ResultPanel';
 import { HistoryPanel } from '@/components/HistoryPanel';
+import { CustomAgentsPanel } from '@/components/CustomAgentsPanel';
 import { useAppStore } from '@/state/useAppStore';
 
 export function App() {
@@ -25,6 +26,7 @@ export function App() {
         <div className="space-y-6">
           <UploadPanel />
           <HistoryPanel />
+          <CustomAgentsPanel />
         </div>
         <ResultPanel />
       </div>

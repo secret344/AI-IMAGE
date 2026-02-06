@@ -38,7 +38,7 @@ export function EvaluationControls({
           type="password"
           value={passphrase}
           onChange={(event) => onChangePassphrase(event.target.value)}
-          placeholder={t('result.passhrasePlaceholder')}
+          placeholder={t('result.passphrasePlaceholder')}
           className="text-sm"
         />
       </Label>

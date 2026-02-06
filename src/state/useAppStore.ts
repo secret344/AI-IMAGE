@@ -16,6 +16,7 @@ interface AppState {
   lastLatencyMs: number | null;
   isOnline: boolean;
   evaluation: EvaluationResult | null;
+  skipCache: boolean;
   setSelectedFileName: (value: string | null) => void;
   setProcessedImage: (value: ProcessedImage | null) => void;
   setPreviewImageBase64: (value: string | null) => void;
@@ -27,6 +28,7 @@ interface AppState {
   setLastLatencyMs: (value: number | null) => void;
   setIsOnline: (value: boolean) => void;
   setEvaluation: (value: EvaluationResult | null) => void;
+  setSkipCache: (value: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -41,6 +43,7 @@ export const useAppStore = create<AppState>((set) => ({
   lastLatencyMs: null,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   evaluation: null,
+  skipCache: false,
   setSelectedFileName: (value) => set({ selectedFileName: value }),
   setProcessedImage: (value) => set({ processedImage: value }),
   setPreviewImageBase64: (value) => set({ previewImageBase64: value }),
@@ -51,5 +54,6 @@ export const useAppStore = create<AppState>((set) => ({
   setProcessingStage: (value) => set({ processingStage: value }),
   setLastLatencyMs: (value) => set({ lastLatencyMs: value }),
   setIsOnline: (value) => set({ isOnline: value }),
-  setEvaluation: (value) => set({ evaluation: value })
+  setEvaluation: (value) => set({ evaluation: value }),
+  setSkipCache: (value) => set({ skipCache: value })
 }));

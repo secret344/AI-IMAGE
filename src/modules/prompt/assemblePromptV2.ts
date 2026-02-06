@@ -11,6 +11,7 @@
 import type { AgentProfile } from '@/config/agents';
 import type { StyleTagScore } from '@/config/style-tags';
 import { buildSystemPrompt, buildUserPrompt, type Language } from '@/config/prompts';
+import { filterCommonExif } from '@/config/exif-constants';
 
 /**
  * 提示词上下文 - 包含评估所需的所有信息
@@ -123,13 +124,16 @@ export function assemblePromptV2(
 
   // 2. 数据格式化（局部作用域，后续释放）
   const formattedStyles = formatStyleTags(context.styleTags ?? []);
-  const formattedExif = formatExif(context.exif ?? {});
+  // 只使用常用EXIF字段，避免prompt过长
+  const commonExif = filterCommonExif(context.exif ?? {});
+  const formattedExif = formatExif(commonExif);
   const agentPrompt = agent?.prompt ?? 'Provide professional analysis.';
 
   // 3. 构建系统和用户提示词
   const system = buildSystemPrompt(validLanguage);
   const user = buildUserPrompt(agentPrompt, formattedStyles, formattedExif, validLanguage);
 
+  
   // 4. 构建结果对象
   const result: AssembledPrompt = {
     system,

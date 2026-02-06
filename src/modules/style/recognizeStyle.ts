@@ -41,6 +41,21 @@ function isRawStyleTag(value: Record<string, unknown>): value is RawStyleTag {
   );
 }
 
+function deriveStyleTagsFromText(text: string): StyleTagScore[] {
+  const lower = text.toLowerCase();
+  const matched = STYLE_TAGS.filter((tag) => lower.includes(tag.toLowerCase()));
+  const selected = (matched.length > 0 ? matched : ['Documentary', 'Street', 'City'])
+    .filter((tag) => STYLE_TAG_SET.has(tag as StyleTag))
+    .slice(0, 5) as StyleTag[];
+
+  const weight = selected.length > 0 ? 1 / selected.length : 1;
+  return selected.map((tag) => ({
+    name: tag,
+    weight,
+    confidence: 0.4
+  }));
+}
+
 // Helper function to extract and validate JSON from text
 function extractAndParseJSON(text: string): unknown {
   const trimmed = text.trim();
@@ -97,7 +112,7 @@ function extractAndParseJSON(text: string): unknown {
     if (!candidate) continue;
     try {
       const parsed = JSON.parse(candidate);
-      console.log('Successfully parsed JSON from candidate');
+
       return parsed as unknown;
     } catch (e) {
       // Continue to next candidate
@@ -118,7 +133,7 @@ function extractAndParseJSON(text: string): unknown {
         const candidate = trimmed.slice(firstBrace, i + 1);
         try {
           const parsed = JSON.parse(candidate);
-          console.log('Successfully parsed JSON using brace counting');
+
           return parsed as unknown;
         } catch (e) {
           // Continue
@@ -195,18 +210,15 @@ export async function recognizeStyle(
     timeoutMs: settings.timeoutMs
   });
 
-  console.log('Style recognition raw response (first 200 chars):', response.slice(0, 200));
+
 
   // Parse the response - extract and validate JSON more carefully
   const parsed = extractAndParseJSON(response);
   if (!parsed) {
-    console.error('Failed to extract JSON from style recognition response');
-    throw new Error(
-      `Failed to parse style recognition response - invalid JSON format. Response preview: ${response.slice(0, 200)}`
-    );
+    console.warn('Failed to extract JSON from style recognition response. Falling back to heuristic tags.');
   }
 
-  const rawTags = Array.isArray((parsed as Record<string, unknown>)?.styleTags)
+  const rawTags = parsed && Array.isArray((parsed as Record<string, unknown>)?.styleTags)
     ? ((parsed as Record<string, unknown>).styleTags as Record<string, unknown>[])
     : [];
 
@@ -231,11 +243,7 @@ export async function recognizeStyle(
 
   // If no valid tags, provide fallback
   if (styleTags.length === 0) {
-    styleTags.push({
-      name: 'Documentary',
-      weight: 0.5,
-      confidence: 0.5
-    });
+    styleTags.push(...deriveStyleTagsFromText(response));
   }
 
   // Normalize weights to sum to approximately 1.0

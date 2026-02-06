@@ -67,12 +67,15 @@ export function ResultPanel() {
 
   useEffect(() => {
     const handler = () => {
+
       setHighlightRun(true);
       sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.setTimeout(() => setHighlightRun(false), 1500);
     };
     window.addEventListener('highlight-run', handler);
-    return () => window.removeEventListener('highlight-run', handler);
+    return () => {
+      window.removeEventListener('highlight-run', handler);
+    };
   }, []);
 
   useEffect(() => {
@@ -125,6 +128,7 @@ export function ResultPanel() {
           {/* Evaluation Results */}
           <EvaluationResults
             evaluation={evaluation}
+            exif={processedImage?.exif ?? null}
             lastLatencyMs={lastLatencyMs}
             isProcessing={isProcessing}
             processingStage={processingStage}

@@ -1,4 +1,4 @@
-import { AGENTS, type AgentProfile } from '@/config/agents';
+import { getAllAgents, type AgentProfile } from '@/config/agents';
 import type { StyleTagScore } from '@/config/style-tags';
 
 export interface AgentRecommendation {
@@ -22,7 +22,7 @@ export function recommendAgents(
   );
   const limit = options.limit ?? 3;
 
-  return AGENTS.map((agent) => {
+  return getAllAgents().map((agent) => {
     let score = 0;
     const matchedTags: string[] = [];
 
@@ -52,5 +52,5 @@ export function recommendAgents(
 }
 
 export function getAgentById(id: string): AgentProfile | undefined {
-  return AGENTS.find((agent) => agent.id === id);
+  return getAllAgents().find((agent) => agent.id === id);
 }

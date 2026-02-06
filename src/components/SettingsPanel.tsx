@@ -182,36 +182,6 @@ export function SettingsPanel() {
     topAgents
   ]);
 
-  // 自动保存到实际使用的 settings storage
-  useEffect(() => {
-    if (!cacheLoaded) {
-      return; // Don't save during initial load
-    }
-    saveProviderSettings({
-      provider,
-      model,
-      fallbackModel,
-      baseUrl,
-      keyLabel: label,
-      topAgents,
-      temperature,
-      maxTokens,
-      timeoutMs
-    });
-    window.dispatchEvent(new Event('settings-updated'));
-  }, [
-    provider,
-    model,
-    fallbackModel,
-    baseUrl,
-    label,
-    temperature,
-    maxTokens,
-    timeoutMs,
-    topAgents,
-    cacheLoaded
-  ]);
-
   const fetchOllamaModels = useCallback(async () => {
     if (provider !== 'ollama') {
       return;

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAppStore } from '@/state/useAppStore';
 import { buildMockEvaluation } from '@/modules/ai/mockEvaluation';
 import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
@@ -46,6 +47,8 @@ export function useResultActions({
   setRunError
 }: UseResultActionsArgs) {
   const { t } = useTranslation();
+  const skipCache = useAppStore((state) => state.skipCache);
+  const setSkipCache = useAppStore((state) => state.setSkipCache);
 
   const handleDownloadXmp = useCallback(() => {
     if (!evaluation) {
@@ -66,7 +69,7 @@ export function useResultActions({
       return;
     }
     try {
-      const savedTask = await saveTask({
+      await saveTask({
         evaluation,
         thumbnailBase64: processedImage.base64,
         fileName: selectedFileName ?? undefined,
@@ -78,7 +81,7 @@ export function useResultActions({
           dimensions: processedImage.dimensions
         }
       });
-      console.log('Task saved successfully:', savedTask);
+
       window.dispatchEvent(new Event('history-updated'));
     } catch (error) {
       console.error('Failed to save task:', error);
@@ -108,13 +111,16 @@ export function useResultActions({
       }
 
       const imageHash = await computeImageHash(processedImage.base64);
-      if (imageHash && agent) {
+      if (imageHash && agent && !skipCache) {
         const cached = await findCachedTaskByImageHash(imageHash, agent.id);
         if (cached) {
+          console.log('[Cache] Using cached evaluation result');
           setEvaluation(cached.evaluation);
           setLastLatencyMs(0);
           return;
         }
+      } else if (skipCache) {
+        console.log('[Re-evaluation] Bypassing cache for fresh evaluation');
       }
 
       const loadedKey =
@@ -153,6 +159,8 @@ export function useResultActions({
       }
       setLastLatencyMs(Math.round(performance.now() - start));
       setEvaluation(result);
+      // Reset skipCache flag after evaluation
+      setSkipCache(false);
       // Auto-save to history after successful evaluation
       try {
         await saveTask({
@@ -167,12 +175,13 @@ export function useResultActions({
             dimensions: processedImage.dimensions
           }
         });
-        console.log('Evaluation automatically saved to history');
+
         window.dispatchEvent(new Event('history-updated'));
       } catch (saveError) {
         console.error('Failed to auto-save to history:', saveError);
       }
     } catch (err) {
+      setSkipCache(false);
       const message = err instanceof Error ? err.message : t('result.evaluationFailed');
       if (message.includes('429') || message.toLowerCase().includes('rate')) {
         setRunError(t('result.rateLimited'));
@@ -182,6 +191,7 @@ export function useResultActions({
     } finally {
       setProcessingStage(null);
       setIsProcessing(false);
+      setSkipCache(false);
     }
   }, [
     agent,
@@ -194,6 +204,8 @@ export function useResultActions({
     setLastLatencyMs,
     setProcessingStage,
     setRunError,
+    setSkipCache,
+    skipCache,
     styleResult,
     t
   ]);

@@ -43,16 +43,27 @@ const buildTaskItemActions = (
   setPreviewImageBase64: (data: string | null) => void,
   setProcessedImage: (data: ProcessedImage | null) => void,
   setRecommendedAgents: (agents: AgentRecommendation[]) => void,
+  setSkipCache: (skip: boolean) => void,
   deleteTask: (id: string) => Promise<void>,
   load: () => Promise<void>
 ): TaskItemActionFactory[] => {
   const loadTaskToState = (task: TaskRecord, clearEvaluation = false) => {
+    console.log('📥 [LoadTaskToState] Loading task to state:', {
+      taskId: task.id,
+      clearEvaluation,
+      hasEvaluation: !!task.evaluation,
+      hasProcessedImage: !!task.processedImage,
+      hasStyleResult: !!task.styleResult
+    });
+    
     setEvaluation(clearEvaluation ? null : task.evaluation);
     setSelectedAgentId(task.agentId ?? null);
     setStyleResult(task.styleResult ?? null);
     setSelectedFileName(task.fileName ?? null);
     setPreviewImageBase64(task.thumbnailBase64);
+    
     if (task.processedImage) {
+
       setProcessedImage(
         processedImageFromDataUrl(
           task.processedImage.base64,
@@ -61,13 +72,21 @@ const buildTaskItemActions = (
           task.processedImage.dimensions
         )
       );
+    } else {
+      console.warn('⚠️ [LoadTaskToState] No processedImage found in task');
     }
+    
     if (task.styleResult) {
+
       const settings = loadProviderSettings();
       setRecommendedAgents(
         recommendAgents(task.styleResult.styleTags, { limit: settings.topAgents })
       );
+    } else {
+      console.warn('⚠️ [LoadTaskToState] No styleResult found in task');
     }
+    
+
   };
 
   return [
@@ -80,7 +99,9 @@ const buildTaskItemActions = (
       label: t('history.reevaluate'),
       variant: 'primary',
       handler: (task) => {
+        console.log('[Re-evaluation] Starting for task:', task.id, '- Agent:', task.agentId);
         loadTaskToState(task, true);
+        setSkipCache(true);
         window.dispatchEvent(new Event('highlight-run'));
       }
     },
@@ -113,7 +134,8 @@ export function HistoryPanel() {
     setSelectedFileName,
     setPreviewImageBase64,
     setProcessedImage,
-    setRecommendedAgents
+    setRecommendedAgents,
+    setSkipCache
   } = useAppStore();
 
   const load = useCallback(async () => {
@@ -371,6 +393,7 @@ export function HistoryPanel() {
               setPreviewImageBase64,
               setProcessedImage,
               setRecommendedAgents,
+              setSkipCache,
               deleteTask,
               load
             ).map((action) => ({ ...action, handler: () => action.handler(task) }))

@@ -1,7 +1,8 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AGENTS } from '@/config/agents';
+import { getAllAgents } from '@/config/agents';
 import type { AgentRecommendation } from '@/modules/agent/recommendAgents';
 
 interface AgentSelectorProps {
@@ -20,12 +21,21 @@ export function AgentSelector({
   onToggleExpand
 }: AgentSelectorProps) {
   const { t } = useTranslation();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handler = () => setRefreshKey((prev) => prev + 1);
+    window.addEventListener('custom-agents-updated', handler);
+    return () => window.removeEventListener('custom-agents-updated', handler);
+  }, []);
 
   // 创建推荐分数 map
   const recommendationScoreMap = new Map(recommendedAgents.map((rec) => [rec.id, rec.score]));
 
+  const allAgents = useMemo(() => getAllAgents(), [refreshKey]);
+
   // 按推荐分数排序所有摄影师
-  const sortedAgents = [...AGENTS].sort((a, b) => {
+  const sortedAgents = [...allAgents].sort((a, b) => {
     const scoreA = recommendationScoreMap.get(a.id) ?? 0;
     const scoreB = recommendationScoreMap.get(b.id) ?? 0;
     return scoreB - scoreA;
@@ -58,8 +68,14 @@ export function AgentSelector({
                   className="w-full justify-between"
                 >
                   <div className="text-left flex-1">
-                    <p className="text-sm font-semibold">{t(`agents.${agent.id}`)}</p>
-                    <p className="text-xs opacity-75">{t(`agents.${agent.id}-photographer`)}</p>
+                    <p className="text-sm font-semibold">
+                      {t(`agents.${agent.id}`, { defaultValue: agent.name })}
+                    </p>
+                    <p className="text-xs opacity-75">
+                      {t(`agents.${agent.id}-photographer`, {
+                        defaultValue: agent.photographer
+                      })}
+                    </p>
                   </div>
                   <div className="text-right">
                     {isRecommended ? (
