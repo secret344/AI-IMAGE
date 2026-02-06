@@ -145,13 +145,13 @@ graph TB
 | :---------------------------- | :----------------- | :----------------------------- |
 | **Browser-image-compression** | 图片压缩           | 纯前端实现，支持 JPEG/PNG/WebP |
 | **Canvas API**                | 图片重绘与格式转换 | 浏览器原生支持，性能稳定       |
-| **exif-js** / **piexifjs**    | EXIF 读写          | 提取曝光参数、清洗隐私信息     |
+| **exifreader**                | EXIF 元数据解析    | 提取曝光参数、清洗隐私信息     |
 
 #### 3.3.5 AI 集成
 
 | 技术                                     | 用途          | 理由                          |
 | :--------------------------------------- | :------------ | :---------------------------- |
-| **LangChain.js**                         | AI 调用抽象层 | 统一多厂商 API 接口，便于切换 |
+| **原生 Fetch API**                       | AI API 调用   | 轻量级，无外部依赖，完全可控  |
 | **TensorFlow.js** / **ONNX Runtime Web** | 浏览器内推理  | 轻量级场景识别、降级方案      |
 
 #### 3.3.6 安全与加密
@@ -1238,7 +1238,7 @@ async function preCheckImage(image: Blob): Promise<boolean> {
 - [ ] UI 框架集成（Tailwind CSS + ShadcnUI）
 - [ ] 上传与拖拽组件
 - [ ] Canvas 图片预处理（压缩、格式转换）
-- [ ] EXIF 提取与清洗（使用 exif-js）
+- [ ] EXIF 提取与清洗（使用 exifreader）
 - [ ] LocalStorage API 密钥管理（Web Crypto 加密）
 - [ ] 风格识别（方案 A：简单规则引擎）
 - [ ] 5 个角色配置与推荐算法
@@ -1561,7 +1561,7 @@ function deleteAllUserData(): void {
 
 **开源项目**
 
-- [exif-js](https://github.com/exif-js/exif-js) - EXIF 提取库
+- [exifreader](https://github.com/mattiasw/ExifReader) - EXIF 元数据解析
 - [browser-image-compression](https://github.com/Donaldcwl/browser-image-compression) - 浏览器图片压缩
 - [Dexie.js](https://dexie.org/) - IndexedDB 封装库
 
@@ -1595,7 +1595,7 @@ function deleteAllUserData(): void {
 - ✅ UI 框架集成 (Tailwind CSS + ShadcnUI)
 - ✅ 上传与拖拽组件
 - ✅ Canvas 图片预处理（压缩、格式转换）
-- ✅ EXIF 提取与清洗（使用 exif-js）
+- ✅ EXIF 提取与清洗（使用 exifreader）
 - ✅ LocalStorage API 密钥管理（Web Crypto AES-GCM 加密）
 - ✅ 风格识别（规则引擎 MVP）
 - ✅ 5 个角色配置与推荐算法

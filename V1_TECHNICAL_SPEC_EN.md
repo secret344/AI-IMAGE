@@ -140,14 +140,14 @@ graph TB
 | :--------------------- | :------------------------ | :------------------------------------------------------------ |
 | Compression            | browser-image-compression | Works on blob directly, respects quality settings             |
 | Canvas API             | Native                    | 2D drawing, format conversion, EXIF stripping                 |
-| EXIF Extraction        | exif-js / piexifjs        | Read raw EXIF, extract shooting params, optional sanitization |
+| EXIF Extraction        | exifreader                | Parse EXIF metadata, extract shooting params, sanitize privacy |
 | RAW Support (Optional) | libraw.js / cloud         | Decode .ARW for Sony cameras, fallback to cloud transcoding   |
 
 #### 3.3.4 AI Integration
 
 | Component             | Selection                         | Rationale                                                    |
 | :-------------------- | :-------------------------------- | :----------------------------------------------------------- |
-| API Abstraction       | LangChain.js                      | Unified interface, easy provider switching, built-in retries |
+| API Integration       | Direct HTTP calls (native fetch) | Lightweight, no external dependencies, full control          |
 | Vision Models         | OpenAI Vision / Gemini / Claude 3 | State-of-the-art multimodal, structured output support       |
 | Local Fallback        | TensorFlow.js                     | MobileNet for lightweight style detection, no extra training |
 | Lightweight Detection | ONNX Runtime Web (Optional)       | Faster inference, smaller models, mobile-friendly            |
@@ -1245,7 +1245,7 @@ async function preCheckImage(image: Blob): Promise<boolean> {
 - [ ] UI framework integration (Tailwind CSS + ShadcnUI)
 - [ ] Upload and drag-drop component
 - [ ] Canvas image preprocessing (compression, format conversion)
-- [ ] EXIF extraction and sanitization (using exif-js)
+- [ ] EXIF extraction and sanitization (using exifreader)
 - [ ] LocalStorage API key management (Web Crypto encryption)
 - [ ] Style recognition (Option A: simple rule engine)
 - [ ] 5-agent configuration and recommendation algorithm
@@ -1542,7 +1542,7 @@ function deleteAllUserData(): void {
 
 **Open Source Projects**
 
-- [exif-js](https://github.com/exif-js/exif-js) - EXIF extraction library
+- [exifreader](https://github.com/mattiasw/ExifReader) - EXIF metadata extraction
 - [browser-image-compression](https://github.com/Donaldcwl/browser-image-compression) - Browser image compression
 - [Dexie.js](https://dexie.org/) - IndexedDB wrapper
 
@@ -1576,7 +1576,7 @@ function deleteAllUserData(): void {
 - ✅ UI framework integration (Tailwind CSS + ShadcnUI)
 - ✅ Upload and drag-drop component
 - ✅ Canvas image preprocessing (compression, format conversion)
-- ✅ EXIF extraction and sanitization (using exif-js)
+- ✅ EXIF extraction and sanitization (using exifreader)
 - ✅ LocalStorage API key management (Web Crypto AES-GCM encryption)
 - ✅ Style recognition (Rule engine MVP)
 - ✅ 5-agent configuration and recommendation algorithm
