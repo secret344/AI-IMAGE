@@ -4,9 +4,9 @@
 
 ### Project Summary / 项目摘要
 
-This repo is a **browser-only SPA** for AI image quality evaluation: upload → preprocess → style tags → agent recommendation → prompt assembly → AI call → JSON validation → results → XMP export → local history. See [README_en.md](../README_en.md) and [V1_TECHNICAL_SPEC_EN.md](../V1_TECHNICAL_SPEC_EN.md).
+This repo is a **browser-only SPA** for AI image quality evaluation: upload → preprocess → style tags → agent recommendation → prompt assembly → AI call → JSON validation → results → XMP export → local history. See [README.md](../README.md) and [V1_TECHNICAL_SPEC_EN.md](../V1_TECHNICAL_SPEC_EN.md).
 
-本仓库是**纯前端 SPA**：上传 → 预处理 → 风格标签 → 角色推荐 → 提示词组装 → AI 调用 → JSON 校验 → 结果展示 → XMP 导出 → 本地历史。参考 [README_en.md](../README_en.md) 与 [V1_TECHNICAL_SPEC_CN.md](../V1_TECHNICAL_SPEC_CN.md)。
+本仓库是**纯前端 SPA**：上传 → 预处理 → 风格标签 → 角色推荐 → 提示词组装 → AI 调用 → JSON 校验 → 结果展示 → XMP 导出 → 本地历史。参考 [README.md](../README.md) 与 [V1_TECHNICAL_SPEC_CN.md](../V1_TECHNICAL_SPEC_CN.md)。
 
 ### Technology Stack / 技术栈
 
@@ -33,7 +33,7 @@ Upload & preprocess (Canvas 4096px, JPEG 0.85, EXIF scrub GPS/serial) → Style 
 
 ### Key References / 关键参考
 
-[README_en.md](../README_en.md) · [README_cn.md](../README_cn.md) · [V1_TECHNICAL_SPEC_EN.md](../V1_TECHNICAL_SPEC_EN.md) · [V1_TECHNICAL_SPEC_CN.md](../V1_TECHNICAL_SPEC_CN.md)
+[README.md](../README.md) · [README_cn.md](../README_cn.md) · [V1_TECHNICAL_SPEC_EN.md](../V1_TECHNICAL_SPEC_EN.md) · [V1_TECHNICAL_SPEC_CN.md](../V1_TECHNICAL_SPEC_CN.md)
 
 ---
 
@@ -102,7 +102,7 @@ ai-image/
 ├── public/
 ├── vite.config.ts, tsconfig.json, tailwind.config.ts
 ├── eslint.config.js, prettier.config.js
-├── README_en.md, README_cn.md
+├── README.md, README_cn.md
 ├── V1_TECHNICAL_SPEC_EN.md, V1_TECHNICAL_SPEC_CN.md
 ```
 
