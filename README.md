@@ -5,6 +5,7 @@
 ## Overview
 
 **AI Image Quality Analyzer** is a privacy-first browser tool that helps photographers quickly assess and improve their work through intelligent AI analysis. It features zero-backend storage architecture, provides multi-persona evaluation from 5 photographer styles, and delivers real-time feedback across 4 dimensions (composition, lighting, color, subject), along with actionable Lightroom/Photoshop retouching steps.
+UI languages: English, Simplified Chinese, Japanese.
 
 **Key Features:**
 
@@ -12,7 +13,7 @@
 - 🎯 **Multi-Persona AI**: 5 photographer style evaluations (Cartier-Bresson, Ansel Adams, Fan Ho, Peter Lindbergh, Kodak Portra)
 - 📊 **Structured Feedback**: 4-dimension scoring with detailed reasoning
 - 🖼️ **Plug-and-Play Export**: Generate Lightroom-compatible XMP files
-- ⚡ **Privacy-First**: Auto EXIF cleanup, encrypted API keys, data cleared on refresh
+- ⚡ **Privacy-First**: Auto EXIF cleanup, encrypted API keys, local-only storage
 
 ---
 
@@ -55,14 +56,14 @@ Get instant 4-dimension scoring:
 
 ### Image Upload & Processing
 
-- **Drag-drop or click** to upload JPEG, PNG, WebP, HEIC, RAW formats
+- **Drag-drop or click** to upload JPEG, PNG, WebP formats
 - **Auto-compression** via Canvas API (4096px max edge, 0.85 JPEG quality)
 - **EXIF Cleanup**: Remove location & device S/N, keep exposure data (ISO, aperture, shutter)
 - **File limits**: Max 50MB per file; ≤10MB recommended for best performance
 
 ### Style Recognition
 
-- Auto multi-label classification (urban, documentary, landscape, portrait, street, etc. - 10 categories)
+- Auto multi-label classification (urban, documentary, landscape, portrait, street, etc. - 16 categories)
 - Top-3 style weights guide Agent recommendations
 - Lightweight rule engine (MVP) or MobileNet model (Phase 2)
 
@@ -83,8 +84,10 @@ Get instant 4-dimension scoring:
 ### Local History & Task Linking
 
 - **IndexedDB storage** of last 10 evaluations with thumbnails
+- **Smart deduplication**: One record per image+agent combination; re-evaluating same image with same agent updates the existing record
 - **Task linking** via parentTaskId for iterative improvement workflow
 - **One-click re-evaluation** with history browsing
+- **Custom agents**: Create personalized evaluation personas with custom name, description, and tag weight distributions
 - **One-button data clear** removes all local data
 
 ---
@@ -152,6 +155,8 @@ Storage:
 | **Components**     | ShadcnUI             | Professional UI kit      |
 | **Language**       | TypeScript 5.0+      | Type safety              |
 | **State**          | Zustand              | State management         |
+| **Internationalization** | react-i18next | Multi-language UI (EN/ZH/JP) |
+| **Forms**          | react-hook-form      | Custom agent & settings  |
 | **Storage**        | IndexedDB (Dexie.js) | Local task history       |
 | **Encryption**     | Web Crypto API       | AES-GCM key storage      |
 | **Images**         | Canvas API, exif-js  | Compression & EXIF       |
