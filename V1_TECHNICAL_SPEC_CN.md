@@ -307,29 +307,37 @@ $$score_{agent} = \sum_{i=1}^{n} (styleWeight_i \times agentWeight_{i,agent})$$
 
 #### 4.3.3 推荐输出
 
-```json
-{
-  "recommendedAgents": [
-    {
-      "id": "street-narrative",
-      "name": "街头叙事",
-      "score": 0.78,
-      "matchedTags": ["人文", "街拍"],
-      "description": "强调决定性瞬间与叙事张力"
-    },
-    {
-      "id": "urban-geometry",
-      "name": "都市几何",
-      "score": 0.64,
-      "matchedTags": ["城市"],
-      "description": "关注几何结构与光影对比"
-    }
-  ],
-  "allAgents": [
-    /* 所有角色列表供用户手动选择 */
-  ]
+**V1 概念示例** - 返回排序后的推荐角色数组
+
+```typescript
+export interface AgentRecommendation {
+  id: string;
+  name: string;
+  score: number;        // 0-1 归一化分数
+  matchedTags: string[]; // 匹配该角色的风格标签
+  description: string;   // 本地化的角色描述
 }
+
+// 输出: AgentRecommendation[]
+[
+  {
+    "id": "street-narrative",
+    "name": "街头叙事",
+    "score": 0.78,
+    "matchedTags": ["人文", "街拍"],
+    "description": "强调决定性瞬间与叙事张力"
+  },
+  {
+    "id": "urban-geometry",
+    "name": "都市几何",
+    "score": 0.64,
+    "matchedTags": ["城市"],
+    "description": "关注几何结构与光影对比"
+  }
+]
 ```
+
+**说明**：UI 单独调用 `getAllAgents()` 获取完整角色列表供用户手动选择，然后根据此输出的分数排序。
 
 ### 4.4 评价生成模块
 

@@ -315,29 +315,37 @@ Each agent defines: compatible tags, weight coefficients, prompt template, repre
 
 #### 4.3.3 Recommendation Output
 
-```json
-{
-  "recommendedAgents": [
-    {
-      "id": "street-narrative",
-      "name": "Street Narrative",
-      "score": 0.78,
-      "matchedTags": ["Documentary", "Street"],
-      "description": "Emphasizes decisive moments and narrative tension"
-    },
-    {
-      "id": "urban-geometry",
-      "name": "Urban Geometry",
-      "score": 0.64,
-      "matchedTags": ["City"],
-      "description": "Focuses on geometric structure and light/shadow contrast"
-    }
-  ],
-  "allAgents": [
-    /* All agent list for manual selection */
-  ]
+**V1 Conceptual Example** - Returns sorted array of recommended agents
+
+```typescript
+export interface AgentRecommendation {
+  id: string;
+  name: string;
+  score: number;        // 0-1 normalized score
+  matchedTags: string[]; // Style tags that matched this agent
+  description: string;   // Localized agent description
 }
+
+// Output: AgentRecommendation[]
+[
+  {
+    "id": "street-narrative",
+    "name": "Street Narrative",
+    "score": 0.78,
+    "matchedTags": ["Documentary", "Street"],
+    "description": "Emphasizes decisive moments and narrative tension"
+  },
+  {
+    "id": "urban-geometry",
+    "name": "Urban Geometry",
+    "score": 0.64,
+    "matchedTags": ["City"],
+    "description": "Focuses on geometric structure and light/shadow contrast"
+  }
+]
 ```
+
+**Note**: UI separately calls `getAllAgents()` to fetch complete agent list for manual selection dropdown, then sorts by recommendation scores from this output.
 
 ### 4.4 Evaluation Generation Module
 
