@@ -42,18 +42,8 @@ export async function handleUploadChatMessage(
 
     // 获取API密钥
     // 注意：如果没有提供密码短语，则使用空字符串（用于未加密的密钥存储）
+    // 不检查 apiKey 是否存在，直接传入下一层处理
     const apiKey = await loadApiKey(settings.keyLabel || settings.provider, passphrase || '');
-    
-    // 如果没有配置API key，返回友好的提示而不是抛出错误
-    // 这允许用户在没有配置API密钥的情况下继续使用应用
-    if (!apiKey) {
-      callbacks.onError(
-        new Error(
-          'API key not configured. Please configure your API key in settings to enable chat feature.'
-        )
-      );
-      return;
-    }
 
     // 构建聊天上下文
     const chatContext: ChatContext = {

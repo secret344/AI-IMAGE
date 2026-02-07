@@ -34,7 +34,7 @@ export interface TaskConversationData {
 export interface ChatRequestConfig {
   modelType?: 'evaluation-chat' | 'refinement-chat' | 'deepdive-chat'; // [预留] 聊天用途
   provider: 'openai' | 'gemini' | 'claude' | 'ollama'; // AI服务商
-  apiKey: string; // API密钥
+  apiKey: string | null; // API密钥 (可能未配置)
   temperature?: number; // 模型参数 (默认0.7)
   maxTokens?: number;   // 最大令牌数
 }
