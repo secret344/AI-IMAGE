@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { LanguageCode } from '@/config/i18n-config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { StyleTagScore } from '@/config/style-tags';
+import type { ChatMessage } from '@/types/conversation';
 import { useAppStore } from '@/state/useAppStore';
 import { processImage } from '@/modules/upload/processImage';
 import { recognizeStyle } from '@/modules/style/recognizeStyle';
@@ -36,6 +37,7 @@ export function UploadPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [passphrase] = useState('');
+  const [currentImageChatMessages, setCurrentImageChatMessages] = useState<ChatMessage[]>([]);
   const {
     selectedFileName,
     isProcessing,
@@ -72,6 +74,7 @@ export function UploadPanel() {
       }
 
       setError(null);
+      setCurrentImageChatMessages([]); // 清除前一个图片的聊天记录
       setIsProcessing(true);
       setProcessingStage(t('upload.preprocessing'));
       setEvaluation(null);
@@ -87,7 +90,8 @@ export function UploadPanel() {
         const userLanguage: LanguageCode = i18n.language?.toLowerCase().startsWith('zh')
           ? 'zh'
           : 'en';
-        const style = await recognizeStyle(processed.base64, userLanguage, passphrase);
+        // 将当前图片的聊天记录传给风格识别模块
+        const style = await recognizeStyle(processed.base64, userLanguage, passphrase, currentImageChatMessages);
         setStyleResult(style);
         setProcessingStage(t('upload.agentRecommendation'));
         applyRecommendations(style.styleTags);
@@ -100,6 +104,7 @@ export function UploadPanel() {
     },
     [
       applyRecommendations,
+      currentImageChatMessages,
       i18n.language,
       passphrase,
       setEvaluation,

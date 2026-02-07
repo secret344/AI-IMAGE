@@ -8,6 +8,7 @@ import {
 import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
 import { callAiProvider } from '@/modules/ai/client';
+import type { ChatMessage } from '@/types/conversation';
 
 export interface StyleRecognitionResult {
   styleTags: StyleTagScore[];
@@ -41,13 +42,25 @@ function buildStyleSystemPrompt(languageLabel: string): string {
   ].join('\n');
 }
 
-function buildStyleUserPrompt(): string {
-  return [
+function buildStyleUserPrompt(chatHistory?: ChatMessage[]): string {
+  let basePrompt = [
     STYLE_USER_PROMPT_STATIC[0],
     `Tags (choose ONLY from this list): ${STYLE_TAGS.join(', ')}.`,
     STYLE_USER_PROMPT_STATIC[1],
     STYLE_USER_PROMPT_STATIC[2]
   ].join('\n');
+
+  // If chat history exists, add it as context to improve style recognition
+  if (chatHistory && chatHistory.length > 0) {
+    const chatContext = chatHistory
+      .map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+      .join('\n');
+    
+    basePrompt += '\n\n【User Analysis Discussion】\n' + chatContext;
+    basePrompt += '\n\nBased on the above discussion, identify the image styles.';
+  }
+
+  return basePrompt;
 }
 
 type RawStyleTag = {
@@ -188,7 +201,8 @@ function extractAndParseJSON(text: string): unknown {
 export async function recognizeStyle(
   base64Image: string,
   userLanguage: LanguageCode,
-  passphrase?: string
+  passphrase?: string,
+  chatHistory?: ChatMessage[]
 ): Promise<StyleRecognitionResult> {
   const start = performance.now();
   const languageLabel = getLanguagePromptLabel(userLanguage);
@@ -222,7 +236,7 @@ export async function recognizeStyle(
 
   // Create the style recognition prompt - keep it short to prevent excessive thinking
   const systemPrompt = buildStyleSystemPrompt(languageLabel);
-  const userPrompt = buildStyleUserPrompt();
+  const userPrompt = buildStyleUserPrompt(chatHistory);
 
   const response = await callAiProvider({
     base64Image,
