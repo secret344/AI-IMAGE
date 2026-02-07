@@ -55,7 +55,7 @@ const buildTaskItemActions = (
       hasStyleResult: !!task.styleTags
     });
     
-    setEvaluation(clearEvaluation ? null : task.evaluationResult);
+    setEvaluation(clearEvaluation ? null : (task.evaluationResult ?? null));
     setSelectedAgentId(task.selectedAgent ?? null);
     
     // Convert styleTags array to StyleRecognitionResult
@@ -211,7 +211,9 @@ export function HistoryPanel() {
 
     const sorted = [...filteredWithFlags].sort((a, b) => {
       if (sortMode === 'score') {
-        return b.evaluationResult.score - a.evaluationResult.score;
+        const scoreB = b.evaluationResult?.score ?? 0;
+        const scoreA = a.evaluationResult?.score ?? 0;
+        return scoreB - scoreA;
       }
       return b.timestamp - a.timestamp;
     });
@@ -228,6 +230,7 @@ export function HistoryPanel() {
     }
     const prefix = new Date().toISOString().replace(/[:.]/g, '-');
     selected.forEach((task) => {
+      if (!task.evaluationResult) return; // Skip tasks without evaluation
       const content = buildXmp(task.evaluationResult.retouchPlan);
       const blob = new Blob([content], { type: 'application/xml' });
       const url = URL.createObjectURL(blob);
@@ -248,6 +251,7 @@ export function HistoryPanel() {
     const prefix = new Date().toISOString().replace(/[:.]/g, '-');
     const zip = new JSZip();
     selected.forEach((task) => {
+      if (!task.evaluationResult) return; // Skip tasks without evaluation
       const safeName = (task.taskId ?? 'ai-image').replace(/[^a-z0-9-_]+/gi, '_');
       const xmp = buildXmp(task.evaluationResult.retouchPlan);
       zip.file(`${prefix}_${safeName}.xmp`, xmp);

@@ -32,7 +32,7 @@ export interface TaskRecord {
   thumbnail?: Blob;
   styleTags: Array<{ name: string; weight: number; confidence: number }>;
   selectedAgent: string;
-  evaluationResult: EvaluationResult;
+  evaluationResult?: EvaluationResult; // 可选，用于兼容旧数据
   promptUsed?: string;
   // ===== 新增：聊天数据 =====
   conversations?: TaskConversationData; // 该任务关联的所有聊天数据

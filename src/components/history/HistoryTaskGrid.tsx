@@ -106,9 +106,11 @@ function ThumbnailCard({
           />
         )}
         {/* Score Badge */}
-        <div className="absolute right-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-base shadow-lg transition-transform group-hover:scale-110">
-          {task.evaluationResult.score}
-        </div>
+        {task.evaluationResult && (
+          <div className="absolute right-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-base shadow-lg transition-transform group-hover:scale-110">
+            {task.evaluationResult.score}
+          </div>
+        )}
       </div>
 
       {/* Content */}

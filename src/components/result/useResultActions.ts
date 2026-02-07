@@ -115,7 +115,7 @@ export function useResultActions({
         const cached = await findCachedTaskByImageHash(imageHash, agent.id);
         if (cached) {
           console.log('[Cache] Using cached evaluation result');
-          setEvaluation(cached.evaluationResult);
+          setEvaluation(cached.evaluationResult ?? null);
           setLastLatencyMs(0);
           return;
         }
