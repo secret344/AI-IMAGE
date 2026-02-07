@@ -21,24 +21,24 @@ export function HistoryComparePanel({ tasks }: HistoryComparePanelProps) {
       <p className="text-sm font-semibold text-foreground">{t('history.comparison')}</p>
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
         {tasks.map((task) => (
-          <div key={task.id} className="rounded-lg border border-border p-3">
+          <div key={task.taskId} className="rounded-lg border border-border p-3">
             <p className="text-xs text-muted-foreground">
-              {task.fileName ?? t('history.untitled')}
+              {t('history.untitled')}
             </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">{task.evaluation.score}</p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">{task.evaluationResult.score}</p>
             <p className="text-xs text-muted-foreground">
               {(() => {
-                const agent = getAgentById(task.agentId ?? '');
+                const agent = getAgentById(task.selectedAgent ?? '');
                 if (agent) {
                   return resolveAgentLocale(agent, i18n.language).name;
                 }
-                return task.agentId ?? t('history.unknownAgent');
+                return task.selectedAgent ?? t('history.unknownAgent');
               })()}
             </p>
             <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-              {task.evaluation.dimensions.map((dimension) => (
+              {task.evaluationResult.dimensions.map((dimension: any) => (
                 <li
-                  key={`${task.id}-${dimension.name}`}
+                  key={`${task.taskId}-${dimension.name}`}
                   className="flex items-center justify-between"
                 >
                   <span>{dimension.name}</span>
@@ -52,8 +52,8 @@ export function HistoryComparePanel({ tasks }: HistoryComparePanelProps) {
       <div className="mt-4 rounded-lg border border-border p-3">
         <p className="text-xs uppercase text-muted-foreground">{t('history.delta')}</p>
         <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-          {first.evaluation.dimensions.map((dimension) => {
-            const other = second.evaluation.dimensions.find((item) => item.name === dimension.name);
+          {first.evaluationResult.dimensions.map((dimension: any) => {
+            const other = second.evaluationResult.dimensions.find((item: any) => item.name === dimension.name);
             const delta = (other?.score ?? 0) - dimension.score;
             const sign = delta > 0 ? '+' : '';
             return (

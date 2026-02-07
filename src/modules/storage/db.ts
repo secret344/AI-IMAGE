@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
-import type { EvaluationResult, TaskRecord } from '@/types/evaluation';
-import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
+import type { TaskRecord } from '@/types/evaluation';
+
+export type { TaskRecord } from '@/types/evaluation';
 
 export class AppDatabase extends Dexie {
   tasks!: Table<TaskRecord, string>;

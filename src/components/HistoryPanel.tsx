@@ -10,7 +10,6 @@ import type { ProcessedImage } from '@/modules/upload/processImage';
 import type { EvaluationResult } from '@/types/evaluation';
 import { deleteTask, deleteTasks, listTasks } from '@/modules/storage/history';
 import { loadProviderSettings } from '@/modules/storage/settings';
-import { processedImageFromDataUrl } from '@/modules/upload/processedImageFromDataUrl';
 import { buildXmp } from '@/modules/export/xmp';
 import { getAgentById, recommendAgents } from '@/modules/agent/recommendAgents';
 import { resolveAgentLocale } from '@/config/agents';
@@ -24,7 +23,6 @@ import {
   HISTORY_FILTER_KEY,
   buildFilterConfigs,
   buildSearchHaystack,
-  hasExif,
   hasRetouch,
   hasStyle
 } from '@/components/history/historyUtils';
@@ -51,44 +49,39 @@ const buildTaskItemActions = (
 ): TaskItemActionFactory[] => {
   const loadTaskToState = (task: TaskRecord, clearEvaluation = false) => {
     console.log('📥 [LoadTaskToState] Loading task to state:', {
-      taskId: task.id,
+      taskId: task.taskId,
       clearEvaluation,
-      hasEvaluation: !!task.evaluation,
-      hasProcessedImage: !!task.processedImage,
-      hasStyleResult: !!task.styleResult
+      hasEvaluation: !!task.evaluationResult,
+      hasStyleResult: !!task.styleTags
     });
     
-    setEvaluation(clearEvaluation ? null : task.evaluation);
-    setSelectedAgentId(task.agentId ?? null);
-    setStyleResult(task.styleResult ?? null);
-    setSelectedFileName(task.fileName ?? null);
-    setPreviewImageBase64(task.thumbnailBase64);
+    setEvaluation(clearEvaluation ? null : task.evaluationResult);
+    setSelectedAgentId(task.selectedAgent ?? null);
     
-    if (task.processedImage) {
-
-      setProcessedImage(
-        processedImageFromDataUrl(
-          task.processedImage.base64,
-          task.fileName ?? 'history.jpg',
-          task.processedImage.exif,
-          task.processedImage.dimensions
-        )
-      );
+    // Convert styleTags array to StyleRecognitionResult
+    if (task.styleTags && task.styleTags.length > 0) {
+      setStyleResult({
+        styleTags: task.styleTags,
+        styleDescription: '',
+        inferenceTime: 0,
+        modelUsed: 'history-recovery'
+      } as StyleRecognitionResult);
     } else {
-      console.warn('⚠️ [LoadTaskToState] No processedImage found in task');
+      setStyleResult(null);
     }
     
-    if (task.styleResult) {
-
+    setSelectedFileName(task.taskId ?? null);
+    setPreviewImageBase64(null);
+    setProcessedImage(null);
+    
+    if (task.styleTags && task.styleTags.length > 0) {
       const settings = loadProviderSettings();
       setRecommendedAgents(
-        recommendAgents(task.styleResult.styleTags, { limit: settings.topAgents }, language)
+        recommendAgents(task.styleTags as any, { limit: settings.topAgents }, language)
       );
     } else {
-      console.warn('⚠️ [LoadTaskToState] No styleResult found in task');
+      console.warn('⚠️ [LoadTaskToState] No styleTags found in task');
     }
-    
-
   };
 
   return [
@@ -101,7 +94,7 @@ const buildTaskItemActions = (
       label: t('history.reevaluate'),
       variant: 'primary',
       handler: (task) => {
-        console.log('[Re-evaluation] Starting for task:', task.id, '- Agent:', task.agentId);
+        console.log('[Re-evaluation] Starting for task:', task.taskId, '- Agent:', task.selectedAgent);
         loadTaskToState(task, true);
         setSkipCache(true);
         window.dispatchEvent(new Event('highlight-run'));
@@ -111,7 +104,7 @@ const buildTaskItemActions = (
       label: t('history.delete'),
       variant: 'danger',
       handler: async (task) => {
-        await deleteTask(task.id);
+        await deleteTask(task.taskId);
         await load();
       }
     }
@@ -123,7 +116,6 @@ export function HistoryPanel() {
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<'time' | 'score'>('time');
-  const [onlyExif, setOnlyExif] = useState(false);
   const [onlyStyle, setOnlyStyle] = useState(false);
   const [onlyRetouch, setOnlyRetouch] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -161,7 +153,6 @@ export function HistoryPanel() {
       const saved = JSON.parse(raw) as {
         query?: string;
         sortMode?: 'time' | 'score';
-        onlyExif?: boolean;
         onlyStyle?: boolean;
         onlyRetouch?: boolean;
         page?: number;
@@ -171,9 +162,6 @@ export function HistoryPanel() {
       }
       if (saved.sortMode) {
         setSortMode(saved.sortMode);
-      }
-      if (saved.onlyExif !== undefined) {
-        setOnlyExif(saved.onlyExif);
       }
       if (saved.onlyStyle !== undefined) {
         setOnlyStyle(saved.onlyStyle);
@@ -192,29 +180,26 @@ export function HistoryPanel() {
   useEffect(() => {
     localStorage.setItem(
       HISTORY_FILTER_KEY,
-      JSON.stringify({ query, sortMode, onlyExif, onlyStyle, onlyRetouch, page })
+      JSON.stringify({ query, sortMode, onlyStyle, onlyRetouch, page })
     );
-  }, [query, sortMode, onlyExif, onlyStyle, onlyRetouch, page]);
+  }, [query, sortMode, onlyStyle, onlyRetouch, page]);
 
   useEffect(() => {
     setPage(1);
     setSelectedIds(new Set());
-  }, [query, sortMode, onlyExif, onlyStyle, onlyRetouch]);
+  }, [query, sortMode, onlyStyle, onlyRetouch]);
 
   const filteredTasks = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const filtered = normalized
       ? tasks.filter((task) => {
-          const agent = getAgentById(task.agentId ?? '');
+          const agent = getAgentById(task.selectedAgent ?? '');
           const agentName = agent ? resolveAgentLocale(agent, i18n.language).name : undefined;
           return buildSearchHaystack(task, agentName).includes(normalized);
         })
       : tasks;
 
     const filteredWithFlags = filtered.filter((task) => {
-      if (onlyExif && !hasExif(task)) {
-        return false;
-      }
       if (onlyStyle && !hasStyle(task)) {
         return false;
       }
@@ -226,28 +211,28 @@ export function HistoryPanel() {
 
     const sorted = [...filteredWithFlags].sort((a, b) => {
       if (sortMode === 'score') {
-        return b.evaluation.score - a.evaluation.score;
+        return b.evaluationResult.score - a.evaluationResult.score;
       }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return b.timestamp - a.timestamp;
     });
     return sorted;
-  }, [tasks, query, sortMode, onlyExif, onlyStyle, onlyRetouch]);
+  }, [tasks, query, sortMode, onlyStyle, onlyRetouch]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / pageSize));
   const pagedTasks = filteredTasks.slice((page - 1) * pageSize, page * pageSize);
 
   const handleExportSelectedXmp = useCallback(() => {
-    const selected = filteredTasks.filter((task) => selectedIds.has(task.id));
+    const selected = filteredTasks.filter((task) => selectedIds.has(task.taskId));
     if (selected.length === 0) {
       return;
     }
     const prefix = new Date().toISOString().replace(/[:.]/g, '-');
     selected.forEach((task) => {
-      const content = buildXmp(task.evaluation.retouchPlan);
+      const content = buildXmp(task.evaluationResult.retouchPlan);
       const blob = new Blob([content], { type: 'application/xml' });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
-      const safeName = (task.fileName ?? 'ai-image').replace(/[^a-z0-9-_]+/gi, '_');
+      const safeName = (task.taskId ?? 'ai-image').replace(/[^a-z0-9-_]+/gi, '_');
       anchor.href = url;
       anchor.download = `${prefix}_${safeName}.xmp`;
       anchor.click();
@@ -256,15 +241,15 @@ export function HistoryPanel() {
   }, [filteredTasks, selectedIds]);
 
   const handleExportSelectedZip = useCallback(async () => {
-    const selected = filteredTasks.filter((task) => selectedIds.has(task.id));
+    const selected = filteredTasks.filter((task) => selectedIds.has(task.taskId));
     if (selected.length === 0) {
       return;
     }
     const prefix = new Date().toISOString().replace(/[:.]/g, '-');
     const zip = new JSZip();
     selected.forEach((task) => {
-      const safeName = (task.fileName ?? 'ai-image').replace(/[^a-z0-9-_]+/gi, '_');
-      const xmp = buildXmp(task.evaluation.retouchPlan);
+      const safeName = (task.taskId ?? 'ai-image').replace(/[^a-z0-9-_]+/gi, '_');
+      const xmp = buildXmp(task.evaluationResult.retouchPlan);
       zip.file(`${prefix}_${safeName}.xmp`, xmp);
       zip.file(`${prefix}_${safeName}.json`, JSON.stringify(task, null, 2));
     });
@@ -339,13 +324,12 @@ export function HistoryPanel() {
         <HistoryFilters
           query={query}
           sortMode={sortMode}
-          filterState={{ onlyExif, onlyStyle, onlyRetouch }}
+          filterState={{ onlyStyle, onlyRetouch }}
           filterConfigs={buildFilterConfigs(t)}
           onQueryChange={setQuery}
           onSortChange={setSortMode}
           onToggleFilter={(key, checked) => {
-            if (key === 'onlyExif') setOnlyExif(checked);
-            else if (key === 'onlyStyle') setOnlyStyle(checked);
+            if (key === 'onlyStyle') setOnlyStyle(checked);
             else setOnlyRetouch(checked);
           }}
         />
@@ -356,7 +340,7 @@ export function HistoryPanel() {
           totalPages={totalPages}
           selectedCount={selectedIds.size}
           pagedCount={pagedTasks.length}
-          onSelectAll={() => setSelectedIds(new Set(filteredTasks.map((task) => task.id)))}
+          onSelectAll={() => setSelectedIds(new Set(filteredTasks.map((task) => task.taskId)))}
           onClearSelection={() => setSelectedIds(new Set())}
           onExportFilteredJson={handleExportFilteredJson}
           onExportCurrentPage={handleExportCurrentPageJson}

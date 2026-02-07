@@ -73,8 +73,7 @@ export function useResultActions({
       await saveTask({
         evaluation,
         thumbnailBase64: processedImage.base64,
-        fileName: selectedFileName ?? undefined,
-        agentId: selectedAgentId ?? undefined,
+        selectedAgent: selectedAgentId ?? undefined,
         styleResult: styleResult ?? undefined,
         processedImage: {
           base64: processedImage.base64,
@@ -116,7 +115,7 @@ export function useResultActions({
         const cached = await findCachedTaskByImageHash(imageHash, agent.id);
         if (cached) {
           console.log('[Cache] Using cached evaluation result');
-          setEvaluation(cached.evaluation);
+          setEvaluation(cached.evaluationResult);
           setLastLatencyMs(0);
           return;
         }
@@ -167,8 +166,7 @@ export function useResultActions({
         await saveTask({
           evaluation: result,
           thumbnailBase64: processedImage.base64,
-          fileName: selectedFileName ?? undefined,
-          agentId: agent.id,
+          selectedAgent: agent.id,
           styleResult: styleResult ?? undefined,
           processedImage: {
             base64: processedImage.base64,

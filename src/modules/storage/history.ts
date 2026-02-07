@@ -8,7 +8,7 @@ export interface SaveTaskInput {
   evaluation: EvaluationResult;
   thumbnailBase64: string;
   fileName?: string;
-  agentId?: string;
+  selectedAgent?: string;
   styleResult?: StyleRecognitionResult;
   processedImage?: {
     base64: string;
@@ -21,26 +21,23 @@ export interface SaveTaskInput {
 export async function saveTask(input: SaveTaskInput) {
   const imageHash = await computeImageHash(input.processedImage?.base64 ?? input.thumbnailBase64);
   
-  // Delete existing records with same imageHash + agentId to avoid duplicates
+  // Delete existing records with same imageHash + selectedAgent to avoid duplicates
   // This ensures each image+agent combination only has one (latest) evaluation
-  if (imageHash && input.agentId) {
+  if (imageHash && input.selectedAgent) {
     await db.tasks
-      .where('[imageHash+agentId]')
-      .equals([imageHash, input.agentId])
+      .where('[imageHash+selectedAgent]')
+      .equals([imageHash, input.selectedAgent])
       .delete();
   }
   
   const record: TaskRecord = {
-    id: crypto.randomUUID(),
+    taskId: crypto.randomUUID(),
     parentTaskId: input.parentTaskId,
-    createdAt: new Date().toISOString(),
-    fileName: input.fileName,
-    agentId: input.agentId,
-    imageHash: imageHash ?? undefined,
-    styleResult: input.styleResult,
-    processedImage: input.processedImage,
-    thumbnailBase64: input.thumbnailBase64,
-    evaluation: input.evaluation
+    timestamp: Date.now(),
+    selectedAgent: input.selectedAgent ?? 'unknown',
+    styleTags: input.styleResult?.styleTags ?? [],
+    evaluationResult: input.evaluation,
+    thumbnail: input.thumbnailBase64 ? await dataUrlToBlob(input.thumbnailBase64) : undefined
   };
 
   await db.tasks.add(record);
@@ -64,9 +61,9 @@ export async function clearHistory() {
   await db.tasks.clear();
 }
 
-export async function findCachedTaskByImageHash(imageHash: string, agentId: string) {
+export async function findCachedTaskByImageHash(imageHash: string, selectedAgent: string) {
   const matches = await db.tasks.where('imageHash').equals(imageHash).toArray();
-  return matches.find((task) => task.agentId === agentId) ?? null;
+  return matches.find((task) => task.selectedAgent === selectedAgent) ?? null;
 }
 
 export async function computeImageHash(base64: string | undefined) {
@@ -82,10 +79,15 @@ export async function computeImageHash(base64: string | undefined) {
 }
 
 async function trimHistory() {
-  const all = await db.tasks.orderBy('createdAt').reverse().toArray();
+  const all = await db.tasks.orderBy('timestamp').reverse().toArray();
   if (all.length <= MAX_TASKS) {
     return;
   }
   const overflow = all.slice(MAX_TASKS);
-  await db.tasks.bulkDelete(overflow.map((item) => item.id));
+  await db.tasks.bulkDelete(overflow.map((item) => item.taskId));
+}
+
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const response = await fetch(dataUrl);
+  return response.blob();
 }
