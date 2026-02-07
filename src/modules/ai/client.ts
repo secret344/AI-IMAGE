@@ -459,9 +459,29 @@ async function callClaude(request: AiRequest): Promise<string> {
 }
 
 async function callOllama(request: AiRequest): Promise<string> {
-  const { data } = extractDataUrl(request.base64Image);
+  // 聊天时可能没有图片，只处理有图片的情况
+  let messages: Array<{ role: string; content: string; images?: string[] }> = [
+    {
+      role: 'system',
+      content: request.systemPrompt
+    },
+    {
+      role: 'user',
+      content: request.userPrompt
+    }
+  ];
 
-
+  // 如果有图片，添加到消息中
+  if (request.base64Image) {
+    try {
+      const { data } = extractDataUrl(request.base64Image);
+      if (messages[1]) {
+        messages[1].images = [data];
+      }
+    } catch {
+      // 如果图片格式不正确，继续处理纯文本消息
+    }
+  }
 
   const response = await sendJsonRequest({
     url: `${request.baseUrl}/api/chat`,
@@ -476,17 +496,7 @@ async function callOllama(request: AiRequest): Promise<string> {
       options: {
         temperature: request.temperature
       },
-      messages: [
-        {
-          role: 'system',
-          content: request.systemPrompt
-        },
-        {
-          role: 'user',
-          content: request.userPrompt,
-          images: [data]
-        }
-      ]
+      messages
     }
   });
 

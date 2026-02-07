@@ -78,21 +78,32 @@ export async function callAgentChat(
 
   try {
     // 调用通用的 AI 提供商接口
+    // 为不同的供应商设置合适的默认模型名
+    const defaultModels: Record<string, string> = {
+      openai: 'gpt-4-turbo-preview',
+      gemini: 'gemini-pro-vision',
+      claude: 'claude-3-opus-20240229',
+      ollama: 'mistral', // Ollama 的默认模型
+    };
+    
+    const modelName = defaultModels[config.provider] || 'mistral';
+    
     responseContent = await callAiProvider({
       base64Image: '', // 聊天时通常不需要图片，但保留接口兼容性
       systemPrompt,
       userPrompt: fullUserPrompt,
       apiKey,
       provider: config.provider,
-      model: 'gpt-4-turbo-preview', // 默认模型，可通过 config 扩展
+      model: modelName,
       baseUrl: settings.baseUrl || 'https://api.openai.com/v1',
       temperature: config.temperature ?? 0.7,
       maxTokens: config.maxTokens ?? 1000,
       timeoutMs: 30000,
     });
   } catch (error) {
-    console.error('Chat API call failed:', error);
-    throw new Error(`Failed to call ${config.provider} chat API`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Chat API call failed (${config.provider}):`, error);
+    throw new Error(`Failed to call ${config.provider} chat API: ${errorMessage}`);
   }
 
   // 返回新消息对象 (存储层会生成 id 和 timestamp)
