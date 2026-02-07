@@ -14,6 +14,7 @@ export interface UseUploadChatOptions {
   taskId: string;
   agentStyle: string;
   imageName: string;
+  imageBase64: string; // 上传图片的 base64 数据
   evaluationResultSummary?: string;
   /** API密钥密码短语（可选，用于解密存储的API密钥） */
   apiKeyPassphrase?: string;
@@ -56,19 +57,31 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
         };
         setMessages(prev => [...prev, userMsg]);
 
-        // 调用聊天处理，传递密码短语
-        await handleUploadChatMessage(userMessage, messages, options, {
-          onMessageReceived: (aiMessage: ChatMessage) => {
-            setMessages(prev => [...prev, aiMessage]);
+        // 调用聊天处理，传递图片和密码短语
+        await handleUploadChatMessage(
+          userMessage,
+          messages,
+          options.imageBase64,
+          {
+            taskId: options.taskId,
+            agentStyle: options.agentStyle,
+            imageName: options.imageName,
+            evaluationResultSummary: options.evaluationResultSummary,
           },
-          onAnalysisSuggested: (suggestion: string) => {
-            setAnalysisSuggestion(suggestion);
-            setShouldShowAnalysisSuggestion(true);
+          {
+            onMessageReceived: (aiMessage: ChatMessage) => {
+              setMessages(prev => [...prev, aiMessage]);
+            },
+            onAnalysisSuggested: (suggestion: string) => {
+              setAnalysisSuggestion(suggestion);
+              setShouldShowAnalysisSuggestion(true);
+            },
+            onError: (err: Error) => {
+              setError(err.message);
+            },
           },
-          onError: (err: Error) => {
-            setError(err.message);
-          },
-        }, options.apiKeyPassphrase);
+          options.apiKeyPassphrase
+        );
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         setError(errorMessage);

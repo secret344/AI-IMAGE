@@ -27,6 +27,7 @@ export interface UploadChatIntegrationCallbacks {
 export async function handleUploadChatMessage(
   userMessage: string,
   conversationHistory: ChatMessage[],
+  imageBase64: string,
   config: {
     taskId: string;
     agentStyle: string;
@@ -51,6 +52,7 @@ export async function handleUploadChatMessage(
       agentStyle: config.agentStyle,
       conversationHistory,
       evaluationResultSummary: config.evaluationResultSummary,
+      imageBase64,
     };
 
     // 构建聊天配置

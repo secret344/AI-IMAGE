@@ -46,4 +46,5 @@ export interface ChatContext {
   evaluationResultSummary?: string;    // 原始评估结果摘要
   conversationHistory: ChatMessage[];  // 聊天历史
   userFeedback?: string;              // 用户最新反馈
+  imageBase64?: string;               // 上传的图片 base64 数据
 }

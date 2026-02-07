@@ -65,6 +65,7 @@ export function UploadPanel() {
     taskId: `task-${Date.now()}`, // 临时 taskId，实际应该来自更上层
     imageName: selectedFileName || 'untitled',
     agentStyle: '通用分析', // 上传阶段使用通用分析
+    imageBase64: processedImage?.base64 || '', // 传递已上传的图片base64数据
   });
 
   const applyRecommendations = useCallback(

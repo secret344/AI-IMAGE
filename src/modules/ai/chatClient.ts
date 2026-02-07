@@ -89,7 +89,7 @@ export async function callAgentChat(
     const modelName = defaultModels[config.provider] || 'mistral';
     
     responseContent = await callAiProvider({
-      base64Image: '', // 聊天时通常不需要图片，但保留接口兼容性
+      base64Image: context.imageBase64 || '',
       systemPrompt,
       userPrompt: fullUserPrompt,
       apiKey,
