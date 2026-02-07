@@ -5,7 +5,7 @@
  */
 
 import type { ChatMessage, ChatRequestConfig, ChatContext } from '@/types/conversation';
-import { addMessageToThread, getConversations, getMainThreadMessages } from '@/modules/storage/conversation';
+import { addMessageToThread, getMainThreadMessages } from '@/modules/storage/conversation';
 import { callAgentChat } from '@/modules/ai/chatClient';
 import type { EvaluationResult } from '@/types/evaluation';
 

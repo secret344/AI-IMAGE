@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { ChatMessage, ConversationThread } from '@/types/conversation';
+import type { ChatMessage } from '@/types/conversation';
 
 export interface UseChatState {
   messages: ChatMessage[];
@@ -30,7 +30,7 @@ export interface UseChatActions {
  */
 export function useChat(initialMessages: ChatMessage[] = []): UseChatState & UseChatActions {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentThreadId] = useState<string>('main');
 

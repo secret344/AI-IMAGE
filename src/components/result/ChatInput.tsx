@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Loader2 } from 'lucide-react';
-import { useLanguage } from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 export interface ChatInputProps {
   onSend: (message: string) => void;
@@ -16,7 +16,7 @@ export interface ChatInputProps {
 
 export function ChatInput({ onSend, isLoading = false, disabled = false }: ChatInputProps) {
   const [input, setInput] = useState('');
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const handleSend = () => {
     if (input.trim() && !isLoading && !disabled) {
@@ -26,7 +26,9 @@ export function ChatInput({ onSend, isLoading = false, disabled = false }: ChatI
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
+    // Ctrl+Enter 或 Cmd+Enter 发送
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
       handleSend();
     }
   };

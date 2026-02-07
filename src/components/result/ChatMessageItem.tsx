@@ -3,8 +3,27 @@
  */
 
 import type { ChatMessage } from '@/types/conversation';
-import { formatTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+
+/**
+ * 格式化时间戳为可读格式
+ */
+function formatTime(timestamp: number): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  
+  // 1 分钟内
+  if (diff < 60000) return '刚刚';
+  // 1 小时内
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+  // 今天
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  }
+  // 其他
+  return date.toLocaleDateString('zh-CN');
+}
 
 export interface ChatMessageProps {
   message: ChatMessage;

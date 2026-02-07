@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { useLanguage } from '@/i18n';
+import { useTranslation } from 'react-i18next';
 import { EvaluationResults } from '@/components/result/EvaluationResults';
 import { ChatPanel } from '@/components/result/ChatPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,7 +52,7 @@ export function ResultChatContainer({
   onSaveToHistory,
   onClearChatError,
 }: ResultChatContainerProps) {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('evaluation');
 
   // 如果没有评估结果，只显示聊天
@@ -72,9 +72,9 @@ export function ResultChatContainer({
         <EvaluationResults
           evaluation={evaluation}
           exif={exif}
-          lastLatencyMs={lastLatencyMs}
-          isProcessing={isProcessing}
-          processingStage={processingStage}
+          lastLatencyMs={lastLatencyMs ?? null}
+          isProcessing={isProcessing ?? false}
+          processingStage={processingStage ?? null}
           onDownloadXmp={onDownloadXmp}
           onSaveToHistory={onSaveToHistory}
         />

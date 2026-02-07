@@ -4,16 +4,24 @@
  * 依赖：conversation.ts 类型定义，db.ts IndexedDB 包装器
  */
 
-import { v4 as uuidv4 } from 'crypto-random-string';
-import { db } from './db';
 import type { ChatMessage, ConversationThread, TaskConversationData } from '@/types/conversation';
+import { db } from './db';
+
+/** 生成 UUID v4 */
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 /**
  * 初始化新对话 (创建任务时调用)
  */
 export function initializeConversation(): TaskConversationData {
   const defaultThread: ConversationThread = {
-    threadId: uuidv4(),
+    threadId: generateUUID(),
     name: '主讨论',
     purpose: 'main',
     messages: [],
@@ -39,7 +47,7 @@ export async function addMessageToThread(
 
   const newMessage: ChatMessage = {
     ...message,
-    id: uuidv4(),
+    id: generateUUID(),
     timestamp: Date.now(),
   };
 
@@ -60,7 +68,7 @@ export async function addMessageToThread(
     }
   }
 
-  await db.tasks.update(taskId, task);
+  await db.tasks.update(taskId, { conversations: task.conversations });
   return newMessage;
 }
 
@@ -107,7 +115,7 @@ export async function clearConversations(taskId: string): Promise<void> {
   if (!task) return;
 
   task.conversations = initializeConversation();
-  await db.tasks.update(taskId, task);
+  await db.tasks.update(taskId, { conversations: task.conversations });
 }
 
 /**
@@ -121,5 +129,5 @@ export async function updateConversationSummary(
   if (!task || !task.conversations) return;
 
   task.conversations.conversationSummary = summary;
-  await db.tasks.update(taskId, task);
+  await db.tasks.update(taskId, { conversations: task.conversations });
 }

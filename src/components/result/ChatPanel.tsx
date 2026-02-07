@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessageItem } from './ChatMessageItem';
 import { ChatInput } from './ChatInput';
-import { useLanguage } from '@/i18n';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, MessageCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { ChatMessage } from '@/types/conversation';
@@ -29,14 +29,20 @@ export function ChatPanel({
   onClearError,
   disabled = false,
 }: ChatPanelProps) {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 自动滚动到底部
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        const parent = scrollRef.current.parentElement;
+        if (parent) {
+          parent.scrollTop = parent.scrollHeight;
+        }
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   return (
