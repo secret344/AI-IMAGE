@@ -563,9 +563,16 @@
   "chat": {
     "title": "Chat with Agent",
     "emptyState": "Start a discussion with the agent",
-    "inputPlaceholder": "Ask a question... (Ctrl+Enter to send)",
+    "emptyHint": "Ask what the agent thinks about this image",
+    "inputPlaceholder": "Ask a question... (Cmd+Enter or Ctrl+Enter to send)",
     "sendButton": "Send",
+    "shortcut": "Press Cmd+Enter or Ctrl+Enter to send quickly",
     "clearButton": "Clear History",
-    "noMessages": "No messages yet"
+    "noMessages": "No messages yet",
+    "loading": "Agent is thinking...",
+    "sending": "Sending...",
+    "error": "Failed to send message",
+    "retry": "Retry",
+    "typingIndicator": "Agent is typing..."
   }
 }

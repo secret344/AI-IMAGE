@@ -15,6 +15,8 @@ export interface UseUploadChatOptions {
   agentStyle: string;
   imageName: string;
   evaluationResultSummary?: string;
+  /** API密钥密码短语（可选，用于解密存储的API密钥） */
+  apiKeyPassphrase?: string;
 }
 
 export interface UseUploadChatReturn {
@@ -54,7 +56,7 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
         };
         setMessages(prev => [...prev, userMsg]);
 
-        // 调用聊天处理
+        // 调用聊天处理，传递密码短语
         await handleUploadChatMessage(userMessage, messages, options, {
           onMessageReceived: (aiMessage: ChatMessage) => {
             setMessages(prev => [...prev, aiMessage]);
@@ -66,7 +68,7 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
           onError: (err: Error) => {
             setError(err.message);
           },
-        });
+        }, options.apiKeyPassphrase);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         setError(errorMessage);

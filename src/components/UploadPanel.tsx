@@ -17,7 +17,7 @@ import { UploadDropzone } from '@/components/upload/UploadDropzone';
 import { UploadPreview } from '@/components/upload/UploadPreview';
 import { StyleTagsSummary } from '@/components/upload/StyleTagsSummary';
 import { RecommendedAgentsList } from '@/components/upload/RecommendedAgentsList';
-import { ChatPanel } from '@/components/result/ChatPanel';
+import { UploadChatWrapper } from '@/components/upload/UploadChatWrapper';
 
 function getUploadErrorMessage(err: unknown, t: ReturnType<typeof useTranslation>['t']) {
   let message = t('upload.uploadFailed');
@@ -302,16 +302,11 @@ export function UploadPanel() {
 
       {/* 右侧：聊天区域 - 上传图片后显示 */}
       {processedImage && (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-col">
-          <ChatPanel
-            messages={uploadChat.messages}
-            onSend={uploadChat.sendMessage}
-            isLoading={uploadChat.isLoading}
-            error={uploadChat.error}
-            onClearError={uploadChat.clearError}
-            disabled={!processedImage}
-          />
-        </Card>
+        <UploadChatWrapper
+          chatState={uploadChat}
+          imageName={selectedFileName || 'untitled'}
+          disabled={!processedImage}
+        />
       )}
     </div>
   );

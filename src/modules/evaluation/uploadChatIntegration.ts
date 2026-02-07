@@ -33,16 +33,18 @@ export async function handleUploadChatMessage(
     imageName: string;
     evaluationResultSummary?: string;
   },
-  callbacks: UploadChatIntegrationCallbacks
+  callbacks: UploadChatIntegrationCallbacks,
+  passphrase?: string
 ): Promise<void> {
   try {
     const settings = loadProviderSettings();
     if (!settings) throw new Error('Settings not found');
 
     // 获取API密钥
-    const apiKey = await loadApiKey(settings.provider, ''); // 使用空密码短语
+    // 注意：如果没有提供密码短语，则使用空字符串（用于未加密的密钥存储）
+    const apiKey = await loadApiKey(settings.keyLabel || settings.provider, passphrase || '');
     if (!apiKey) {
-      throw new Error('API key not configured');
+      throw new Error('API key not configured. Please configure your API key in settings.');
     }
 
     // 构建聊天上下文

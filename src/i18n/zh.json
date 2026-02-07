@@ -561,9 +561,16 @@
   "chat": {
     "title": "与智能体讨论",
     "emptyState": "开始与智能体讨论吧",
-    "inputPlaceholder": "输入问题... (Ctrl+Enter 发送)",
+    "emptyHint": "你可以问问AI对这张图片的看法",
+    "inputPlaceholder": "输入问题... (Cmd+Enter 或 Ctrl+Enter 发送)",
     "sendButton": "发送",
+    "shortcut": "按 Cmd+Enter 或 Ctrl+Enter 快速发送",
     "clearButton": "清空历史",
-    "noMessages": "暂无消息"
+    "noMessages": "暂无消息",
+    "loading": "智能体正在思考...",
+    "sending": "发送中...",
+    "error": "发送消息失败",
+    "retry": "重试",
+    "typingIndicator": "智能体正在输入..."
   }
 }
