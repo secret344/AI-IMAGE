@@ -59,12 +59,8 @@ export async function callAgentChat(
   const settings = loadProviderSettings();
   if (!settings) throw new Error('Settings not found');
 
-  // 获取 API 密钥 (需要从调用者获取密钥或从本地存储获取)
-  // 注：这是简化版本，实际应该通过 config 或其他方式传入
+  // 获取 API 密钥
   const apiKey = config.apiKey;
-  if (!apiKey) {
-    throw new Error(`API key not provided for provider: ${config.provider}`);
-  }
 
   const systemPrompt = buildChatPrompt(context, config.modelType);
 

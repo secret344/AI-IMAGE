@@ -4,7 +4,7 @@ export interface AiRequest {
   base64Image: string;
   systemPrompt: string;
   userPrompt: string;
-  apiKey: string;
+  apiKey: string | null;
   provider: 'openai' | 'gemini' | 'claude' | 'ollama' | 'mock';
   model: string;
   baseUrl: string;
@@ -327,6 +327,12 @@ export async function callAiProvider(request: AiRequest): Promise<string> {
     throw new Error('Mock provider does not call APIs.');
   }
 
+  // 需要 API key 的供应商检查
+  const keyRequiredProviders = ['openai', 'gemini', 'claude'] as const;
+  if (keyRequiredProviders.includes(request.provider as any) && !request.apiKey) {
+    throw new Error(`API key is required for ${request.provider} provider.`);
+  }
+
   if (request.provider === 'openai') {
     return callOpenAi(request);
   }
@@ -350,7 +356,7 @@ async function callOpenAi(request: AiRequest): Promise<string> {
     timeoutMs: request.timeoutMs,
     headers: {
       Accept: 'text/event-stream',
-      Authorization: `Bearer ${request.apiKey}`
+      Authorization: `Bearer ${request.apiKey!}`
     },
     body: {
       model: request.model,
@@ -381,7 +387,7 @@ async function callOpenAi(request: AiRequest): Promise<string> {
 async function callGemini(request: AiRequest): Promise<string> {
   const { data, mimeType } = extractDataUrl(request.base64Image);
   // Use streaming endpoint
-  const url = `${request.baseUrl}/models/${request.model}:streamGenerateContent?key=${request.apiKey}&alt=sse`;
+  const url = `${request.baseUrl}/models/${request.model}:streamGenerateContent?key=${request.apiKey!}&alt=sse`;
   const response = await sendJsonRequest({
     url,
     providerLabel: 'Gemini',
@@ -422,7 +428,7 @@ async function callClaude(request: AiRequest): Promise<string> {
     timeoutMs: request.timeoutMs,
     headers: {
       Accept: 'text/event-stream',
-      'x-api-key': request.apiKey,
+      'x-api-key': request.apiKey!,
       'anthropic-version': '2023-06-01'
     },
     body: {
@@ -542,7 +548,7 @@ export async function healthCheck(request: {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${request.apiKey}`
+          Authorization: `Bearer ${request.apiKey!}`
         },
         body: JSON.stringify({
           model: request.model,
@@ -564,7 +570,7 @@ export async function healthCheck(request: {
 
   if (request.provider === 'gemini') {
     const response = await fetchWithTimeout(
-      `${request.baseUrl}/models/${request.model}:generateContent?key=${request.apiKey}`,
+      `${request.baseUrl}/models/${request.model}:generateContent?key=${request.apiKey!}`,
       {
         method: 'POST',
         headers: {
@@ -611,7 +617,7 @@ export async function healthCheck(request: {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': request.apiKey,
+        'x-api-key': request.apiKey!,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
