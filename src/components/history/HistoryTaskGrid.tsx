@@ -146,7 +146,7 @@ function ThumbnailCard({
 
         {/* Actions */}
         <div className="mt-auto pt-3 flex flex-col gap-2 border-t border-border/50">
-          {taskActions.map((action) => {
+          {taskActions.map((action, index) => {
             const variant =
               action.variant === 'primary'
                 ? 'default'
@@ -155,7 +155,7 @@ function ThumbnailCard({
                   : 'outline';
             return (
               <Button
-                key={action.label}
+                key={`${task.taskId}-action-${index}`}
                 size="sm"
                 variant={variant}
                 onClick={action.handler}

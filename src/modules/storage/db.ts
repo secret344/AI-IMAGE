@@ -9,7 +9,7 @@ export class AppDatabase extends Dexie {
   constructor() {
     super('aiImageDb');
     this.version(1).stores({
-      tasks: 'taskId, timestamp, imageHash, [imageHash+selectedAgent]'
+      tasks: 'taskId, [imageHash+selectedAgent], timestamp'
     });
   }
 }

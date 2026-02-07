@@ -28,7 +28,8 @@ export interface EvaluationResult {
 export interface TaskRecord {
   taskId: string;
   parentTaskId?: string; // 迭代链
-  timestamp: number;
+  timestamp: number;     // 创建时间，用于排序（可能不唯一）
+  imageHash?: string;    // 图片哈希值，用于去重（可空）
   thumbnail?: Blob;
   styleTags: Array<{ name: string; weight: number; confidence: number }>;
   selectedAgent: string;

@@ -34,6 +34,7 @@ export async function saveTask(input: SaveTaskInput) {
     taskId: crypto.randomUUID(),
     parentTaskId: input.parentTaskId,
     timestamp: Date.now(),
+    imageHash: imageHash ?? undefined,
     selectedAgent: input.selectedAgent ?? 'unknown',
     styleTags: input.styleResult?.styleTags ?? [],
     evaluationResult: input.evaluation,
@@ -46,7 +47,7 @@ export async function saveTask(input: SaveTaskInput) {
 }
 
 export async function listTasks(): Promise<TaskRecord[]> {
-  return db.tasks.orderBy('createdAt').reverse().toArray();
+  return db.tasks.orderBy('timestamp').reverse().toArray();
 }
 
 export async function deleteTask(id: string) {
