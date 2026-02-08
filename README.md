@@ -147,21 +147,21 @@ Storage:
 
 ## Technology Stack
 
-| Layer              | Technology           | Purpose                  |
-| :----------------- | :------------------- | :----------------------- |
-| **Build**          | Vite 5.0+            | Fast bundling & HMR      |
-| **Framework**      | React 18+            | UI components & state    |
-| **Styling**        | Tailwind 3.3+        | Design system            |
-| **Components**     | ShadcnUI             | Professional UI kit      |
-| **Language**       | TypeScript 5.0+      | Type safety              |
-| **State**          | Zustand              | State management         |
-| **Internationalization** | react-i18next | Multi-language UI (EN/ZH/JP) |
-| **Forms**          | react-hook-form      | Custom agent & settings  |
-| **Storage**        | IndexedDB (Dexie.js) | Local task history       |
-| **Encryption**     | Web Crypto API       | AES-GCM key storage      |
-| **Images**         | Canvas API, exif-js  | Compression & EXIF       |
-| **AI Integration** | LangChain.js         | Multi-vendor abstraction |
-| **Deployment**     | Vercel / Netlify     | Static hosting           |
+| Layer                    | Technology           | Purpose                      |
+| :----------------------- | :------------------- | :--------------------------- |
+| **Build**                | Vite 5.0+            | Fast bundling & HMR          |
+| **Framework**            | React 18+            | UI components & state        |
+| **Styling**              | Tailwind 3.3+        | Design system                |
+| **Components**           | ShadcnUI             | Professional UI kit          |
+| **Language**             | TypeScript 5.0+      | Type safety                  |
+| **State**                | Zustand              | State management             |
+| **Internationalization** | react-i18next        | Multi-language UI (EN/ZH/JP) |
+| **Forms**                | react-hook-form      | Custom agent & settings      |
+| **Storage**              | IndexedDB (Dexie.js) | Local task history           |
+| **Encryption**           | Web Crypto API       | AES-GCM key storage          |
+| **Images**               | Canvas API, exif-js  | Compression & EXIF           |
+| **AI Integration**       | LangChain.js         | Multi-vendor abstraction     |
+| **Deployment**           | Vercel / Netlify     | Static hosting               |
 
 ---
 
@@ -351,4 +351,7 @@ MIT License - See LICENSE file
 **Last Updated**: 2026-01-28  
 **Status**: ✅ Ready for Phase 1 development  
 **Version**: 1.0.0
-````
+
+```
+
+```

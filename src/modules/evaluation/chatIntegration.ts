@@ -5,7 +5,6 @@
  */
 
 import type { ChatMessage, ChatRequestConfig, ChatContext } from '@/types/conversation';
-import { addMessageToThread, getMainThreadMessages } from '@/modules/storage/conversation';
 import { callAgentChat } from '@/modules/ai/chatClient';
 import type { EvaluationResult } from '@/types/evaluation';
 
@@ -17,42 +16,19 @@ import type { EvaluationResult } from '@/types/evaluation';
  * 4. 返回两条消息
  */
 export async function processChatMessage(
-  taskId: string,
-  threadId: string,
   userMessage: string,
   chatContext: ChatContext,
-  chatConfig: ChatRequestConfig
-): Promise<{ userMsg: ChatMessage; assistantMsg: ChatMessage } | null> {
+  chatConfig: ChatRequestConfig,
+  conversationHistory: ChatMessage[]
+): Promise<ChatMessage | null> {
   try {
-    // 1. 存储用户消息
-    const storedUserMsg = await addMessageToThread(taskId, threadId, {
-      role: 'user',
-      content: userMessage,
-      threadId,
-    });
-
-    // 2. 获取当前对话历史 (用于 AI 上下文)
-    const messages = await getMainThreadMessages(taskId);
     const updatedContext: ChatContext = {
       ...chatContext,
-      conversationHistory: messages,
+      conversationHistory
     };
 
-    // 3. 调用 AI 获取回复
     const assistantResponse = await callAgentChat(updatedContext, userMessage, chatConfig);
-
-    // 4. 存储 AI 回复
-    const storedAssistantMsg = await addMessageToThread(taskId, threadId, {
-      role: 'assistant',
-      content: assistantResponse.content,
-      threadId,
-      modelUsed: chatConfig.provider,
-    });
-
-    return {
-      userMsg: storedUserMsg,
-      assistantMsg: storedAssistantMsg,
-    };
+    return assistantResponse;
   } catch (error) {
     console.error('Failed to process chat message:', error);
     throw error;
@@ -64,11 +40,10 @@ export async function processChatMessage(
  * 用于在重评时注入用户与智能体的讨论反馈
  */
 export async function getChatContextForReEvaluation(
-  taskId: string,
+  messages: ChatMessage[],
   maxMessages: number = 5
 ): Promise<string> {
   try {
-    const messages = await getMainThreadMessages(taskId);
     if (messages.length === 0) return '';
 
     // 取最后 N 条消息
@@ -76,7 +51,7 @@ export async function getChatContextForReEvaluation(
 
     // 格式化为可读文本
     const summary = recentMessages
-      .map(msg => {
+      .map((msg) => {
         const role = msg.role === 'user' ? '📝 用户' : '🤖 智能体';
         return `${role}:\n${msg.content}`;
       })
@@ -94,7 +69,7 @@ export async function getChatContextForReEvaluation(
  */
 export function generateEvaluationSummary(result: EvaluationResult): string {
   const dimensionsSummary = result.dimensions
-    .map(d => `- ${d.name}: ${d.score}/100 - ${d.reason}`)
+    .map((d) => `- ${d.name}: ${d.score}/100 - ${d.reason}`)
     .join('\n');
 
   const tipsSummary = result.shootingTips.slice(0, 3).join('\n- ');

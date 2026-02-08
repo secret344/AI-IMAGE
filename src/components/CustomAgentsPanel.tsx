@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -132,12 +132,7 @@ export function CustomAgentsPanel() {
     const trimmedId = values.id.trim();
     form.setValue('id', trimmedId);
     form.clearErrors();
-    if (
-      !trimmedId
-      || !values.name
-      || !values.photographer
-      || !values.prompts
-    ) {
+    if (!trimmedId || !values.name || !values.photographer || !values.prompts) {
       if (!trimmedId) {
         form.setError('id', { message: t('customAgents.requiredField') });
         return;
@@ -191,7 +186,7 @@ export function CustomAgentsPanel() {
   };
 
   return (
-    <Card className="border-border/60 bg-card/50">
+    <Card className="border-border/50 bg-card/60 shadow-sm rounded-xl">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">{t('customAgents.title')}</CardTitle>
         <CardDescription>{t('customAgents.description')}</CardDescription>
@@ -219,7 +214,11 @@ export function CustomAgentsPanel() {
                         <Button size="sm" variant="outline" onClick={() => openEditAgent(agent)}>
                           {t('customAgents.edit')}
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(agent.id)}>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(agent.id)}
+                        >
                           {t('customAgents.delete')}
                         </Button>
                       </div>
@@ -363,10 +362,13 @@ export function CustomAgentsPanel() {
                                   });
                                   return;
                                 }
-                                const nextValues = [...(field.value ?? []), {
-                                  tag: tagToAdd,
-                                  weight: weightToAdd
-                                }];
+                                const nextValues = [
+                                  ...(field.value ?? []),
+                                  {
+                                    tag: tagToAdd,
+                                    weight: weightToAdd
+                                  }
+                                ];
                                 field.onChange(nextValues);
                                 form.clearErrors('tagWeights');
                                 setTagToAdd('');

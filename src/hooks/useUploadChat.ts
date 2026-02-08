@@ -1,23 +1,20 @@
-/**
- * useUploadChat Hook
- * 管理上传阶段的聊天状态和交互
- * 低耦合：与UI组件分离，易于测试
- */
-
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChatMessage } from '@/types/conversation';
-import {
-  handleUploadChatMessage,
-} from '@/modules/evaluation/uploadChatIntegration';
+import type { ProviderSettings } from '@/modules/storage/settings';
+import { useTaskContext } from '@/state/TaskContext';
+import { handleUploadChatMessage } from '@/modules/evaluation/uploadChatIntegration';
 
 export interface UseUploadChatOptions {
   taskId: string;
   agentStyle: string;
+  agentPhotographer?: string;
   imageName: string;
   imageBase64: string; // 上传图片的 base64 数据
   evaluationResultSummary?: string;
   /** API密钥密码短语（可选，用于解密存储的API密钥） */
   apiKeyPassphrase?: string;
+  /** 任务级设置（跟随任务，不使用全局配置） */
+  taskSettings?: ProviderSettings | null;
 }
 
 export interface UseUploadChatReturn {
@@ -26,19 +23,102 @@ export interface UseUploadChatReturn {
   error: string | null;
   analysisSuggestion: string | null;
   shouldShowAnalysisSuggestion: boolean;
+  activeAssistantId: string | null;
   sendMessage: (message: string) => Promise<void>;
+  cancelCurrent: () => void;
   confirmAnalysis: () => void;
+  rollbackToCheckpointAt: (index: number) => void;
   clearError: () => void;
   clearMessages: () => void;
 }
 
 export function useUploadChat(options: UseUploadChatOptions): UseUploadChatReturn {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysisSuggestion, setAnalysisSuggestion] = useState<string | null>(null);
-  const [shouldShowAnalysisSuggestion, setShouldShowAnalysisSuggestion] =
-    useState(false);
+  const [shouldShowAnalysisSuggestion, setShouldShowAnalysisSuggestion] = useState(false);
+  const [activeAssistantId, setActiveAssistantId] = useState<string | null>(null);
+  const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const streamingAssistantIdRef = useRef<string | null>(null);
+
+  // Get messages from TaskContext instead of local state
+  const { taskState, addChatMessage, clearChatMessages, setChatMessages } = useTaskContext();
+  const storedMessages = taskState.chatMessages ?? [];
+  const messages = useMemo(
+    () => (streamingMessage ? [...storedMessages, streamingMessage] : storedMessages),
+    [streamingMessage, storedMessages]
+  );
+
+  const appendAssistantMessage = useCallback(
+    async (content: string, modelUsed?: string, replaceId?: string | null) => {
+      if (!content.trim()) {
+        return;
+      }
+      try {
+        if (replaceId && streamingAssistantIdRef.current === replaceId) {
+          setStreamingMessage(null);
+          streamingAssistantIdRef.current = null;
+        }
+        const stored = await addChatMessage({
+          role: 'assistant',
+          content,
+          modelUsed
+        });
+        setActiveAssistantId(replaceId ? null : stored.id);
+      } catch {
+        const fallbackId =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `fallback-${Date.now()}`;
+        const fallbackMessage: ChatMessage = {
+          id: fallbackId,
+          role: 'assistant',
+          content,
+          timestamp: Date.now(),
+          modelUsed
+        };
+        if (replaceId && streamingAssistantIdRef.current === replaceId) {
+          setStreamingMessage(null);
+          streamingAssistantIdRef.current = null;
+        }
+        setStreamingMessage(fallbackMessage);
+        setActiveAssistantId(replaceId ? null : fallbackId);
+      }
+    },
+    [addChatMessage]
+  );
+
+  const applyStreamChunk = useCallback(
+    (chunk: string) => {
+      if (!chunk) {
+        return;
+      }
+      const currentId = streamingAssistantIdRef.current;
+      if (!currentId) {
+        const nextId =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `stream-${Date.now()}`;
+        streamingAssistantIdRef.current = nextId;
+        const message: ChatMessage = {
+          id: nextId,
+          role: 'assistant',
+          content: chunk,
+          timestamp: Date.now(),
+          modelUsed: options.taskSettings?.provider
+        };
+        setStreamingMessage(message);
+        setActiveAssistantId(null);
+        return;
+      }
+
+      setStreamingMessage((prev) =>
+        prev && prev.id === currentId ? { ...prev, content: `${prev.content}${chunk}` } : prev
+      );
+    },
+    [options.taskSettings?.provider]
+  );
 
   const sendMessage = useCallback(
     async (userMessage: string) => {
@@ -46,66 +126,120 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
 
       setError(null);
       setIsLoading(true);
+      setActiveAssistantId(null);
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       try {
         // 立即添加用户消息到界面
-        const userMsg: ChatMessage = {
-          id: `msg-user-${Date.now()}`,
+        const historySnapshot = storedMessages;
+        await addChatMessage({
           role: 'user',
-          content: userMessage,
-          timestamp: Date.now(),
-        };
-        setMessages(prev => [...prev, userMsg]);
+          content: userMessage
+        });
+        const nextHistory = historySnapshot;
 
-        // 调用聊天处理，传递图片和密码短语
+        // 调用聊天处理，传递图片、任务设置和密码短语
         await handleUploadChatMessage(
           userMessage,
-          messages,
+          nextHistory,
           options.imageBase64,
           {
             taskId: options.taskId,
             agentStyle: options.agentStyle,
+            agentPhotographer: options.agentPhotographer,
             imageName: options.imageName,
             evaluationResultSummary: options.evaluationResultSummary,
+            taskSettings: options.taskSettings
           },
           {
             onMessageReceived: (aiMessage: ChatMessage) => {
-              setMessages(prev => [...prev, aiMessage]);
+              const replaceId = streamingAssistantIdRef.current;
+              streamingAssistantIdRef.current = null;
+              void appendAssistantMessage(aiMessage.content, aiMessage.modelUsed, replaceId);
             },
             onAnalysisSuggested: (suggestion: string) => {
               setAnalysisSuggestion(suggestion);
               setShouldShowAnalysisSuggestion(true);
             },
             onError: (err: Error) => {
-              setError(err.message);
+              if (!controller.signal.aborted) {
+                const replaceId = streamingAssistantIdRef.current;
+                streamingAssistantIdRef.current = null;
+                setStreamingMessage((prev) => (prev && prev.id === replaceId ? null : prev));
+                setError(err.message);
+                void appendAssistantMessage(err.message);
+              }
             },
+            onStreamChunk: applyStreamChunk
           },
-          options.apiKeyPassphrase
+          options.apiKeyPassphrase,
+          controller.signal
         );
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError(errorMessage);
+        if (!controller.signal.aborted) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          const replaceId = streamingAssistantIdRef.current;
+          streamingAssistantIdRef.current = null;
+          setStreamingMessage((prev) => (prev && prev.id === replaceId ? null : prev));
+          setError(errorMessage);
+          void appendAssistantMessage(errorMessage);
+        }
       } finally {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
         setIsLoading(false);
       }
     },
-    [messages, options]
+    [addChatMessage, appendAssistantMessage, applyStreamChunk, options, storedMessages]
   );
+
+  const cancelCurrent = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setIsLoading(false);
+  }, []);
 
   const confirmAnalysis = useCallback(() => {
     setShouldShowAnalysisSuggestion(false);
     setAnalysisSuggestion(null);
   }, []);
 
+  const rollbackToCheckpointAt = useCallback(
+    (index: number) => {
+      if (index < 0) {
+        return;
+      }
+      const snapshot = storedMessages.slice(0, index + 1);
+      setStreamingMessage(null);
+      streamingAssistantIdRef.current = null;
+      void setChatMessages(snapshot);
+      setActiveAssistantId(null);
+      setAnalysisSuggestion(null);
+      setShouldShowAnalysisSuggestion(false);
+      setError(null);
+    },
+    [storedMessages, setChatMessages]
+  );
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
   const clearMessages = useCallback(() => {
-    setMessages([]);
     setAnalysisSuggestion(null);
     setShouldShowAnalysisSuggestion(false);
-  }, []);
+    setActiveAssistantId(null);
+    setStreamingMessage(null);
+    streamingAssistantIdRef.current = null;
+    void clearChatMessages();
+  }, [clearChatMessages]);
 
   return {
     messages,
@@ -113,9 +247,12 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
     error,
     analysisSuggestion,
     shouldShowAnalysisSuggestion,
+    activeAssistantId,
     sendMessage,
+    cancelCurrent,
     confirmAnalysis,
+    rollbackToCheckpointAt,
     clearError,
-    clearMessages,
+    clearMessages
   };
 }

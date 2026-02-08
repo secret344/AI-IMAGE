@@ -149,7 +149,6 @@ export function assemblePrompt(
     validLanguage
   );
 
-  
   // 4. 构建结果对象
   const result: AssembledPrompt = {
     system,

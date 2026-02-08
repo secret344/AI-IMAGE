@@ -8,7 +8,8 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UploadChatPanel } from '@/components/upload/UploadChatPanel';
 import type { UseUploadChatReturn } from '@/hooks/useUploadChat';
-import { loadProviderSettings } from '@/modules/storage/settings';
+import { useAppStore } from '@/state/useAppStore';
+import { getDefaultProviderSettings } from '@/modules/storage/settings';
 
 export interface UploadChatWrapperProps {
   /** 聊天hook返回值 */
@@ -29,10 +30,11 @@ export function UploadChatWrapper({
   chatState,
   imageName = 'untitled',
   disabled = false,
-  title,
+  title
 }: UploadChatWrapperProps) {
   const { t } = useTranslation();
-  const settings = loadProviderSettings();
+  const settings =
+    useAppStore((state) => state.globalProviderSettings) ?? getDefaultProviderSettings();
 
   // 处理发送消息 - 添加API密钥密码短语支持
   const handleSend = useCallback(
@@ -53,9 +55,12 @@ export function UploadChatWrapper({
     <UploadChatPanel
       messages={chatState.messages}
       onSend={handleSend}
+      onCancel={chatState.cancelCurrent}
       isLoading={chatState.isLoading}
       error={chatState.error}
       onClearError={handleClearError}
+      onRollbackCheckpointAt={chatState.rollbackToCheckpointAt}
+      activeAssistantId={chatState.activeAssistantId}
       disabled={disabled || !settings}
       title={title || `${t('chat.title') || '与智能体讨论'} · ${imageName}`}
       emptyStateText={t('chat.emptyState')}

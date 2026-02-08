@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppStore } from '@/state/useAppStore';
+import { useTaskContext } from '@/state/TaskContext';
 import { getAgentById, recommendAgents } from '@/modules/agent/recommendAgents';
-import { loadProviderSettings } from '@/modules/storage/settings';
 import { AgentSelector } from '@/components/result/AgentSelector';
 import { ActiveAgentDisplay } from '@/components/result/ActiveAgentDisplay';
 import { EvaluationResults } from '@/components/result/EvaluationResults';
@@ -18,6 +18,8 @@ export function ResultPanel() {
   const [highlightRun, setHighlightRun] = useState(false);
   const [isAgentSelectorExpanded, setIsAgentSelectorExpanded] = useState(false);
   const sectionRef = useRef<HTMLDivElement | null>(null);
+  const { isOnline, globalProviderSettings } = useAppStore();
+  const { taskState, setTaskState, taskSettings } = useTaskContext();
   const {
     evaluation,
     selectedAgentId,
@@ -25,17 +27,10 @@ export function ResultPanel() {
     isProcessing,
     processingStage,
     lastLatencyMs,
-    isOnline,
     recommendedAgents,
     selectedFileName,
-    processedImage,
-    setEvaluation,
-    setIsProcessing,
-    setProcessingStage,
-    setLastLatencyMs,
-    setRecommendedAgents,
-    setSelectedAgentId
-  } = useAppStore();
+    processedImage
+  } = taskState;
   const agent = useMemo(
     () => (selectedAgentId ? (getAgentById(selectedAgentId) ?? null) : null),
     [selectedAgentId]
@@ -58,16 +53,16 @@ export function ResultPanel() {
     agentRec,
     isOnline,
     passphrase,
-    setEvaluation,
-    setIsProcessing,
-    setProcessingStage,
-    setLastLatencyMs,
+    taskSettings,
+    setEvaluation: (value) => setTaskState({ evaluation: value }),
+    setIsProcessing: (value) => setTaskState({ isProcessing: value }),
+    setProcessingStage: (value) => setTaskState({ processingStage: value }),
+    setLastLatencyMs: (value) => setTaskState({ lastLatencyMs: value }),
     setRunError
   });
 
   useEffect(() => {
     const handler = () => {
-
       setHighlightRun(true);
       sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.setTimeout(() => setHighlightRun(false), 1500);
@@ -79,33 +74,30 @@ export function ResultPanel() {
   }, []);
 
   useEffect(() => {
-    const handler = () => {
-      if (!styleResult) {
-        return;
-      }
-      const settings = loadProviderSettings();
-      const agents = recommendAgents(
-        styleResult.styleTags,
-        { limit: settings.topAgents },
-        i18n.language
-      );
-      setRecommendedAgents(agents);
-      setSelectedAgentId(agents[0]?.id ?? null);
-    };
-    window.addEventListener('settings-updated', handler);
-    return () => window.removeEventListener('settings-updated', handler);
-  }, [setRecommendedAgents, setSelectedAgentId, styleResult]);
+    if (!styleResult || !globalProviderSettings) {
+      return;
+    }
+    const agents = recommendAgents(
+      styleResult.styleTags,
+      { limit: globalProviderSettings.topAgents },
+      i18n.language
+    );
+    setTaskState({
+      recommendedAgents: agents,
+      selectedAgentId: agents[0]?.id ?? null
+    });
+  }, [setTaskState, styleResult, i18n.language]);
 
   return (
-    <div ref={sectionRef}>
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm sticky top-6 sm:top-8">
+    <div ref={sectionRef} className="h-full">
+      <Card className="border-border/50 bg-card/60 backdrop-blur-sm shadow-sm rounded-xl h-full flex flex-col">
         <CardHeader className="pb-3 sm:pb-4">
           <CardTitle className="text-lg sm:text-xl">{t('result.title')}</CardTitle>
           <CardDescription className="text-sm text-muted-foreground/80">
             {t('result.description')}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-5 flex-1 overflow-y-auto">
           {/* Status Messages */}
           <StatusMessages
             isOnline={isOnline}
@@ -123,7 +115,7 @@ export function ResultPanel() {
             <AgentSelector
               recommendedAgents={recommendedAgents}
               selectedAgentId={selectedAgentId}
-              onSelectAgent={setSelectedAgentId}
+              onSelectAgent={(id) => setTaskState({ selectedAgentId: id })}
               isExpanded={isAgentSelectorExpanded}
               onToggleExpand={setIsAgentSelectorExpanded}
             />

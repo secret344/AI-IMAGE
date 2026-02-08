@@ -1,18 +1,25 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore } from '@/state/useAppStore';
+import { useTaskContext } from '@/state/TaskContext';
 import { normalizeLanguage } from '@/config/i18n-config';
 import { buildMockEvaluation } from '@/modules/ai/mockEvaluation';
 import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
 import { runEvaluation } from '@/modules/evaluation/runEvaluation';
 import { buildXmp } from '@/modules/export/xmp';
-import { computeImageHash, findCachedTaskByImageHash, saveTask } from '@/modules/storage/history';
+import {
+  computeImageHash,
+  findCachedTaskByImageHash,
+  saveTaskDetail,
+  saveTaskSummary,
+  updateTaskSummary
+} from '@/modules/storage/history';
 import type { AgentProfile } from '@/config/agents';
 import type { AgentRecommendation } from '@/modules/agent/recommendAgents';
 import type { ProcessedImage } from '@/modules/upload/processImage';
 import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
 import type { EvaluationResult } from '@/types/evaluation';
+import type { ProviderSettings } from '@/modules/storage/settings';
 
 interface UseResultActionsArgs {
   evaluation: EvaluationResult | null;
@@ -24,6 +31,7 @@ interface UseResultActionsArgs {
   agentRec: AgentRecommendation | null;
   isOnline: boolean;
   passphrase: string;
+  taskSettings: ProviderSettings | null;
   setEvaluation: (value: EvaluationResult | null) => void;
   setIsProcessing: (value: boolean) => void;
   setProcessingStage: (value: string | null) => void;
@@ -41,6 +49,7 @@ export function useResultActions({
   agentRec,
   isOnline,
   passphrase,
+  taskSettings,
   setEvaluation,
   setIsProcessing,
   setProcessingStage,
@@ -48,8 +57,7 @@ export function useResultActions({
   setRunError
 }: UseResultActionsArgs) {
   const { t } = useTranslation();
-  const skipCache = useAppStore((state) => state.skipCache);
-  const setSkipCache = useAppStore((state) => state.setSkipCache);
+  const { currentTaskId, skipCache, setSkipCache, taskState } = useTaskContext();
 
   const handleDownloadXmp = useCallback(() => {
     if (!evaluation) {
@@ -70,17 +78,41 @@ export function useResultActions({
       return;
     }
     try {
-      await saveTask({
-        evaluation,
-        thumbnailBase64: processedImage.base64,
-        selectedAgent: selectedAgentId ?? undefined,
-        styleResult: styleResult ?? undefined,
-        processedImage: {
-          base64: processedImage.base64,
-          exif: processedImage.exif,
-          dimensions: processedImage.dimensions
-        }
-      });
+      if (currentTaskId) {
+        await updateTaskSummary(currentTaskId, {
+          selectedAgent: selectedAgentId ?? undefined,
+          styleTags: styleResult?.styleTags ?? []
+        });
+        await saveTaskDetail(currentTaskId, {
+          evaluationResult: evaluation,
+          taskSettings: taskSettings ?? undefined,
+          processedImage: {
+            base64: processedImage.base64,
+            exif: processedImage.exif,
+            dimensions: processedImage.dimensions
+          }
+        });
+      } else {
+        const summary = await saveTaskSummary({
+          thumbnailBase64: processedImage.base64,
+          selectedAgent: selectedAgentId ?? undefined,
+          styleResult: styleResult ?? undefined,
+          processedImage: {
+            base64: processedImage.base64,
+            exif: processedImage.exif,
+            dimensions: processedImage.dimensions
+          }
+        });
+        await saveTaskDetail(summary.taskId, {
+          evaluationResult: evaluation,
+          taskSettings: taskSettings ?? undefined,
+          processedImage: {
+            base64: processedImage.base64,
+            exif: processedImage.exif,
+            dimensions: processedImage.dimensions
+          }
+        });
+      }
 
       window.dispatchEvent(new Event('history-updated'));
     } catch (error) {
@@ -104,32 +136,37 @@ export function useResultActions({
     setProcessingStage(t('common.loading'));
 
     try {
-      const settings = loadProviderSettings();
+      const settings = taskSettings ?? loadProviderSettings();
       if (settings.provider === 'mock') {
         setEvaluation(buildMockEvaluation(styleResult, agentRec));
         return;
       }
 
       const imageHash = await computeImageHash(processedImage.base64);
-      if (imageHash && agent && !skipCache) {
+
+      if (skipCache) {
+        console.log('[Re-evaluation] Bypassing cache - forcing fresh evaluation');
+      } else if (imageHash && agent) {
         const cached = await findCachedTaskByImageHash(imageHash, agent.id);
-        if (cached) {
+        if (cached?.evaluationResult) {
           console.log('[Cache] Using cached evaluation result');
-          setEvaluation(cached.evaluationResult ?? null);
+          setEvaluation(cached.evaluationResult);
           setLastLatencyMs(0);
           return;
         }
-      } else if (skipCache) {
-        console.log('[Re-evaluation] Bypassing cache for fresh evaluation');
       }
 
       const loadedKey =
         settings.provider === 'ollama' ? '' : await loadApiKey(settings.keyLabel, passphrase);
-      if (!loadedKey && settings.provider !== 'ollama') {
-        setRunError(t('result.apiKeyNotFound'));
-        return;
-      }
       const apiKey = loadedKey ?? '';
+
+      // Get conversation history from context (no direct DB access)
+      const conversationHistory = taskState.chatMessages ?? [];
+      console.log(
+        '[Evaluation] Using conversation history from context:',
+        conversationHistory.length,
+        'messages'
+      );
 
       const start = performance.now();
       const attempt = async (model: string) =>
@@ -144,7 +181,8 @@ export function useResultActions({
           temperature: settings.temperature,
           maxTokens: settings.maxTokens,
           timeoutMs: settings.timeoutMs,
-          language: normalizeLanguage(t('meta.languageCode'))
+          language: normalizeLanguage(t('meta.languageCode')),
+          conversationHistory
         });
 
       let result;
@@ -159,21 +197,49 @@ export function useResultActions({
       }
       setLastLatencyMs(Math.round(performance.now() - start));
       setEvaluation(result);
-      // Reset skipCache flag after evaluation
-      setSkipCache(false);
+
+      // Reset skipCache flag after successful evaluation
+      if (skipCache) {
+        console.log('[Re-evaluation] Fresh evaluation completed, resetting cache flag');
+        setSkipCache(false);
+      }
       // Auto-save to history after successful evaluation
       try {
-        await saveTask({
-          evaluation: result,
-          thumbnailBase64: processedImage.base64,
-          selectedAgent: agent.id,
-          styleResult: styleResult ?? undefined,
-          processedImage: {
-            base64: processedImage.base64,
-            exif: processedImage.exif,
-            dimensions: processedImage.dimensions
-          }
-        });
+        if (currentTaskId) {
+          await updateTaskSummary(currentTaskId, {
+            selectedAgent: agent.id,
+            styleTags: styleResult?.styleTags ?? []
+          });
+          await saveTaskDetail(currentTaskId, {
+            evaluationResult: result,
+            taskSettings: taskSettings ?? undefined,
+            processedImage: {
+              base64: processedImage.base64,
+              exif: processedImage.exif,
+              dimensions: processedImage.dimensions
+            }
+          });
+        } else {
+          const summary = await saveTaskSummary({
+            thumbnailBase64: processedImage.base64,
+            selectedAgent: agent.id,
+            styleResult: styleResult ?? undefined,
+            processedImage: {
+              base64: processedImage.base64,
+              exif: processedImage.exif,
+              dimensions: processedImage.dimensions
+            }
+          });
+          await saveTaskDetail(summary.taskId, {
+            evaluationResult: result,
+            taskSettings: taskSettings ?? undefined,
+            processedImage: {
+              base64: processedImage.base64,
+              exif: processedImage.exif,
+              dimensions: processedImage.dimensions
+            }
+          });
+        }
 
         window.dispatchEvent(new Event('history-updated'));
       } catch (saveError) {
@@ -205,6 +271,8 @@ export function useResultActions({
     setRunError,
     setSkipCache,
     skipCache,
+    currentTaskId,
+    taskSettings,
     styleResult,
     t
   ]);

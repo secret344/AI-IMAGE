@@ -56,12 +56,8 @@ export function getStyleRecognitionI18n(code: LanguageCode): {
   const fallback = getLocaleMessages(LANGUAGE_FALLBACK)?.styleRecognition ?? {};
   return {
     mockDescription:
-      current.mockDescription
-      ?? fallback.mockDescription
-      ?? 'Preliminary style analysis.',
+      current.mockDescription ?? fallback.mockDescription ?? 'Preliminary style analysis.',
     descriptionPrefix:
-      current.descriptionPrefix
-      ?? fallback.descriptionPrefix
-      ?? 'Preliminary style: '
+      current.descriptionPrefix ?? fallback.descriptionPrefix ?? 'Preliminary style: '
   };
 }

@@ -17,6 +17,9 @@
   "settings": {
     "title": "AI 設定",
     "description": "APIキーはローカルで暗号化され保存されます。サーバーには送信されません。",
+    "taskSettings": "タスク設定",
+    "taskSettingsDescription": "このタスク専用の AI モデル設定を構成します。",
+    "configureTask": "設定",
     "provider": "AI プロバイダーを選択",
     "model": "主要モデル",
     "modelLabel": "モデル",
@@ -38,6 +41,7 @@
     "maxTokensLabel": "最大トークン",
     "timeout": "タイムアウト（ミリ秒）",
     "timeoutLabel": "タイムアウト（ms）",
+    "contextMaxCharsLabel": "チャット文脈の最大文字数",
     "apiKey": "API キー",
     "passphrase": "復号キー",
     "saveLocally": "保存",
@@ -62,6 +66,29 @@
       "claude": "Claude",
       "ollama": "Ollama",
       "mock": "Mock"
+    }
+  },
+  "chat": {
+    "title": "エージェントと会話",
+    "emptyState": "エージェントとの会話を開始しましょう",
+    "emptyHint": "この画像について AI に聞いてみてください",
+    "inputPlaceholder": "メッセージを入力... (Cmd+Enter で送信)",
+    "sendButton": "送信",
+    "stopButton": "停止",
+    "shortcut": "Cmd+Enter または Ctrl+Enter で送信",
+    "thinking": {
+      "label": "思考内容",
+      "show": "思考を表示",
+      "hide": "思考を非表示"
+    },
+    "checkpoint": {
+      "label": "チェックポイント",
+      "create": "チェックポイントを設定",
+      "rollback": "ロールバック",
+      "confirmTitle": "ロールバックの確認",
+      "confirmDescription": "チェックポイント以降のメッセージは破棄され、元に戻せません。",
+      "confirmAction": "ロールバック",
+      "cancelAction": "キャンセル"
     }
   },
   "upload": {
@@ -540,6 +567,8 @@
     "warning": "警告",
     "info": "情報",
     "close": "閉じる",
+    "reset": "リセット",
+    "apply": "適用",
     "cancel": "キャンセル",
     "confirm": "確認",
     "yes": "はい",

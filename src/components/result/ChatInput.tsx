@@ -37,7 +37,7 @@ export function ChatInput({ onSend, isLoading = false, disabled = false }: ChatI
     <div className="flex gap-2">
       <Textarea
         value={input}
-        onChange={e => setInput(e.target.value)}
+        onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={t('chat.inputPlaceholder') || '输入消息... (Ctrl+Enter 发送)'}
         disabled={isLoading || disabled}

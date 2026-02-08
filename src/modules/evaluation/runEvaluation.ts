@@ -2,6 +2,7 @@ import type { ProcessedImage } from '@/modules/upload/processImage';
 import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
 import type { AgentProfile } from '@/config/agents';
 import type { LanguageCode } from '@/config/i18n-config';
+import type { ChatMessage } from '@/types/conversation';
 import { assemblePrompt } from '@/modules/prompt/assemblePrompt';
 import { callAiProvider } from '@/modules/ai/client';
 import { validateResult } from '@/modules/validation/validateResult';
@@ -19,6 +20,7 @@ export interface RunEvaluationInput {
   maxTokens: number;
   timeoutMs: number;
   language?: LanguageCode;
+  conversationHistory?: ChatMessage[];
 }
 
 export async function runEvaluation(input: RunEvaluationInput) {
@@ -34,6 +36,12 @@ export async function runEvaluation(input: RunEvaluationInput) {
     false // 生产环境不需要调试信息
   );
 
+  // Convert chat history to messages format for AI
+  const messages = input.conversationHistory?.map((msg) => ({
+    role: msg.role as 'system' | 'user' | 'assistant',
+    content: msg.content
+  }));
+
   const response = await wrapMemorySafeAiCall(() =>
     callWithRetry(
       () =>
@@ -47,7 +55,8 @@ export async function runEvaluation(input: RunEvaluationInput) {
           baseUrl: input.baseUrl,
           temperature: input.temperature,
           maxTokens: input.maxTokens,
-          timeoutMs: input.timeoutMs
+          timeoutMs: input.timeoutMs,
+          messages
         }),
       2
     )

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { TaskRecord } from '@/modules/storage/db';
 import type { TaskItemActionConfig } from '@/components/history/taskActions';
 
@@ -36,7 +37,7 @@ export function HistoryTaskGrid({
   };
 
   return (
-    <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="mt-6 grid auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {tasks.map((task) => {
         const taskActions = buildActions(task);
         return (
@@ -84,89 +85,80 @@ function ThumbnailCard({
   }, [task.thumbnail, blobToDataUrl]);
 
   return (
-    <div
-      className="group relative flex flex-col rounded-lg border border-border bg-card overflow-hidden transition-all duration-200 hover:border-primary/70 hover:shadow-lg hover:shadow-primary/10"
-    >
+    <Card className="group relative flex h-full flex-col overflow-hidden border-border/60 bg-card/60 shadow-sm transition-all hover:shadow-md">
       {/* Checkbox Overlay */}
-      <div className="absolute left-3 top-3 z-10 opacity-100 transition-opacity group-hover:opacity-100">
+      <div className="absolute left-3 top-3 z-10 rounded-md bg-background/80 p-1 shadow-sm">
         <Checkbox
           checked={selectedIds.has(task.taskId)}
           onCheckedChange={(checked) => onToggleSelected(task.taskId, checked as boolean)}
-          className="h-5 w-5"
+          className="h-4 w-4"
         />
       </div>
 
-      {/* Image Container */}
+      {/* Image */}
       <div className="relative h-44 overflow-hidden bg-muted">
         {thumbnailUrl && (
           <img
             src={thumbnailUrl}
             alt={t('history.thumbnailAlt')}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
-        {/* Score Badge */}
         {task.evaluationResult && (
-          <div className="absolute right-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-base shadow-lg transition-transform group-hover:scale-110">
+          <div className="absolute right-3 top-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold px-3 py-1 shadow">
             {task.evaluationResult.score}
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex flex-1 flex-col p-4 space-y-3">
-        {/* Agent */}
-        <div className="space-y-2 min-h-12 flex flex-col justify-center">
-          {task.selectedAgent && (
-            <p className="text-xs font-semibold text-primary uppercase tracking-widest leading-tight">
-              {getAgentName(task.selectedAgent) ?? task.selectedAgent}
-            </p>
-          )}
-          {!task.selectedAgent && (
-            <p className="text-xs text-muted-foreground">
-              {t('history.noAgent', { defaultValue: 'Unknown Agent' })}
-            </p>
-          )}
-        </div>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs font-semibold text-primary uppercase tracking-[0.2em] line-clamp-1">
+          {task.selectedAgent
+            ? (getAgentName(task.selectedAgent) ?? task.selectedAgent)
+            : t('history.noAgent', { defaultValue: 'Unknown Agent' })}
+        </CardTitle>
+      </CardHeader>
 
-        {/* Metadata */}
-        <div className="space-y-1.5 text-xs text-muted-foreground">
-          {task.styleTags && task.styleTags.length > 0 && (
-            <p className="truncate font-medium text-foreground/80">
-              {task.styleTags
-                .slice(0, 2)
-                .map((tag) => `${tag.name} ${Math.round(tag.weight * 100)}%`)
-                .join(' · ')}
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground/70">
-            {new Date(task.timestamp).toLocaleDateString()}
+      <CardContent className="flex flex-1 flex-col gap-2 text-xs text-muted-foreground">
+        {task.styleTags && task.styleTags.length > 0 && (
+          <p className="line-clamp-1 text-foreground/80 font-medium">
+            {task.styleTags
+              .slice(0, 2)
+              .map(
+                (tag) =>
+                  `${t(`styleTags.${tag.name}`, { defaultValue: tag.name })} ${Math.round(
+                    tag.weight * 100
+                  )}%`
+              )
+              .join(' · ')}
           </p>
-        </div>
+        )}
+        <p className="text-[11px] text-muted-foreground/70">
+          {new Date(task.timestamp).toLocaleDateString()}
+        </p>
+      </CardContent>
 
-        {/* Actions */}
-        <div className="mt-auto pt-3 flex flex-col gap-2 border-t border-border/50">
-          {taskActions.map((action, index) => {
-            const variant =
-              action.variant === 'primary'
-                ? 'default'
-                : action.variant === 'danger'
-                  ? 'destructive'
-                  : 'outline';
-            return (
-              <Button
-                key={`${task.taskId}-action-${index}`}
-                size="sm"
-                variant={variant}
-                onClick={action.handler}
-                className="h-8 text-xs font-medium transition-colors"
-              >
-                {action.label}
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+      <CardFooter className="mt-auto flex flex-col gap-2 border-t border-border/40 pt-3">
+        {taskActions.map((action, index) => {
+          const variant =
+            action.variant === 'primary'
+              ? 'default'
+              : action.variant === 'danger'
+                ? 'destructive'
+                : 'outline';
+          return (
+            <Button
+              key={`${task.taskId}-action-${index}`}
+              size="sm"
+              variant={variant}
+              onClick={action.handler}
+              className="h-8 text-xs font-medium"
+            >
+              {action.label}
+            </Button>
+          );
+        })}
+      </CardFooter>
+    </Card>
   );
 }

@@ -13,6 +13,7 @@ export interface AnalyzeStyleOptions {
   userLanguage: LanguageCode;
   passphrase?: string;
   chatHistory?: ChatMessage[];
+  providerSettings?: import('@/modules/storage/settings').ProviderSettings;
   onStart?: () => void;
   onProgress?: (stage: string) => void;
   onSuccess?: (result: any) => void;
@@ -29,10 +30,11 @@ export async function analyzeStyleWithChat(options: AnalyzeStyleOptions): Promis
     userLanguage,
     passphrase,
     chatHistory,
+    providerSettings,
     onStart,
     onProgress,
     onSuccess,
-    onError,
+    onError
   } = options;
 
   try {
@@ -43,7 +45,8 @@ export async function analyzeStyleWithChat(options: AnalyzeStyleOptions): Promis
       base64Image,
       userLanguage,
       passphrase,
-      chatHistory
+      chatHistory,
+      providerSettings
     );
 
     onSuccess?.(styleResult);
@@ -74,20 +77,21 @@ export function shouldTriggerAnalysisFromChat(
     '分析一下',
     'analyze',
     '风格识别',
-    'style',
+    'style'
   ];
 
   const content = lastAssistantMessage.content.toLowerCase();
-  return analysisKeywords.some(keyword => content.includes(keyword));
+  return analysisKeywords.some((keyword) => content.includes(keyword));
 }
 
 /**
  * 从聊天消息中提取分析建议
  * 返回是否应该自动触发分析，以及建议文案
  */
-export function extractAnalysisSuggestion(
-  lastAssistantMessage: ChatMessage | undefined
-): { shouldAnalyze: boolean; suggestion: string } {
+export function extractAnalysisSuggestion(lastAssistantMessage: ChatMessage | undefined): {
+  shouldAnalyze: boolean;
+  suggestion: string;
+} {
   if (!lastAssistantMessage || lastAssistantMessage.role !== 'assistant') {
     return { shouldAnalyze: false, suggestion: '' };
   }

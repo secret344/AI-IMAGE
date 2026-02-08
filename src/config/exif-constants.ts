@@ -18,23 +18,23 @@ export const COMMON_EXIF_KEYS = [
   'ApertureValue',
   'BrightnessValue',
   'ExposureBiasValue',
-  
+
   // 焦距参数
   'FocalLength',
   'FocalLengthIn35mm',
   'FocalLengthIn35mmFilm',
-  
+
   // 测光与白平衡
   'MeteringMode',
   'LightSource',
   'Flash',
   'WhiteBalance',
-  
+
   // 相机与镜头信息
   'Make',
   'Model',
   'LensModel',
-  
+
   // 时间信息
   'DateTimeOriginal',
   'DateTime'
@@ -48,7 +48,7 @@ export const COMMON_EXIF_KEYS_SET = new Set<string>(COMMON_EXIF_KEYS);
 /**
  * 过滤EXIF数据，只保留常用字段
  * @param exif 完整的EXIF数据
- * @returns 只包含常用字段的EXIF数据
+ * @return 只包含常用字段的EXIF数据
  */
 export function filterCommonExif(
   exif: Record<string, string | number>
@@ -58,7 +58,7 @@ export function filterCommonExif(
   }
 
   const filtered: Record<string, string | number> = {};
-  
+
   for (const key of COMMON_EXIF_KEYS) {
     if (key in exif && exif[key] != null) {
       filtered[key] = exif[key];

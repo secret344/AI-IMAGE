@@ -145,21 +145,21 @@
 
 ## 技术栈
 
-| 层级       | 技术                 | 用途              |
-| :--------- | :------------------- | :---------------- |
-| **构建**   | Vite 5.0+            | 快速打包和热更新  |
-| **框架**   | React 18+            | UI 组件和状态管理 |
-| **样式**   | Tailwind 3.3+        | 设计系统          |
-| **组件**   | ShadcnUI             | 专业UI套件        |
-| **语言**   | TypeScript 5.0+      | 类型安全          |
-| **状态**   | Zustand              | 状态管理          |
-| **国际化**     | react-i18next        | 多语言UI (英/中/日) |
-| **表单**       | react-hook-form      | 自定义Agent与设置 |
-| **存储**   | IndexedDB (Dexie.js) | 本地任务历史      |
-| **加密**   | Web Crypto API       | AES-GCM密钥存储   |
-| **图片**   | Canvas API, exif-js  | 压缩和EXIF处理    |
-| **AI集成** | LangChain.js         | 多供应商抽象      |
-| **部署**   | Vercel / Netlify     | 静态托管          |
+| 层级       | 技术                 | 用途                |
+| :--------- | :------------------- | :------------------ |
+| **构建**   | Vite 5.0+            | 快速打包和热更新    |
+| **框架**   | React 18+            | UI 组件和状态管理   |
+| **样式**   | Tailwind 3.3+        | 设计系统            |
+| **组件**   | ShadcnUI             | 专业UI套件          |
+| **语言**   | TypeScript 5.0+      | 类型安全            |
+| **状态**   | Zustand              | 状态管理            |
+| **国际化** | react-i18next        | 多语言UI (英/中/日) |
+| **表单**   | react-hook-form      | 自定义Agent与设置   |
+| **存储**   | IndexedDB (Dexie.js) | 本地任务历史        |
+| **加密**   | Web Crypto API       | AES-GCM密钥存储     |
+| **图片**   | Canvas API, exif-js  | 压缩和EXIF处理      |
+| **AI集成** | LangChain.js         | 多供应商抽象        |
+| **部署**   | Vercel / Netlify     | 静态托管            |
 
 ---
 

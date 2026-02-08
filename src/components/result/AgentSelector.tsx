@@ -4,12 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAllAgents, resolveAgentLocale, resolveAgentPrompt } from '@/config/agents';
 import type { AgentRecommendation } from '@/modules/agent/recommendAgents';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AgentSelectorProps {
   recommendedAgents: AgentRecommendation[];
@@ -62,44 +57,40 @@ export function AgentSelector({
         {isExpanded && (
           <div className="border-t border-border px-4 py-3 space-y-2">
             <TooltipProvider>
-            {sortedAgents.map((agent) => {
-              const score = recommendationScoreMap.get(agent.id);
-              const isRecommended = score !== undefined;
-              const isSelected = selectedAgentId === agent.id;
-              const promptText = resolveAgentPrompt(agent, i18n.language);
-              const locale = resolveAgentLocale(agent, i18n.language);
+              {sortedAgents.map((agent) => {
+                const score = recommendationScoreMap.get(agent.id);
+                const isRecommended = score !== undefined;
+                const isSelected = selectedAgentId === agent.id;
+                const promptText = resolveAgentPrompt(agent, i18n.language);
+                const locale = resolveAgentLocale(agent, i18n.language);
 
-              return (
-                <Tooltip key={agent.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={isSelected ? 'default' : 'outline'}
-                      onClick={() => onSelectAgent(agent.id)}
-                      className="w-full justify-between"
-                    >
-                      <div className="text-left flex-1">
-                        <p className="text-sm font-semibold">
-                          {locale.name}
-                        </p>
-                        <p className="text-xs opacity-75">
-                          {locale.photographer}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        {isRecommended ? (
-                          <p className="text-xs font-semibold">{Math.round(score * 100)}%</p>
-                        ) : (
-                          <p className="text-xs opacity-50">—</p>
-                        )}
-                      </div>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs leading-relaxed whitespace-pre-wrap">{promptText}</p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+                return (
+                  <Tooltip key={agent.id}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isSelected ? 'default' : 'outline'}
+                        onClick={() => onSelectAgent(agent.id)}
+                        className="w-full justify-between"
+                      >
+                        <div className="text-left flex-1">
+                          <p className="text-sm font-semibold">{locale.name}</p>
+                          <p className="text-xs opacity-75">{locale.photographer}</p>
+                        </div>
+                        <div className="text-right">
+                          {isRecommended ? (
+                            <p className="text-xs font-semibold">{Math.round(score * 100)}%</p>
+                          ) : (
+                            <p className="text-xs opacity-50">—</p>
+                          )}
+                        </div>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs leading-relaxed whitespace-pre-wrap">{promptText}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
             </TooltipProvider>
           </div>
         )}

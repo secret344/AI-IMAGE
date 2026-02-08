@@ -5,6 +5,7 @@
  */
 
 import type { ChatMessage, ChatContext, ChatRequestConfig } from '@/types/conversation';
+import type { ProviderSettings } from '@/modules/storage/settings';
 import { callAgentChat } from '@/modules/ai/chatClient';
 import { loadProviderSettings } from '@/modules/storage/settings';
 import { loadApiKey } from '@/modules/storage/keys';
@@ -14,6 +15,7 @@ export interface UploadChatIntegrationCallbacks {
   onMessageReceived: (message: ChatMessage) => void;
   onAnalysisSuggested: (suggestion: string) => void;
   onError: (error: Error) => void;
+  onStreamChunk?: (chunk: string) => void;
 }
 
 /**
@@ -31,14 +33,18 @@ export async function handleUploadChatMessage(
   config: {
     taskId: string;
     agentStyle: string;
+    agentPhotographer?: string;
     imageName: string;
     evaluationResultSummary?: string;
+    taskSettings?: ProviderSettings | null;
   },
   callbacks: UploadChatIntegrationCallbacks,
-  passphrase?: string
+  passphrase?: string,
+  signal?: AbortSignal
 ): Promise<void> {
   try {
-    const settings = loadProviderSettings();
+    // 使用任务级设置，如果没有则使用全局设置
+    const settings = config.taskSettings || loadProviderSettings();
     if (!settings) throw new Error('Settings not found');
 
     // 获取API密钥
@@ -50,21 +56,28 @@ export async function handleUploadChatMessage(
     const chatContext: ChatContext = {
       taskId: config.taskId,
       agentStyle: config.agentStyle,
+      agentPhotographer: config.agentPhotographer,
       conversationHistory,
       evaluationResultSummary: config.evaluationResultSummary,
-      imageBase64,
+      imageBase64
     };
 
-    // 构建聊天配置
+    // 构建聊天配置（使用任务设置或全局设置，不使用缓存）
     const chatConfig: ChatRequestConfig = {
       provider: settings.provider as any,
       apiKey,
-      temperature: 0.7,
-      maxTokens: 1000,
+      model: settings.model,
+      baseUrl: settings.baseUrl,
+      temperature: settings.temperature,
+      maxTokens: settings.maxTokens,
+      timeoutMs: settings.timeoutMs,
+      contextMaxChars: settings.contextMaxChars,
+      onToken: callbacks.onStreamChunk,
+      includeThinking: true
     };
 
     // 调用AI聊天
-    const aiMessage = await callAgentChat(chatContext, userMessage, chatConfig);
+    const aiMessage = await callAgentChat(chatContext, userMessage, chatConfig, signal);
 
     // 返回AI消息给UI
     callbacks.onMessageReceived(aiMessage);
@@ -87,16 +100,8 @@ export async function handleUploadChatMessage(
  * 在聊天中检测到分析请求关键词时触发
  */
 export function detectAnalysisRequest(userMessage: string): boolean {
-  const analysisKeywords = [
-    '分析',
-    'analyze',
-    '风格',
-    'style',
-    '我来看看',
-    '看看',
-    'check',
-  ];
+  const analysisKeywords = ['分析', 'analyze', '风格', 'style', '我来看看', '看看', 'check'];
 
   const lowerMessage = userMessage.toLowerCase();
-  return analysisKeywords.some(keyword => lowerMessage.includes(keyword));
+  return analysisKeywords.some((keyword) => lowerMessage.includes(keyword));
 }

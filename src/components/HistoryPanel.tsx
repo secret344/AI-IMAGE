@@ -4,16 +4,15 @@ import JSZip from 'jszip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { TaskRecord } from '@/modules/storage/db';
-import type { AgentRecommendation } from '@/modules/agent/recommendAgents';
 import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
-import type { ProcessedImage } from '@/modules/upload/processImage';
-import type { EvaluationResult } from '@/types/evaluation';
 import { deleteTask, deleteTasks, listTasks } from '@/modules/storage/history';
-import { loadProviderSettings } from '@/modules/storage/settings';
+import { getDefaultProviderSettings } from '@/modules/storage/settings';
 import { buildXmp } from '@/modules/export/xmp';
 import { getAgentById, recommendAgents } from '@/modules/agent/recommendAgents';
 import { resolveAgentLocale } from '@/config/agents';
 import { useAppStore } from '@/state/useAppStore';
+import { useTaskContext } from '@/state/TaskContext';
+import type { TaskState } from '@/state/TaskContext';
 import { HistoryFilters } from '@/components/history/HistoryFilters';
 import { HistoryActionsBar } from '@/components/history/HistoryActionsBar';
 import { HistoryTaskGrid } from '@/components/history/HistoryTaskGrid';
@@ -36,14 +35,11 @@ interface TaskItemActionFactory {
 const buildTaskItemActions = (
   t: (key: string) => string,
   language: string,
-  setEvaluation: (val: EvaluationResult | null) => void,
-  setSelectedAgentId: (id: string | null) => void,
-  setStyleResult: (val: StyleRecognitionResult | null) => void,
-  setSelectedFileName: (name: string | null) => void,
-  setPreviewImageBase64: (data: string | null) => void,
-  setProcessedImage: (data: ProcessedImage | null) => void,
-  setRecommendedAgents: (agents: AgentRecommendation[]) => void,
-  setSkipCache: (skip: boolean) => void,
+  setTaskStateForTask: (taskId: string, partial: Partial<TaskState>) => void,
+  globalProviderSettings: { topAgents: number },
+  setCurrentTaskId: (taskId: string) => void,
+  setSkipCacheForTask: (taskId: string, skip: boolean) => void,
+  setResetEvaluationForTask: (taskId: string, value: boolean) => void,
   deleteTask: (id: string) => Promise<void>,
   load: () => Promise<void>
 ): TaskItemActionFactory[] => {
@@ -54,32 +50,50 @@ const buildTaskItemActions = (
       hasEvaluation: !!task.evaluationResult,
       hasStyleResult: !!task.styleTags
     });
-    
-    setEvaluation(clearEvaluation ? null : (task.evaluationResult ?? null));
-    setSelectedAgentId(task.selectedAgent ?? null);
-    
+
+    const evaluation = clearEvaluation ? null : (task.evaluationResult ?? null);
+    const hydratedImage = task.processedImage
+      ? {
+          originalName: task.fileName ?? 'cached-image',
+          processedBlob: new Blob([], { type: 'image/jpeg' }),
+          base64: task.processedImage.base64,
+          exif: task.processedImage.exif,
+          dimensions: task.processedImage.dimensions
+        }
+      : null;
+
     // Convert styleTags array to StyleRecognitionResult
     if (task.styleTags && task.styleTags.length > 0) {
-      setStyleResult({
+      const styleResult: StyleRecognitionResult = {
         styleTags: task.styleTags,
         styleDescription: '',
         inferenceTime: 0,
         modelUsed: 'history-recovery'
-      } as StyleRecognitionResult);
-    } else {
-      setStyleResult(null);
-    }
-    
-    setSelectedFileName(task.taskId ?? null);
-    setPreviewImageBase64(null);
-    setProcessedImage(null);
-    
-    if (task.styleTags && task.styleTags.length > 0) {
-      const settings = loadProviderSettings();
-      setRecommendedAgents(
-        recommendAgents(task.styleTags as any, { limit: settings.topAgents }, language)
+      } as StyleRecognitionResult;
+      const recommendedAgents = recommendAgents(
+        task.styleTags as any,
+        { limit: globalProviderSettings.topAgents },
+        language
       );
+      setTaskStateForTask(task.taskId, {
+        evaluation,
+        selectedAgentId: task.selectedAgent ?? null,
+        styleResult,
+        selectedFileName: task.fileName ?? null,
+        previewImageBase64: task.processedImage?.base64 ?? null,
+        processedImage: hydratedImage,
+        recommendedAgents
+      });
     } else {
+      setTaskStateForTask(task.taskId, {
+        evaluation,
+        selectedAgentId: task.selectedAgent ?? null,
+        styleResult: null,
+        selectedFileName: task.fileName ?? null,
+        previewImageBase64: task.processedImage?.base64 ?? null,
+        processedImage: hydratedImage,
+        recommendedAgents: []
+      });
       console.warn('⚠️ [LoadTaskToState] No styleTags found in task');
     }
   };
@@ -88,15 +102,27 @@ const buildTaskItemActions = (
     {
       label: t('history.view'),
       variant: 'default',
-      handler: (task) => loadTaskToState(task, false)
+      handler: (task) => {
+        setCurrentTaskId(task.taskId);
+        loadTaskToState(task, false);
+      }
     },
     {
       label: t('history.reevaluate'),
       variant: 'primary',
       handler: (task) => {
-        console.log('[Re-evaluation] Starting for task:', task.taskId, '- Agent:', task.selectedAgent);
-        loadTaskToState(task, true);
-        setSkipCache(true);
+        // Set flags before switching tasks
+        setResetEvaluationForTask(task.taskId, true);
+        setSkipCacheForTask(task.taskId, true);
+        // Clear evaluation immediately to show run button
+        setTaskStateForTask(task.taskId, {
+          evaluation: null,
+          isProcessing: false,
+          processingStage: null
+        });
+        // Switch to the task (will trigger hydration with flags applied)
+        setCurrentTaskId(task.taskId);
+        // Highlight the run button
         window.dispatchEvent(new Event('highlight-run'));
       }
     },
@@ -121,16 +147,10 @@ export function HistoryPanel() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  const {
-    setEvaluation,
-    setSelectedAgentId,
-    setStyleResult,
-    setSelectedFileName,
-    setPreviewImageBase64,
-    setProcessedImage,
-    setRecommendedAgents,
-    setSkipCache
-  } = useAppStore();
+  const { setSkipCacheForTask, setResetEvaluationForTask, setCurrentTaskId, setTaskStateForTask } =
+    useTaskContext();
+  const globalProviderSettings =
+    useAppStore((state) => state.globalProviderSettings) ?? getDefaultProviderSettings();
 
   const load = useCallback(async () => {
     const data = await listTasks();
@@ -199,7 +219,7 @@ export function HistoryPanel() {
         })
       : tasks;
 
-    const filteredWithFlags = filtered.filter((task) => {
+    const filteredByFlags = filtered.filter((task) => {
       if (onlyStyle && !hasStyle(task)) {
         return false;
       }
@@ -209,19 +229,45 @@ export function HistoryPanel() {
       return true;
     });
 
-    const sorted = [...filteredWithFlags].sort((a, b) => {
+    const sorted = [...filteredByFlags].sort((a, b) => {
       if (sortMode === 'score') {
-        const scoreB = b.evaluationResult?.score ?? 0;
         const scoreA = a.evaluationResult?.score ?? 0;
+        const scoreB = b.evaluationResult?.score ?? 0;
         return scoreB - scoreA;
       }
       return b.timestamp - a.timestamp;
     });
-    return sorted;
-  }, [tasks, query, sortMode, onlyStyle, onlyRetouch]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / pageSize));
+    return sorted;
+  }, [tasks, query, i18n.language, onlyStyle, onlyRetouch, sortMode]);
+
+  const taskItemActions = useMemo(
+    () =>
+      buildTaskItemActions(
+        t,
+        i18n.language,
+        setTaskStateForTask,
+        globalProviderSettings,
+        setCurrentTaskId,
+        setSkipCacheForTask,
+        setResetEvaluationForTask,
+        deleteTask,
+        load
+      ),
+    [
+      t,
+      i18n.language,
+      setTaskStateForTask,
+      globalProviderSettings,
+      setCurrentTaskId,
+      setSkipCacheForTask,
+      setResetEvaluationForTask,
+      deleteTask,
+      load
+    ]
+  );
   const pagedTasks = filteredTasks.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / pageSize));
 
   const handleExportSelectedXmp = useCallback(() => {
     const selected = filteredTasks.filter((task) => selectedIds.has(task.taskId));
@@ -379,20 +425,10 @@ export function HistoryPanel() {
             setSelectedIds(next);
           }}
           buildActions={(task) =>
-            buildTaskItemActions(
-              t,
-              i18n.language,
-              setEvaluation,
-              setSelectedAgentId,
-              setStyleResult,
-              setSelectedFileName,
-              setPreviewImageBase64,
-              setProcessedImage,
-              setRecommendedAgents,
-              setSkipCache,
-              deleteTask,
-              load
-            ).map((action) => ({ ...action, handler: () => action.handler(task) }))
+            taskItemActions.map((action) => ({
+              ...action,
+              handler: () => action.handler(task)
+            }))
           }
         />
 

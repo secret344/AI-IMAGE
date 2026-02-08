@@ -1,207 +1,208 @@
-/**
- * ============================================================
- * 聊天功能实现指南
- * ============================================================
- * 
- * 本文档说明如何在应用中集成聊天功能。
- * 设计原则：低耦合、易扩展、支持未来的多模型配置。
- * 
- * ============================================================
- * 快速开始
- * ============================================================
- * 
- * 1. 创建聊天状态
- * 
- *   import { useChat } from '@/hooks/useChat';
- *   
- *   const chat = useChat([]);  // 初始化空聊天
- *   
- * 2. 发送消息并获取回复
- * 
- *   import { processChatMessage } from '@/modules/evaluation/chatIntegration';
- *   import { generateEvaluationSummary } from '@/modules/evaluation/chatIntegration';
- *   
- *   const handleSendMessage = async (userMessage: string) => {
- *     chat.setLoading(true);
- *     try {
- *       const result = await processChatMessage(
- *         taskId,                              // 任务 ID
- *         'main',                              // 线程 ID (当前总是 'main')
- *         userMessage,
- *         {
- *           taskId,
- *           agentStyle: 'Street Narrative',    // 当前评估角色
- *           evaluationResultSummary: generateEvaluationSummary(evaluation),
- *           conversationHistory: chat.messages,
- *         },
- *         {
- *           provider: 'openai',                // 使用的 AI 提供商
- *           modelType: 'evaluation-chat',      // [预留] 聊天用途
- *         }
- *       );
- *       
- *       if (result) {
- *         chat.addMessage(result.userMsg);
- *         chat.addMessage(result.assistantMsg);
- *       }
- *     } catch (error) {
- *       chat.setError(error.message);
- *     } finally {
- *       chat.setLoading(false);
- *     }
- *   };
- * 
- * 3. 显示聊天界面
- * 
- *   import { ChatPanel } from '@/components/result/ChatPanel';
- *   
- *   <ChatPanel
- *     messages={chat.messages}
- *     onSend={handleSendMessage}
- *     isLoading={chat.isLoading}
- *     error={chat.error}
- *     onClearError={() => chat.setError(null)}
- *   />
- * 
- * ============================================================
- * 架构概览
- * ============================================================
- * 
- * 类型定义 (src/types/conversation.ts)
- * ├─ ChatMessage: 单条聊天消息
- * ├─ ConversationThread: 聊天线程 [预留多线程]
- * ├─ TaskConversationData: 任务关联的所有聊天数据
- * └─ ChatRequestConfig: API 调用配置 [预留多模型]
- * 
- * 存储层 (src/modules/storage/conversation.ts)
- * ├─ initializeConversation(): 为新任务创建聊天容器
- * ├─ addMessageToThread(): 添加消息（自动持久化）
- * ├─ getConversations(): 获取所有聊天记录
- * ├─ generateConversationSummary(): 生成聊天摘要
- * └─ clearConversations(): 清空聊天记录
- * 
- * API 层 (src/modules/ai/chatClient.ts)
- * ├─ callAgentChat(): 核心聊天函数，支持多提供商
- * └─ CHAT_SYSTEM_PROMPTS: 针对不同用途的系统提示词
- * 
- * 业务逻辑 (src/modules/evaluation/chatIntegration.ts)
- * ├─ processChatMessage(): 处理消息的完整流程
- * ├─ getChatContextForReEvaluation(): 为重评准备上下文
- * └─ generateEvaluationSummary(): 生成评估结果摘要
- * 
- * UI 组件
- * ├─ ChatPanel (src/components/result/ChatPanel.tsx): 主面板
- * ├─ ChatMessageItem (src/components/result/ChatMessageItem.tsx): 单条消息
- * ├─ ChatInput (src/components/result/ChatInput.tsx): 输入框
- * └─ ResultChatContainer (src/components/result/ResultChatContainer.tsx): 结果+聊天集成
- * 
- * ============================================================
- * 集成到重评流程
- * ============================================================
- * 
- * 在 runEvaluation 中，重评时自动注入聊天上下文：
- * 
- *   import { prepareChatContextForReEvaluation } from '@/modules/evaluation/reEvaluationChat';
- *   
- *   async function reEvaluate(taskId: string) {
- *     // 准备聊天上下文
- *     const chatContext = await prepareChatContextForReEvaluation(taskId);
- *     
- *     // 将聊天上下文注入原始提示词
- *     const augmentedPrompt = originalPrompt + chatContext;
- *     
- *     // 进行评估
- *     const result = await evaluateWithAI(augmentedPrompt, image);
- *     
- *     // 更新聊天摘要
- *     await updateChatSummaryAfterReEvaluation(taskId);
- *   }
- * 
- * ============================================================
- * 预留扩展点
- * ============================================================
- * 
- * 1. 多线程支持 (V2)
- *    - additionalThreads 字段用于子讨论
- *    - 可在聊天 UI 中支持"创建新线程"
- *    - 修改 processChatMessage 支持 threadId 参数
- * 
- * 2. 多模型配置 (V2)
- *    - ChatRequestConfig.modelType: 'evaluation-chat' | 'refinement-chat' | 'deepdive-chat'
- *    - 每种类型可配置不同的 AI 模型、temperature、maxTokens
- *    - CHAT_SYSTEM_PROMPTS 中已预留不同用途的提示词
- *    - 扩展 callAgentChat 支持模型路由
- * 
- * 3. 聊天持久化优化 (V2)
- *    - 当前聊天数据存储在 TaskRecord 中
- *    - 可考虑创建独立的 conversations 表以提升查询效率
- *    - 实现聊天搜索和标签功能
- * 
- * 4. 对话流程自动化 (V2)
- *    - 预定义常见问题和快速回复
- *    - 基于评估结果自动推荐讨论方向
- *    - 集成 RAG 增强检索
- * 
- * ============================================================
- * 低耦合设计说明
- * ============================================================
- * 
- * 整体设计遵循分层架构：
- * 
- * 类型层 (types/conversation.ts)
- * ↓ (仅依赖：types/evaluation.ts)
- * ┌─────────────────┬──────────────────┬──────────────────┐
- * │ 存储层          │ API 层           │ 业务逻辑层       │
- * │ storage/        │ ai/chatClient.ts │ evaluation/      │
- * │ conversation.ts │ (依赖：types)    │ chatIntegration  │
- * └─────────────────┴──────────────────┴──────────────────┘
- *           ↓                ↓                  ↓
- *   ┌──────────────────────────────────────────────────────┐
- *   │ UI 层 (components/result/)                           │
- *   │ - ChatPanel (依赖：hooks/useChat, ChatPanel)        │
- *   │ - ResultChatContainer (依赖：上述类型和组件)        │
- *   └──────────────────────────────────────────────────────┘
- * 
- * 关键设计原则：
- * 
- * 1. 依赖单向性
- *    - 只能向下依赖 (UI → 业务逻辑 → API/存储 → 类型)
- *    - 同层级通过接口通信，避免循环依赖
- * 
- * 2. 参数透明性
- *    - 所有函数都接受显式参数，不隐式依赖全局状态
- *    - 便于单元测试和函数组合
- * 
- * 3. 职责分离
- *    - 存储层：纯 CRUD 操作
- *    - API 层：AI 提供商的抽象
- *    - 业务层：流程编排
- *    - UI 层：交互展示
- * 
- * ============================================================
- * 常见问题
- * ============================================================
- * 
- * Q: 为什么不用 Zustand 管理聊天状态？
- * A: 聊天状态是任务特定的，使用 local hook (useChat) 更灵活。
- *    如果未来需要多任务并行聊天，可考虑迁移到全局状态。
- * 
- * Q: 如何支持多个 AI 模型同时聊天？
- * A: 在 TaskConversationData 中添加字段跟踪每条消息的 modelUsed。
- *    在 ChatPanel 中添加模型选择器。
- *    修改 callAgentChat 支持动态模型路由。
- * 
- * Q: 如何避免聊天中的上下文超出 token 限制？
- * A: 在 callAgentChat 中实现"滑动窗口"策略。
- *    参数化 maxHistoryMessages 并在 API 调用前裁剪。
- *    实现聊天摘要总结长对话。
- * 
- * Q: 如何在聊天中支持图片上传？
- * A: 在 ChatMessage 中添加 attachments 字段。
- *    修改 ChatInput 支持文件拖拽。
- *    在 callAgentChat 中处理多模态输入。
- * 
- * ============================================================
- */
+/\*\*
+
+- ============================================================
+- 聊天功能实现指南
+- ============================================================
+-
+- 本文档说明如何在应用中集成聊天功能。
+- 设计原则：低耦合、易扩展、支持未来的多模型配置。
+-
+- ============================================================
+- 快速开始
+- ============================================================
+-
+- 1.  创建聊天状态
+-
+- import { useChat } from '@/hooks/useChat';
+-
+- const chat = useChat([]); // 初始化空聊天
+-
+- 2.  发送消息并获取回复
+-
+- import { processChatMessage } from '@/modules/evaluation/chatIntegration';
+- import { generateEvaluationSummary } from '@/modules/evaluation/chatIntegration';
+-
+- const handleSendMessage = async (userMessage: string) => {
+-     chat.setLoading(true);
+-     try {
+-       const result = await processChatMessage(
+-         taskId,                              // 任务 ID
+-         'main',                              // 线程 ID (当前总是 'main')
+-         userMessage,
+-         {
+-           taskId,
+-           agentStyle: 'Street Narrative',    // 当前评估角色
+-           evaluationResultSummary: generateEvaluationSummary(evaluation),
+-           conversationHistory: chat.messages,
+-         },
+-         {
+-           provider: 'openai',                // 使用的 AI 提供商
+-           modelType: 'evaluation-chat',      // [预留] 聊天用途
+-         }
+-       );
+-
+-       if (result) {
+-         chat.addMessage(result.userMsg);
+-         chat.addMessage(result.assistantMsg);
+-       }
+-     } catch (error) {
+-       chat.setError(error.message);
+-     } finally {
+-       chat.setLoading(false);
+-     }
+- };
+-
+- 3.  显示聊天界面
+-
+- import { ChatPanel } from '@/components/result/ChatPanel';
+-
+- <ChatPanel
+-     messages={chat.messages}
+-     onSend={handleSendMessage}
+-     isLoading={chat.isLoading}
+-     error={chat.error}
+-     onClearError={() => chat.setError(null)}
+- />
+-
+- ============================================================
+- 架构概览
+- ============================================================
+-
+- 类型定义 (src/types/conversation.ts)
+- ├─ ChatMessage: 单条聊天消息
+- ├─ ConversationThread: 聊天线程 [预留多线程]
+- ├─ TaskConversationData: 任务关联的所有聊天数据
+- └─ ChatRequestConfig: API 调用配置 [预留多模型]
+-
+- 存储层 (src/modules/storage/conversation.ts)
+- ├─ initializeConversation(): 为新任务创建聊天容器
+- ├─ addMessageToThread(): 添加消息（自动持久化）
+- ├─ getConversations(): 获取所有聊天记录
+- ├─ generateConversationSummary(): 生成聊天摘要
+- └─ clearConversations(): 清空聊天记录
+-
+- API 层 (src/modules/ai/chatClient.ts)
+- ├─ callAgentChat(): 核心聊天函数，支持多提供商
+- └─ CHAT_SYSTEM_PROMPTS: 针对不同用途的系统提示词
+-
+- 业务逻辑 (src/modules/evaluation/chatIntegration.ts)
+- ├─ processChatMessage(): 处理消息的完整流程
+- ├─ getChatContextForReEvaluation(): 为重评准备上下文
+- └─ generateEvaluationSummary(): 生成评估结果摘要
+-
+- UI 组件
+- ├─ ChatPanel (src/components/result/ChatPanel.tsx): 主面板
+- ├─ ChatMessageItem (src/components/result/ChatMessageItem.tsx): 单条消息
+- ├─ ChatInput (src/components/result/ChatInput.tsx): 输入框
+- └─ ResultChatContainer (src/components/result/ResultChatContainer.tsx): 结果+聊天集成
+-
+- ============================================================
+- 集成到重评流程
+- ============================================================
+-
+- 在 runEvaluation 中，重评时自动注入聊天上下文：
+-
+- import { prepareChatContextForReEvaluation } from '@/modules/evaluation/reEvaluationChat';
+-
+- async function reEvaluate(taskId: string) {
+-     // 准备聊天上下文
+-     const chatContext = await prepareChatContextForReEvaluation(taskId);
+-
+-     // 将聊天上下文注入原始提示词
+-     const augmentedPrompt = originalPrompt + chatContext;
+-
+-     // 进行评估
+-     const result = await evaluateWithAI(augmentedPrompt, image);
+-
+-     // 更新聊天摘要
+-     await updateChatSummaryAfterReEvaluation(taskId);
+- }
+-
+- ============================================================
+- 预留扩展点
+- ============================================================
+-
+- 1.  多线程支持 (V2)
+- - additionalThreads 字段用于子讨论
+- - 可在聊天 UI 中支持"创建新线程"
+- - 修改 processChatMessage 支持 threadId 参数
+-
+- 2.  多模型配置 (V2)
+- - ChatRequestConfig.modelType: 'evaluation-chat' | 'refinement-chat' | 'deepdive-chat'
+- - 每种类型可配置不同的 AI 模型、temperature、maxTokens
+- - CHAT_SYSTEM_PROMPTS 中已预留不同用途的提示词
+- - 扩展 callAgentChat 支持模型路由
+-
+- 3.  聊天持久化优化 (V2)
+- - 当前聊天数据存储在 TaskRecord 中
+- - 可考虑创建独立的 conversations 表以提升查询效率
+- - 实现聊天搜索和标签功能
+-
+- 4.  对话流程自动化 (V2)
+- - 预定义常见问题和快速回复
+- - 基于评估结果自动推荐讨论方向
+- - 集成 RAG 增强检索
+-
+- ============================================================
+- 低耦合设计说明
+- ============================================================
+-
+- 整体设计遵循分层架构：
+-
+- 类型层 (types/conversation.ts)
+- ↓ (仅依赖：types/evaluation.ts)
+- ┌─────────────────┬──────────────────┬──────────────────┐
+- │ 存储层 │ API 层 │ 业务逻辑层 │
+- │ storage/ │ ai/chatClient.ts │ evaluation/ │
+- │ conversation.ts │ (依赖：types) │ chatIntegration │
+- └─────────────────┴──────────────────┴──────────────────┘
+-           ↓                ↓                  ↓
+- ┌──────────────────────────────────────────────────────┐
+- │ UI 层 (components/result/) │
+- │ - ChatPanel (依赖：hooks/useChat, ChatPanel) │
+- │ - ResultChatContainer (依赖：上述类型和组件) │
+- └──────────────────────────────────────────────────────┘
+-
+- 关键设计原则：
+-
+- 1.  依赖单向性
+- - 只能向下依赖 (UI → 业务逻辑 → API/存储 → 类型)
+- - 同层级通过接口通信，避免循环依赖
+-
+- 2.  参数透明性
+- - 所有函数都接受显式参数，不隐式依赖全局状态
+- - 便于单元测试和函数组合
+-
+- 3.  职责分离
+- - 存储层：纯 CRUD 操作
+- - API 层：AI 提供商的抽象
+- - 业务层：流程编排
+- - UI 层：交互展示
+-
+- ============================================================
+- 常见问题
+- ============================================================
+-
+- Q: 为什么不用 Zustand 管理聊天状态？
+- A: 聊天状态是任务特定的，使用 local hook (useChat) 更灵活。
+- 如果未来需要多任务并行聊天，可考虑迁移到全局状态。
+-
+- Q: 如何支持多个 AI 模型同时聊天？
+- A: 在 TaskConversationData 中添加字段跟踪每条消息的 modelUsed。
+- 在 ChatPanel 中添加模型选择器。
+- 修改 callAgentChat 支持动态模型路由。
+-
+- Q: 如何避免聊天中的上下文超出 token 限制？
+- A: 在 callAgentChat 中实现"滑动窗口"策略。
+- 参数化 maxHistoryMessages 并在 API 调用前裁剪。
+- 实现聊天摘要总结长对话。
+-
+- Q: 如何在聊天中支持图片上传？
+- A: 在 ChatMessage 中添加 attachments 字段。
+- 修改 ChatInput 支持文件拖拽。
+- 在 callAgentChat 中处理多模态输入。
+-
+- ============================================================
+  \*/
 
 // 此文件仅用于文档，实际实现见各模块文件

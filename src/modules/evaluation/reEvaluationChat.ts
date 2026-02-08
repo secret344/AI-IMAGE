@@ -4,19 +4,21 @@
  * 特点：作为独立的集成点，不改变现有重评逻辑
  */
 
+import type { ChatMessage } from '@/types/conversation';
 import { getChatContextForReEvaluation } from './chatIntegration';
-import { generateConversationSummary, updateConversationSummary } from '@/modules/storage/conversation';
+import {
+  generateConversationSummary,
+  updateConversationSummary
+} from '@/modules/storage/conversation';
 
 /**
  * 为重评准备聊天上下文
  * 返回可注入到提示词中的聊天摘要
  */
-export async function prepareChatContextForReEvaluation(
-  taskId: string
-): Promise<string> {
+export async function prepareChatContextForReEvaluation(messages: ChatMessage[]): Promise<string> {
   try {
     // 获取聊天上下文
-    const chatContext = await getChatContextForReEvaluation(taskId, 5);
+    const chatContext = await getChatContextForReEvaluation(messages, 5);
 
     if (!chatContext) {
       return '';
@@ -33,9 +35,7 @@ export async function prepareChatContextForReEvaluation(
  * 重评完成后，更新聊天摘要
  * 在 TaskRecord 中保存聊天摘要，用于后续参考
  */
-export async function updateChatSummaryAfterReEvaluation(
-  taskId: string
-): Promise<void> {
+export async function updateChatSummaryAfterReEvaluation(taskId: string): Promise<void> {
   try {
     const summary = await generateConversationSummary(taskId);
     if (summary) {
@@ -50,10 +50,7 @@ export async function updateChatSummaryAfterReEvaluation(
  * [预留] 构建用于新重评的完整聊天提示词
  * 格式：原始评估结果 + 用户反馈 = 新的评估上下文
  */
-export function buildChatAugmentedPrompt(
-  originalPrompt: string,
-  chatContext: string
-): string {
+export function buildChatAugmentedPrompt(originalPrompt: string, chatContext: string): string {
   if (!chatContext) {
     return originalPrompt;
   }

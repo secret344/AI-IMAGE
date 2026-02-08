@@ -2,6 +2,8 @@ import type { ChangeEvent, DragEvent } from 'react';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ImagePlus } from 'lucide-react';
 
 interface UploadDropzoneProps {
   isProcessing: boolean;
@@ -38,9 +40,11 @@ export function UploadDropzone({
       />
 
       {/* Dropzone area using div with proper semantics */}
-      <div
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition ${
-          isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+      <Card
+        className={`transition ${
+          isDragging
+            ? 'border-primary/60 bg-primary/5 shadow-md'
+            : 'border-border/60 bg-card/40 hover:border-primary/40 hover:shadow-sm'
         }`}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
@@ -53,23 +57,30 @@ export function UploadDropzone({
           }
         }}
       >
-        <p className="text-sm">{isProcessing ? t('upload.processing') : t('upload.dragDrop')}</p>
-        {isProcessing && processingStage && (
-          <p className="mt-2 text-xs text-muted-foreground">{processingStage}</p>
-        )}
-        <p className="mt-2 text-xs text-muted-foreground">{t('upload.maxFileSize')}</p>
+        <CardContent className="flex cursor-pointer flex-col items-center justify-center gap-2 p-6 text-center sm:p-8">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <ImagePlus className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <p className="text-sm font-medium">
+            {isProcessing ? t('upload.processing') : t('upload.dragDrop')}
+          </p>
+          {isProcessing && processingStage && (
+            <p className="text-xs text-muted-foreground">{processingStage}</p>
+          )}
+          <p className="text-xs text-muted-foreground">{t('upload.maxFileSize')}</p>
 
-        {/* Click to browse button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
-          disabled={isProcessing}
-          className="mt-4"
-        >
-          {t('upload.selectFile')}
-        </Button>
-      </div>
+          {/* Click to browse button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={isProcessing}
+            className="mt-3"
+          >
+            {t('upload.selectFile')}
+          </Button>
+        </CardContent>
+      </Card>
     </>
   );
 }

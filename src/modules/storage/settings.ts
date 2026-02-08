@@ -1,3 +1,5 @@
+import { useAppStore } from '@/state/useAppStore';
+
 export interface ProviderSettings {
   provider: 'openai' | 'gemini' | 'claude' | 'ollama' | 'mock';
   model: string;
@@ -8,6 +10,7 @@ export interface ProviderSettings {
   temperature: number;
   maxTokens: number;
   timeoutMs: number;
+  contextMaxChars: number;
 }
 
 const STORAGE_KEY = 'ai-image-provider-settings';
@@ -21,22 +24,32 @@ const DEFAULT_SETTINGS: ProviderSettings = {
   topAgents: 3,
   temperature: 0.2,
   maxTokens: 1024,
-  timeoutMs: 30000
+  timeoutMs: 30000,
+  contextMaxChars: 4000
 };
 
-export function loadProviderSettings(): ProviderSettings {
+export function hydrateProviderSettings(): ProviderSettings {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
     return DEFAULT_SETTINGS;
   }
 
   try {
-    return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<ProviderSettings>) };
+    return JSON.parse(raw) as ProviderSettings;
   } catch {
     return DEFAULT_SETTINGS;
   }
 }
 
+export function loadProviderSettings(): ProviderSettings {
+  return useAppStore.getState().globalProviderSettings ?? DEFAULT_SETTINGS;
+}
+
+export function getDefaultProviderSettings(): ProviderSettings {
+  return DEFAULT_SETTINGS;
+}
+
 export function saveProviderSettings(settings: ProviderSettings) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  useAppStore.getState().setGlobalProviderSettings(settings);
 }

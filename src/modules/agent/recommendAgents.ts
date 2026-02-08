@@ -23,27 +23,28 @@ export function recommendAgents(
   );
   const limit = options.limit ?? 3;
 
-  return getAllAgents().map((agent) => {
-    let score = 0;
-    const matchedTags: string[] = [];
-    const locale = resolveAgentLocale(agent, language);
+  return getAllAgents()
+    .map((agent) => {
+      let score = 0;
+      const matchedTags: string[] = [];
+      const locale = resolveAgentLocale(agent, language);
 
-    normalized.forEach((tag) => {
-      const weight = agent.tagWeights[tag.name];
-      if (weight) {
-        score += tag.weight * weight;
-        matchedTags.push(tag.name);
-      }
-    });
+      normalized.forEach((tag) => {
+        const weight = agent.tagWeights[tag.name];
+        if (weight) {
+          score += tag.weight * weight;
+          matchedTags.push(tag.name);
+        }
+      });
 
-    return {
-      id: agent.id,
-      name: locale.name,
-      score: Number(score.toFixed(2)),
-      matchedTags,
-      description: locale.description
-    };
-  })
+      return {
+        id: agent.id,
+        name: locale.name,
+        score: Number(score.toFixed(2)),
+        matchedTags,
+        description: locale.description
+      };
+    })
     .sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;

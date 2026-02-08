@@ -1,15 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import {
-  fallbackLanguage,
-  languageCodeSet,
-  resources
-} from '@/i18n/resources';
-import {
-  LANGUAGE_FALLBACK,
-  normalizeLanguage,
-  type LanguageCode
-} from '@/config/i18n-config';
+import { fallbackLanguage, languageCodeSet, resources } from '@/i18n/resources';
+import { LANGUAGE_FALLBACK, normalizeLanguage, type LanguageCode } from '@/config/i18n-config';
 
 // Detect user language preference
 const getInitialLanguage = (): LanguageCode => {

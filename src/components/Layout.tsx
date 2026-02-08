@@ -33,7 +33,7 @@ export function Layout({ children }: PropsWithChildren) {
   }, [buildModelInfo]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-x-hidden">
       <Header
         title={t('header.title')}
         subtitle={t('header.subtitle')}
@@ -52,8 +52,12 @@ export function Layout({ children }: PropsWithChildren) {
           </div>
         }
       />
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8">{children}</main>
-      <footer className="border-t border-border/50 px-4 sm:px-6 py-6 text-center text-xs text-muted-foreground/80 bg-background/80">
+      <main className="flex-1 w-full px-3 sm:px-6 py-6 sm:py-8 min-w-0">
+        <div className="rounded-2xl border border-border/40 bg-card/30 p-4 sm:p-6 shadow-sm min-w-0 overflow-hidden w-full">
+          {children}
+        </div>
+      </main>
+      <footer className="border-t border-border/40 px-4 sm:px-6 py-6 text-center text-xs text-muted-foreground/80 bg-background/80">
         {t('header.footerText')}
       </footer>
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}>

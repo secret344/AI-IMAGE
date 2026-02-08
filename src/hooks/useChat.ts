@@ -35,7 +35,7 @@ export function useChat(initialMessages: ChatMessage[] = []): UseChatState & Use
   const [currentThreadId] = useState<string>('main');
 
   const addMessage = useCallback((message: ChatMessage) => {
-    setMessages(prev => [...prev, message]);
+    setMessages((prev) => [...prev, message]);
   }, []);
 
   const addUserMessage = useCallback(
@@ -45,7 +45,7 @@ export function useChat(initialMessages: ChatMessage[] = []): UseChatState & Use
         role: 'user',
         content,
         timestamp: Date.now(),
-        threadId: currentThreadId,
+        threadId: currentThreadId
       };
       addMessage(message);
       return message;
@@ -67,6 +67,6 @@ export function useChat(initialMessages: ChatMessage[] = []): UseChatState & Use
     addUserMessage,
     clearMessages,
     setError,
-    setLoading,
+    setLoading
   };
 }

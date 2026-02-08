@@ -59,7 +59,9 @@ export function EvaluationResults({
       const labelKey = `result.exifTags.${key}`;
       const label = t(labelKey, { defaultValue: key }).toLowerCase();
       const valueText = String(value).toLowerCase();
-      return key.toLowerCase().includes(query) || label.includes(query) || valueText.includes(query);
+      return (
+        key.toLowerCase().includes(query) || label.includes(query) || valueText.includes(query)
+      );
     });
   }, [exifEntries, exifQuery, showCommonOnly, t]);
   const formatRetouchValue = (value: unknown) => {
@@ -283,7 +285,6 @@ export function EvaluationResults({
         </DialogContent>
       </Dialog>
 
-
       <div className="grid gap-3 sm:grid-cols-2">
         {evaluation.dimensions.map((dimension) => (
           <div key={dimension.name} className="rounded-lg border border-border bg-card p-4">
@@ -291,7 +292,9 @@ export function EvaluationResults({
               {t(`dimensions.${dimension.name.toLowerCase()}`)}
             </p>
             <p className="text-2xl font-semibold text-foreground">{dimension.score}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{dimension.reason}</p>
+            <p className="mt-2 text-xs text-muted-foreground break-words whitespace-pre-wrap">
+              {dimension.reason}
+            </p>
           </div>
         ))}
       </div>
@@ -308,7 +311,7 @@ export function EvaluationResults({
         {evaluation.shootingTips.length === 0 ? (
           <p className="mt-2 text-xs text-muted-foreground">{t('result.noTips')}</p>
         ) : (
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-xs text-muted-foreground">
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-xs text-muted-foreground break-words whitespace-pre-wrap">
             {evaluation.shootingTips.map((tip) => (
               <li key={tip}>{tip}</li>
             ))}
@@ -328,15 +331,17 @@ export function EvaluationResults({
         ) : (
           <div className="mt-3 space-y-3">
             {evaluation.retouchPlan.map((step, index) => (
-              <div key={index} className="rounded-lg border border-slate-700 bg-background p-3">
+              <div key={index} className="rounded-lg border border-border bg-background p-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-foreground">
                     {step.tool} — {step.step}
                   </p>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{step.action}</p>
+                <p className="mt-1 text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                  {step.action}
+                </p>
                 {step.values && Object.keys(step.values).length > 0 ? (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground break-words whitespace-pre-wrap">
                     {Object.entries(step.values).map(([key, value]) => (
                       <li key={key}>
                         {key}: {formatRetouchValue(value)}
@@ -346,7 +351,9 @@ export function EvaluationResults({
                 ) : (
                   <p className="mt-2 text-xs text-muted-foreground">{t('result.noParameters')}</p>
                 )}
-                <p className="mt-2 text-xs text-muted-foreground">{step.reason}</p>
+                <p className="mt-2 text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                  {step.reason}
+                </p>
               </div>
             ))}
           </div>
@@ -357,7 +364,7 @@ export function EvaluationResults({
         <p className="text-sm font-semibold text-foreground">{t('result.rawOutput')}</p>
         <p className="mt-1 text-xs text-muted-foreground">{t('result.rawOutputHint')}</p>
         <Textarea
-          className="mt-3 h-48 text-xs"
+          className="mt-3 h-48 text-xs whitespace-pre-wrap break-words"
           readOnly
           value={JSON.stringify(evaluation.raw ?? evaluation, null, 2)}
         />

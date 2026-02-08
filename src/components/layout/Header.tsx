@@ -21,21 +21,23 @@ export function Header({
   languageMenu
 }: HeaderProps) {
   return (
-    <header className="border-b border-border/50 px-4 sm:px-6 py-4 sm:py-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+    <header className="border-b border-border/40 px-4 sm:px-6 py-4 sm:py-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="flex items-center justify-between gap-4 px-1">
         <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground font-medium">
+          <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
             {title}
           </p>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground mt-1">{subtitle}</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground mt-1">{subtitle}</h1>
         </div>
         <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-          <div className="hidden sm:block text-xs text-muted-foreground/70 text-right">{badge}</div>
+          <div className="hidden sm:block rounded-full border border-border/50 bg-card/60 px-3 py-1 text-[11px] text-muted-foreground">
+            {badge}
+          </div>
           <Button
             onClick={onOpenSettings}
             variant="outline"
             size="sm"
-            className="flex items-center gap-2 h-9 px-3"
+            className="flex items-center gap-2 h-9 px-3 border-border/60 bg-card/40 hover:bg-card/70"
             aria-label="Settings"
           >
             <svg
@@ -59,7 +61,9 @@ export function Header({
             </svg>
             <div className="hidden sm:flex flex-col items-start text-left">
               <span className="text-xs font-medium">{settingsLabel}</span>
-              <span className="text-[10px] text-muted-foreground">{modelInfo}</span>
+              <span className="text-[10px] text-muted-foreground line-clamp-1 max-w-[180px]">
+                {modelInfo}
+              </span>
             </div>
           </Button>
           {languageMenu}

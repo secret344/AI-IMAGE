@@ -7,6 +7,7 @@ import {
 } from '@/config/i18n-config';
 import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
+import type { ProviderSettings } from '@/modules/storage/settings';
 import { callAiProvider } from '@/modules/ai/client';
 import type { ChatMessage } from '@/types/conversation';
 
@@ -22,8 +23,12 @@ const STYLE_TAG_SET = new Set(STYLE_TAGS);
 const STYLE_SYSTEM_PROMPT_STATIC = [
   'You are a professional photography style analyzer.',
   'Analyze the image and identify photographic style tags.',
-  'CRITICAL: Return ONLY valid JSON. No explanation, no markdown, no code fences, no text before or after the JSON.',
-  'Use this exact schema: {"styleTags":[{"name":"TagName","weight":0.5,"confidence":0.9}],"description":"..."}'
+  'CRITICAL: You MUST return ONLY valid JSON in this exact format: {"styleTags":[{"name":"TagName","weight":0.5,"confidence":0.9}],"description":"..."}',
+  'Rules:',
+  '1. Output ONLY the JSON object, nothing else.',
+  '2. No explanation text, no markdown, no code fences, no backticks.',
+  '3. The JSON must be valid and parseable.',
+  '4. Do not include thinking tags or any other content.'
 ];
 
 const STYLE_USER_PROMPT_STATIC = [
@@ -36,29 +41,23 @@ function buildStyleSystemPrompt(languageLabel: string): string {
   return [
     STYLE_SYSTEM_PROMPT_STATIC[0],
     STYLE_SYSTEM_PROMPT_STATIC[1],
-    `Any human-readable text must be written in ${languageLabel}.`,
+    `Any human-readable text (like description) must be written in ${languageLabel}.`,
     STYLE_SYSTEM_PROMPT_STATIC[2],
-    STYLE_SYSTEM_PROMPT_STATIC[3]
+    STYLE_SYSTEM_PROMPT_STATIC[3],
+    STYLE_SYSTEM_PROMPT_STATIC[4],
+    STYLE_SYSTEM_PROMPT_STATIC[5],
+    STYLE_SYSTEM_PROMPT_STATIC[6],
+    STYLE_SYSTEM_PROMPT_STATIC[7]
   ].join('\n');
 }
 
-function buildStyleUserPrompt(chatHistory?: ChatMessage[]): string {
-  let basePrompt = [
+function buildStyleUserPrompt(): string {
+  const basePrompt = [
     STYLE_USER_PROMPT_STATIC[0],
     `Tags (choose ONLY from this list): ${STYLE_TAGS.join(', ')}.`,
     STYLE_USER_PROMPT_STATIC[1],
     STYLE_USER_PROMPT_STATIC[2]
   ].join('\n');
-
-  // If chat history exists, add it as context to improve style recognition
-  if (chatHistory && chatHistory.length > 0) {
-    const chatContext = chatHistory
-      .map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-      .join('\n');
-    
-    basePrompt += '\n\n【User Analysis Discussion】\n' + chatContext;
-    basePrompt += '\n\nBased on the above discussion, identify the image styles.';
-  }
 
   return basePrompt;
 }
@@ -202,12 +201,13 @@ export async function recognizeStyle(
   base64Image: string,
   userLanguage: LanguageCode,
   passphrase?: string,
-  chatHistory?: ChatMessage[]
+  chatHistory?: ChatMessage[],
+  providerSettings?: ProviderSettings
 ): Promise<StyleRecognitionResult> {
   const start = performance.now();
   const languageLabel = getLanguagePromptLabel(userLanguage);
 
-  const settings = loadProviderSettings();
+  const settings = providerSettings ?? loadProviderSettings();
 
   // If using mock provider, return mock data
   if (settings.provider === 'mock') {
@@ -231,40 +231,64 @@ export async function recognizeStyle(
   const apiKey = loadedKey ?? '';
 
   if (!loadedKey && settings.provider !== 'ollama') {
-    throw new Error('API key not found. Please configure it in settings.');
+    console.warn('[StyleRecognition] API key missing, attempting provider call without key.');
   }
 
   // Create the style recognition prompt - keep it short to prevent excessive thinking
   const systemPrompt = buildStyleSystemPrompt(languageLabel);
-  const userPrompt = buildStyleUserPrompt(chatHistory);
+  const userPrompt = buildStyleUserPrompt();
 
-  const response = await callAiProvider({
-    base64Image,
-    systemPrompt,
-    userPrompt,
-    apiKey,
-    provider: settings.provider,
-    model: settings.model,
-    baseUrl: settings.baseUrl,
-    temperature: 0.3, // Lower temperature for consistency
-    maxTokens: 500,
-    timeoutMs: settings.timeoutMs
-  });
+  let response = '';
+  try {
+    response = await callAiProvider({
+      base64Image,
+      systemPrompt,
+      userPrompt,
+      apiKey,
+      provider: settings.provider,
+      model: settings.model,
+      baseUrl: settings.baseUrl,
+      temperature: 0.3, // Lower temperature for consistency
+      maxTokens: settings.maxTokens,
+      timeoutMs: settings.timeoutMs,
+      messages: chatHistory?.map((message) => ({
+        role: message.role,
+        content: message.content
+      }))
+    });
+  } catch (error) {
+    console.error('Style recognition API call failed:', error);
+    response = '';
+  }
 
-
+  if (!response || !response.trim()) {
+    console.warn('Empty response from style recognition API. Using fallback heuristic tags.');
+    return {
+      styleTags: deriveStyleTagsFromText(''),
+      styleDescription: getStyleRecognitionI18n(userLanguage).descriptionPrefix,
+      inferenceTime: Math.round(performance.now() - start),
+      modelUsed: `${settings.model}-fallback`
+    };
+  }
 
   // Parse the response - extract and validate JSON more carefully
   const parsed = extractAndParseJSON(response);
   if (!parsed) {
-    console.warn('Failed to extract JSON from style recognition response. Falling back to heuristic tags.');
+    console.warn(
+      'Failed to extract JSON from style recognition response. Response preview:',
+      response.slice(0, 300)
+    );
+    console.warn('Falling back to heuristic tags.');
   }
 
-  const rawTags = parsed && Array.isArray((parsed as Record<string, unknown>)?.styleTags)
-    ? ((parsed as Record<string, unknown>).styleTags as Record<string, unknown>[])
-    : [];
-  const rawDescription = parsed && typeof (parsed as Record<string, unknown>)?.description === 'string'
-    ? ((parsed as Record<string, unknown>).description as string)
-    : '';
+  const rawTags =
+    parsed && Array.isArray((parsed as Record<string, unknown>)?.styleTags)
+      ? ((parsed as Record<string, unknown>).styleTags as Record<string, unknown>[])
+      : [];
+  const rawDescription =
+    parsed && typeof (parsed as Record<string, unknown>)?.description === 'string'
+      ? ((parsed as Record<string, unknown>).description as string)
+      : '';
 
   // Validate and normalize the response
   const styleTags: StyleTagScore[] = rawTags

@@ -5,8 +5,7 @@ type ExifTag = {
   value?: unknown;
 };
 
-const isBinaryValue = (value: unknown) =>
-  value instanceof ArrayBuffer || ArrayBuffer.isView(value);
+const isBinaryValue = (value: unknown) => value instanceof ArrayBuffer || ArrayBuffer.isView(value);
 
 const normalizeTagValue = (tag: ExifTag): string | number | null => {
   if (typeof tag.description === 'string' && tag.description.trim().length > 0) {
@@ -44,7 +43,6 @@ const normalizeTagValue = (tag: ExifTag): string | number | null => {
   return null;
 };
 
-
 /**
  * Extract EXIF metadata while sanitizing privacy-sensitive information.
  * Strips: GPS coordinates, device serial numbers, camera make/model
@@ -65,7 +63,6 @@ export async function extractExif(file: File): Promise<Record<string, string | n
         data[key] = normalized;
       }
     });
-
 
     return data;
   } catch (error) {

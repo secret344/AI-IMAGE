@@ -149,10 +149,10 @@ graph TB
 
 #### 3.3.5 AI 集成
 
-| 技术                                     | 用途          | 理由                          |
-| :--------------------------------------- | :------------ | :---------------------------- |
-| **原生 Fetch API**                       | AI API 调用   | 轻量级，无外部依赖，完全可控  |
-| **TensorFlow.js** / **ONNX Runtime Web** | 浏览器内推理  | 轻量级场景识别、降级方案      |
+| 技术                                     | 用途         | 理由                         |
+| :--------------------------------------- | :----------- | :--------------------------- |
+| **原生 Fetch API**                       | AI API 调用  | 轻量级，无外部依赖，完全可控 |
+| **TensorFlow.js** / **ONNX Runtime Web** | 浏览器内推理 | 轻量级场景识别、降级方案     |
 
 #### 3.3.6 安全与加密
 
@@ -313,28 +313,28 @@ $$score_{agent} = \sum_{i=1}^{n} (styleWeight_i \times agentWeight_{i,agent})$$
 export interface AgentRecommendation {
   id: string;
   name: string;
-  score: number;        // 0-1 归一化分数
+  score: number; // 0-1 归一化分数
   matchedTags: string[]; // 匹配该角色的风格标签
-  description: string;   // 本地化的角色描述
+  description: string; // 本地化的角色描述
 }
 
 // 输出: AgentRecommendation[]
 [
   {
-    "id": "street-narrative",
-    "name": "街头叙事",
-    "score": 0.78,
-    "matchedTags": ["人文", "街拍"],
-    "description": "强调决定性瞬间与叙事张力"
+    id: 'street-narrative',
+    name: '街头叙事',
+    score: 0.78,
+    matchedTags: ['人文', '街拍'],
+    description: '强调决定性瞬间与叙事张力'
   },
   {
-    "id": "urban-geometry",
-    "name": "都市几何",
-    "score": 0.64,
-    "matchedTags": ["城市"],
-    "description": "关注几何结构与光影对比"
+    id: 'urban-geometry',
+    name: '都市几何',
+    score: 0.64,
+    matchedTags: ['城市'],
+    description: '关注几何结构与光影对比'
   }
-]
+];
 ```
 
 **说明**：UI 单独调用 `getAllAgents()` 获取完整角色列表供用户手动选择，然后根据此输出的分数排序。
@@ -1620,10 +1620,12 @@ function deleteAllUserData(): void {
 ### 🟡 第 3 阶段：高级功能与优化（部分完成）
 
 **已完成的功能：**
+
 - ✅ CORS 代理处理（支持浏览器直连 API 调用）
 - ✅ 自定义 Agent 提示词管理（含国际化支持）
 
 **未实现的功能：**
+
 - ❌ RAW 格式支持（.ARW 转码）
 - ❌ HEIC 格式支持（heic2any.js）
 - ❌ SSE/WebSocket 实时进度反馈

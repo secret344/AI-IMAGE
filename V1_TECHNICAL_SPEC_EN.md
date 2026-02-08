@@ -136,18 +136,18 @@ graph TB
 
 #### 3.3.3 Image Processing
 
-| Component              | Selection                 | Rationale                                                     |
-| :--------------------- | :------------------------ | :------------------------------------------------------------ |
-| Compression            | browser-image-compression | Works on blob directly, respects quality settings             |
-| Canvas API             | Native                    | 2D drawing, format conversion, EXIF stripping                 |
+| Component              | Selection                 | Rationale                                                      |
+| :--------------------- | :------------------------ | :------------------------------------------------------------- |
+| Compression            | browser-image-compression | Works on blob directly, respects quality settings              |
+| Canvas API             | Native                    | 2D drawing, format conversion, EXIF stripping                  |
 | EXIF Extraction        | exifreader                | Parse EXIF metadata, extract shooting params, sanitize privacy |
-| RAW Support (Optional) | libraw.js / cloud         | Decode .ARW for Sony cameras, fallback to cloud transcoding   |
+| RAW Support (Optional) | libraw.js / cloud         | Decode .ARW for Sony cameras, fallback to cloud transcoding    |
 
 #### 3.3.4 AI Integration
 
 | Component             | Selection                         | Rationale                                                    |
 | :-------------------- | :-------------------------------- | :----------------------------------------------------------- |
-| API Integration       | Direct HTTP calls (native fetch) | Lightweight, no external dependencies, full control          |
+| API Integration       | Direct HTTP calls (native fetch)  | Lightweight, no external dependencies, full control          |
 | Vision Models         | OpenAI Vision / Gemini / Claude 3 | State-of-the-art multimodal, structured output support       |
 | Local Fallback        | TensorFlow.js                     | MobileNet for lightweight style detection, no extra training |
 | Lightweight Detection | ONNX Runtime Web (Optional)       | Faster inference, smaller models, mobile-friendly            |
@@ -321,28 +321,28 @@ Each agent defines: compatible tags, weight coefficients, prompt template, repre
 export interface AgentRecommendation {
   id: string;
   name: string;
-  score: number;        // 0-1 normalized score
+  score: number; // 0-1 normalized score
   matchedTags: string[]; // Style tags that matched this agent
-  description: string;   // Localized agent description
+  description: string; // Localized agent description
 }
 
 // Output: AgentRecommendation[]
 [
   {
-    "id": "street-narrative",
-    "name": "Street Narrative",
-    "score": 0.78,
-    "matchedTags": ["Documentary", "Street"],
-    "description": "Emphasizes decisive moments and narrative tension"
+    id: 'street-narrative',
+    name: 'Street Narrative',
+    score: 0.78,
+    matchedTags: ['Documentary', 'Street'],
+    description: 'Emphasizes decisive moments and narrative tension'
   },
   {
-    "id": "urban-geometry",
-    "name": "Urban Geometry",
-    "score": 0.64,
-    "matchedTags": ["City"],
-    "description": "Focuses on geometric structure and light/shadow contrast"
+    id: 'urban-geometry',
+    name: 'Urban Geometry',
+    score: 0.64,
+    matchedTags: ['City'],
+    description: 'Focuses on geometric structure and light/shadow contrast'
   }
-]
+];
 ```
 
 **Note**: UI separately calls `getAllAgents()` to fetch complete agent list for manual selection dropdown, then sorts by recommendation scores from this output.
@@ -1601,10 +1601,12 @@ function deleteAllUserData(): void {
 ### 🟡 Phase 3: Advanced Features & Optimization (PARTIALLY COMPLETED)
 
 **Completed in Phase 3:**
+
 - ✅ CORS proxy handling (supports direct API calls via browser)
 - ✅ Custom agent prompt management with localization support
 
 **Not Yet Implemented:**
+
 - ❌ RAW format support (.ARW transcoding)
 - ❌ HEIC format support (heic2any.js)
 - ❌ SSE/WebSocket real-time progress feedback

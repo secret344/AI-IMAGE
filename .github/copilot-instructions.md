@@ -26,6 +26,17 @@ This repo is a **browser-only SPA** for AI image quality evaluation: upload → 
 - Image limits: ≤50MB (recommended ≤10MB); mobile prefer 2048px max edge.
 - Output must be strict JSON; always validate and provide fallback.
 - Personas fixed: Cartier-Bresson, Ansel Adams, Fan Ho, Peter Lindbergh, Kodak Portra.
+- Global provider settings must be loaded by the Settings modal and synced into `useAppStore.globalProviderSettings`; other modules must NOT read localStorage directly for config.
+
+### Multi-Round Conversation & Cost Control / 多轮对话与成本控制
+
+- **messages 格式**：多轮对话必须用 `messages` 数组传递上下文，每条消息结构为 `{"role":"user|assistant","content":"..."}`；**不要**添加 `reasoning_content` 字段；`content` 仅允许字符串。
+- **多模态消息**：本项目 `messages` 不使用数组形式；图像内容通过供应商请求体的图像字段单独传递。
+- **上下文管理**：
+  - **截断**：保留最近 N 轮对话，避免超出模型上下文限制。
+  - **滚动摘要**：当上下文接近上限（如 70%）时，对早期对话生成“记忆摘要”，用摘要替换旧消息并拼接近期消息。
+  - **向量化召回**：保存历史对话向量，按需检索相关片段并拼接入请求。
+- **成本控制**：通过上下文管理减少输入 Token；优先使用支持 **上下文缓存** 的模型（如 qwen-max / qwen-plus）。
 
 ### Data Flow / 数据流
 
@@ -94,7 +105,7 @@ ai-image/
 │   │   └── style-recognition/        # Style tagging
 │   ├── state/                        # Zustand store (useAppStore.ts)
 │   ├── types/                        # Types
-│   ├── i18n/                         # en.json, zh.json, useLanguage.ts
+│   ├── i18n/                         # locales/*.json, useLanguage.ts
 │   ├── config/                       # agents.ts, style-tags.ts
 │   ├── utils/                        # crypto, string, etc.
 │   ├── styles/                       # globals.css, Tailwind
@@ -127,6 +138,7 @@ ai-image/
 
 - Strict TypeScript; absolute imports with `@/`
 - All user-facing text via i18n (react-i18next)
+- i18n JSON files must live ONLY in src/i18n/locales/_.json; do not create or keep duplicates in src/i18n/_.json
 - Mobile-first responsive; semantic Tailwind tokens (text-foreground, bg-card, border-border)
 - Zero backend storage; BYOK only; never log keys
 

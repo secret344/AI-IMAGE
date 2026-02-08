@@ -28,9 +28,7 @@ export function ActiveAgentDisplay({ agent }: ActiveAgentDisplayProps) {
       <p className="mt-2 text-lg">{locale.name}</p>
       <p className="text-xs text-muted-foreground">{locale.photographer}</p>
       <p className="mt-3 text-xs text-muted-foreground">{locale.description}</p>
-      <p className="mt-3 text-xs text-muted-foreground">
-        {concisePrompt}
-      </p>
+      <p className="mt-3 text-xs text-muted-foreground">{concisePrompt}</p>
     </div>
   );
 }

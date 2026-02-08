@@ -6,18 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { StyleTagScore } from '@/config/style-tags';
-import { useAppStore } from '@/state/useAppStore';
+import { useTaskContext } from '@/state/TaskContext';
 import { processImage } from '@/modules/upload/processImage';
 import { recommendAgents } from '@/modules/agent/recommendAgents';
-import { loadProviderSettings } from '@/modules/storage/settings';
 import { assertFileSize } from '@/utils/file';
 import { analyzeStyleWithChat } from '@/modules/style/analyzeStyleWithChat';
-import { useUploadChat } from '@/hooks/useUploadChat';
+import type { UseUploadChatReturn } from '@/hooks/useUploadChat';
+import { saveTaskDetail, saveTaskSummary } from '@/modules/storage/history';
 import { UploadDropzone } from '@/components/upload/UploadDropzone';
 import { UploadPreview } from '@/components/upload/UploadPreview';
 import { StyleTagsSummary } from '@/components/upload/StyleTagsSummary';
 import { RecommendedAgentsList } from '@/components/upload/RecommendedAgentsList';
-import { UploadChatWrapper } from '@/components/upload/UploadChatWrapper';
+import { TaskSettingsPanel } from '@/components/upload/TaskSettingsPanel';
 
 function getUploadErrorMessage(err: unknown, t: ReturnType<typeof useTranslation>['t']) {
   let message = t('upload.uploadFailed');
@@ -35,12 +35,24 @@ function getUploadErrorMessage(err: unknown, t: ReturnType<typeof useTranslation
   return message;
 }
 
-export function UploadPanel() {
+interface UploadPanelProps {
+  uploadChat: UseUploadChatReturn;
+}
+
+export function UploadPanel({ uploadChat }: UploadPanelProps) {
   const { t, i18n } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [passphrase] = useState('');
-  
+  const {
+    setCurrentTaskId,
+    taskSettings,
+    globalProviderSettings,
+    taskState,
+    setTaskState,
+    setTaskStateForTask
+  } = useTaskContext();
+
   const {
     selectedFileName,
     isProcessing,
@@ -48,34 +60,18 @@ export function UploadPanel() {
     styleResult,
     recommendedAgents,
     processedImage,
-    previewImageBase64,
-    setSelectedFileName,
-    setProcessedImage,
-    setPreviewImageBase64,
-    setStyleResult,
-    setRecommendedAgents,
-    setSelectedAgentId,
-    setIsProcessing,
-    setProcessingStage,
-    setEvaluation
-  } = useAppStore();
-
-  // 使用 useUploadChat Hook 管理聊天
-  const uploadChat = useUploadChat({
-    taskId: `task-${Date.now()}`, // 临时 taskId，实际应该来自更上层
-    imageName: selectedFileName || 'untitled',
-    agentStyle: '通用分析', // 上传阶段使用通用分析
-    imageBase64: processedImage?.base64 || '', // 传递已上传的图片base64数据
-  });
+    previewImageBase64
+  } = taskState;
 
   const applyRecommendations = useCallback(
     (styleTags: StyleTagScore[]) => {
-      const settings = loadProviderSettings();
-      const agents = recommendAgents(styleTags, { limit: settings.topAgents });
-      setRecommendedAgents(agents);
-      setSelectedAgentId(agents[0]?.id ?? null);
+      const agents = recommendAgents(styleTags, { limit: globalProviderSettings.topAgents });
+      setTaskState({
+        recommendedAgents: agents,
+        selectedAgentId: agents[0]?.id ?? null
+      });
     },
-    [setRecommendedAgents, setSelectedAgentId]
+    [setTaskState, globalProviderSettings]
   );
 
   const handleFile = useCallback(
@@ -85,43 +81,58 @@ export function UploadPanel() {
       }
 
       setError(null);
+      // 新图片上传，生成新的任务 ID
+      const nextTaskId = `upload-${Date.now()}`;
+      setCurrentTaskId(nextTaskId);
       uploadChat.clearMessages(); // 清除前一个图片的聊天记录
-      setIsProcessing(true);
-      setProcessingStage(t('upload.preprocessing'));
-      setEvaluation(null);
-      setStyleResult(null); // 清除前一个图片的风格结果
-      setRecommendedAgents([]); // 清除前一个图片的推荐Agent
+      setTaskStateForTask(nextTaskId, {
+        isProcessing: true,
+        processingStage: t('upload.preprocessing'),
+        evaluation: null,
+        styleResult: null,
+        recommendedAgents: [],
+        selectedAgentId: null
+      });
 
       try {
         assertFileSize(file, 50);
         const processed = await processImage(file);
-        setSelectedFileName(file.name);
-        setProcessedImage(processed);
-        setPreviewImageBase64(processed.base64);
-        
+        await saveTaskSummary({
+          taskId: nextTaskId,
+          fileName: file.name,
+          thumbnailBase64: processed.base64,
+          processedImage: {
+            base64: processed.base64,
+            exif: processed.exif,
+            dimensions: processed.dimensions
+          }
+        });
+        await saveTaskDetail(nextTaskId, {
+          processedImage: {
+            base64: processed.base64,
+            exif: processed.exif,
+            dimensions: processed.dimensions
+          }
+        });
+        setTaskStateForTask(nextTaskId, {
+          selectedFileName: file.name,
+          processedImage: processed,
+          previewImageBase64: processed.base64
+        });
+
         // 不再自动进行风格识别
         // 等待用户通过聊天或点击"分析"按钮手动触发
       } catch (err) {
         setError(getUploadErrorMessage(err, t));
       } finally {
-        setProcessingStage(null);
-        setIsProcessing(false);
+        setTaskStateForTask(nextTaskId, {
+          processingStage: null,
+          isProcessing: false
+        });
+        window.dispatchEvent(new Event('history-updated'));
       }
     },
-    [
-      i18n.language,
-      passphrase,
-      setEvaluation,
-      setIsProcessing,
-      setProcessingStage,
-      setProcessedImage,
-      setPreviewImageBase64,
-      setSelectedFileName,
-      setStyleResult,
-      setRecommendedAgents,
-      t,
-      uploadChat,
-    ]
+    [i18n.language, passphrase, setTaskState, setTaskStateForTask, t, uploadChat]
   );
 
   /**
@@ -135,7 +146,7 @@ export function UploadPanel() {
     }
 
     setError(null);
-    setIsProcessing(true);
+    setTaskState({ isProcessing: true });
 
     try {
       const userLanguage: LanguageCode = i18n.language?.toLowerCase().startsWith('zh')
@@ -146,19 +157,25 @@ export function UploadPanel() {
         base64Image: processedImage.base64,
         userLanguage,
         passphrase,
+        providerSettings: taskSettings ?? undefined,
         chatHistory: uploadChat.messages, // 使用聊天消息作为上下文
-        onProgress: setProcessingStage,
+        onProgress: (stage) => setTaskState({ processingStage: stage }),
         onSuccess: (styleResult) => {
-          setStyleResult(styleResult);
+          setTaskState({ styleResult });
           applyRecommendations(styleResult.styleTags);
         },
         onError: (err) => {
           setError(getUploadErrorMessage(err, t));
-        },
+        }
       });
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(getUploadErrorMessage(error, t));
     } finally {
-      setProcessingStage(null);
-      setIsProcessing(false);
+      setTaskState({
+        processingStage: null,
+        isProcessing: false
+      });
     }
   }, [
     processedImage,
@@ -167,9 +184,8 @@ export function UploadPanel() {
     uploadChat.messages,
     t,
     applyRecommendations,
-    setIsProcessing,
-    setProcessingStage,
-    setStyleResult,
+    setTaskState,
+    taskSettings
   ]);
 
   const handleFileChange = useCallback(
@@ -217,16 +233,22 @@ export function UploadPanel() {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+    <div className="flex flex-col gap-4 h-full">
       {/* 左侧：上传和预览区域 */}
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-col">
+      <Card className="border-border/50 bg-card/60 backdrop-blur-sm flex flex-col shadow-sm rounded-xl">
         <CardHeader className="pb-3 sm:pb-4">
-          <CardTitle className="text-lg sm:text-xl">{t('upload.title')}</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground/80">
-            {t('upload.description')}
-          </CardDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <CardTitle className="text-lg sm:text-xl">{t('upload.title')}</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground/80">
+                {t('upload.description')}
+              </CardDescription>
+            </div>
+            {/* 任务级 AI 设置按钮 */}
+            <TaskSettingsPanel />
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4 flex-1 flex flex-col overflow-y-auto">
+        <CardContent className="space-y-5 flex-1 flex flex-col overflow-y-auto">
           <UploadDropzone
             isProcessing={isProcessing}
             processingStage={processingStage}
@@ -245,7 +267,7 @@ export function UploadPanel() {
             processedImageBase64={processedImage?.base64 ?? null}
             previewImageBase64={previewImageBase64}
           />
-          
+
           {/* 分析按钮 - 只在图片上传后且未分析时显示 */}
           {processedImage && !styleResult && (
             <Button
@@ -278,11 +300,7 @@ export function UploadPanel() {
                     >
                       确认分析
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={uploadChat.confirmAnalysis}
-                    >
+                    <Button size="sm" variant="outline" onClick={uploadChat.confirmAnalysis}>
                       稍后再说
                     </Button>
                   </div>
@@ -294,21 +312,12 @@ export function UploadPanel() {
           <StyleTagsSummary styleResult={styleResult} />
           <RecommendedAgentsList agents={recommendedAgents} />
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-xs sm:text-sm text-destructive font-medium">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs sm:text-sm text-destructive font-medium">
               ⚠️ {error}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* 右侧：聊天区域 - 上传图片后显示 */}
-      {processedImage && (
-        <UploadChatWrapper
-          chatState={uploadChat}
-          imageName={selectedFileName || 'untitled'}
-          disabled={!processedImage}
-        />
-      )}
     </div>
   );
 }

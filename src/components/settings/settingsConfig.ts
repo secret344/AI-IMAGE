@@ -9,6 +9,7 @@ export type SettingState = {
   temperature: number;
   maxTokens: number;
   timeoutMs: number;
+  contextMaxChars: number;
 };
 
 export interface FormFieldConfig {
@@ -33,6 +34,7 @@ export const PROVIDER_DEFAULTS: Record<
     temperature: number;
     maxTokens: number;
     timeoutMs: number;
+    contextMaxChars: number;
   }
 > = {
   openai: {
@@ -42,7 +44,8 @@ export const PROVIDER_DEFAULTS: Record<
     keyLabel: 'openai',
     temperature: 0.2,
     maxTokens: 1024,
-    timeoutMs: 30000
+    timeoutMs: 30000,
+    contextMaxChars: 4000
   },
   gemini: {
     model: 'gemini-1.5-flash',
@@ -51,7 +54,8 @@ export const PROVIDER_DEFAULTS: Record<
     keyLabel: 'gemini',
     temperature: 0.2,
     maxTokens: 1024,
-    timeoutMs: 30000
+    timeoutMs: 30000,
+    contextMaxChars: 4000
   },
   claude: {
     model: 'claude-3-5-sonnet-20241022',
@@ -60,7 +64,8 @@ export const PROVIDER_DEFAULTS: Record<
     keyLabel: 'claude',
     temperature: 0.2,
     maxTokens: 1024,
-    timeoutMs: 30000
+    timeoutMs: 30000,
+    contextMaxChars: 4000
   },
   ollama: {
     model: 'llama3.2-vision:latest',
@@ -69,7 +74,8 @@ export const PROVIDER_DEFAULTS: Record<
     keyLabel: 'ollama',
     temperature: 0.2,
     maxTokens: 1024,
-    timeoutMs: 30000
+    timeoutMs: 30000,
+    contextMaxChars: 4000
   },
   mock: {
     model: 'mock',
@@ -78,7 +84,8 @@ export const PROVIDER_DEFAULTS: Record<
     keyLabel: 'mock',
     temperature: 0,
     maxTokens: 256,
-    timeoutMs: 5000
+    timeoutMs: 5000,
+    contextMaxChars: 2000
   }
 };
 
@@ -143,5 +150,13 @@ export const FORM_FIELDS_CONFIG: FormFieldConfig[] = [
     type: 'number',
     min: 5000,
     max: 120000
+  },
+  {
+    key: 'contextMaxChars',
+    labelKey: 'settings.contextMaxCharsLabel',
+    type: 'number',
+    min: 500,
+    max: 20000,
+    step: 100
   }
 ];

@@ -36,17 +36,10 @@ for (const module of Object.values(localeModules)) {
   localeMessagesByCode[code] = messages;
 }
 
-const fallbackLanguage = languageMeta.find((lang) => lang.code === 'en')?.code
-  ?? languageMeta[0]?.code
-  ?? 'en';
+const fallbackLanguage =
+  languageMeta.find((lang) => lang.code === 'en')?.code ?? languageMeta[0]?.code ?? 'en';
 
-export {
-  resources,
-  languageMeta,
-  languageCodeSet,
-  fallbackLanguage,
-  localeMessagesByCode
-};
+export { resources, languageMeta, languageCodeSet, fallbackLanguage, localeMessagesByCode };
 
 export function getLocaleMessages(code?: string): LocaleMessages | undefined {
   if (!code) {

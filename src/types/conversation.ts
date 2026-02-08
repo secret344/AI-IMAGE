@@ -5,22 +5,22 @@
 
 /** 聊天消息 */
 export interface ChatMessage {
-  id: string;                    // UUID
-  role: 'user' | 'assistant';   // 消息角色
-  content: string;              // 消息内容
-  timestamp: number;            // 时间戳 (ms)
-  threadId?: string;            // [预留] 线程ID，用于多线程支持
-  modelUsed?: string;           // [预留] 使用的模型名称
+  id: string; // UUID
+  role: 'user' | 'assistant'; // 消息角色
+  content: string; // 消息内容
+  timestamp: number; // 时间戳 (ms)
+  threadId?: string; // [预留] 线程ID，用于多线程支持
+  modelUsed?: string; // [预留] 使用的模型名称
 }
 
 /** 聊天线程 (v1: 单主线程；v2+: 支持多线程讨论) */
 export interface ConversationThread {
-  threadId: string;             // 唯一线程ID
-  name: string;                 // 线程名称 e.g. "主讨论" "构图优化"
+  threadId: string; // 唯一线程ID
+  name: string; // 线程名称 e.g. "主讨论" "构图优化"
   purpose?: 'main' | 'refinement' | 'deepdive'; // [预留] 线程用途分类
-  messages: ChatMessage[];      // 该线程的所有消息
-  createdAt: number;            // 创建时间
-  updatedAt: number;            // 最后更新时间
+  messages: ChatMessage[]; // 该线程的所有消息
+  createdAt: number; // 创建时间
+  updatedAt: number; // 最后更新时间
 }
 
 /** 任务关联的聊天数据 */
@@ -35,16 +35,23 @@ export interface ChatRequestConfig {
   modelType?: 'evaluation-chat' | 'refinement-chat' | 'deepdive-chat'; // [预留] 聊天用途
   provider: 'openai' | 'gemini' | 'claude' | 'ollama'; // AI服务商
   apiKey: string | null; // API密钥 (可能未配置)
+  model: string; // 模型名称
+  baseUrl: string; // API baseUrl
   temperature?: number; // 模型参数 (默认0.7)
-  maxTokens?: number;   // 最大令牌数
+  maxTokens?: number; // 最大令牌数
+  timeoutMs?: number; // 超时
+  contextMaxChars?: number; // 上下文消息长度限制
+  onToken?: (chunk: string) => void; // 流式输出回调
+  includeThinking?: boolean; // 是否展示思考内容（仅聊天）
 }
 
 /** 聊天上下文信息 (传递给AI的关键信息) */
 export interface ChatContext {
-  taskId: string;                      // 所属任务
-  agentStyle: string;                  // 当前评估角色
-  evaluationResultSummary?: string;    // 原始评估结果摘要
-  conversationHistory: ChatMessage[];  // 聊天历史
-  userFeedback?: string;              // 用户最新反馈
-  imageBase64?: string;               // 上传的图片 base64 数据
+  taskId: string; // 所属任务
+  agentStyle: string; // 当前评估角色
+  agentPhotographer?: string; // 摄影师/风格参考（可选）
+  evaluationResultSummary?: string; // 原始评估结果摘要
+  conversationHistory: ChatMessage[]; // 聊天历史
+  userFeedback?: string; // 用户最新反馈
+  imageBase64?: string; // 上传的图片 base64 数据
 }

@@ -17,6 +17,9 @@
   "settings": {
     "title": "AI Configuration",
     "description": "API keys are encrypted and stored locally. Nothing is sent to any server.",
+    "taskSettings": "Task Settings",
+    "taskSettingsDescription": "Configure AI model settings for this task only.",
+    "configureTask": "Configure",
     "provider": "Select AI Provider",
     "model": "Primary Model",
     "modelLabel": "Model",
@@ -38,6 +41,7 @@
     "maxTokensLabel": "Max tokens",
     "timeout": "Timeout (milliseconds)",
     "timeoutLabel": "Timeout (ms)",
+    "contextMaxCharsLabel": "Chat context max characters",
     "apiKey": "API Key",
     "passphrase": "Decryption Key",
     "saveLocally": "Save",
@@ -62,6 +66,29 @@
       "claude": "Claude",
       "ollama": "Ollama",
       "mock": "Mock"
+    }
+  },
+  "chat": {
+    "title": "Chat with the agent",
+    "emptyState": "Start a conversation with the agent",
+    "emptyHint": "Ask the AI what it thinks about this image",
+    "inputPlaceholder": "Type a message... (Cmd+Enter to send)",
+    "sendButton": "Send",
+    "stopButton": "Stop",
+    "shortcut": "Press Cmd+Enter or Ctrl+Enter to send",
+    "thinking": {
+      "label": "Thinking",
+      "show": "Show thinking",
+      "hide": "Hide thinking"
+    },
+    "checkpoint": {
+      "label": "Checkpoint",
+      "create": "Set checkpoint",
+      "rollback": "Rollback",
+      "confirmTitle": "Confirm rollback",
+      "confirmDescription": "Rolling back will discard messages after the checkpoint. This cannot be undone.",
+      "confirmAction": "Rollback",
+      "cancelAction": "Cancel"
     }
   },
   "upload": {
@@ -540,6 +567,8 @@
     "warning": "Warning",
     "info": "Info",
     "close": "Close",
+    "reset": "Reset",
+    "apply": "Apply",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "yes": "Yes",

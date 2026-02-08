@@ -45,7 +45,7 @@ export function HistoryActionsBar({
   }
 
   return (
-    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border/50 bg-card/60 p-4 transition-colors hover:bg-card/80">
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-border/50 bg-card/60 p-4 shadow-sm">
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
         <span className="font-semibold text-foreground text-base">{filteredCount}</span>
         <span>{t('history.items')}</span>

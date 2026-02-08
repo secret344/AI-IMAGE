@@ -26,12 +26,29 @@ export function initializeConversation(): TaskConversationData {
     purpose: 'main',
     messages: [],
     createdAt: Date.now(),
-    updatedAt: Date.now(),
+    updatedAt: Date.now()
   };
 
   return {
-    defaultThread,
+    defaultThread
   };
+}
+
+async function ensureConversation(taskId: string): Promise<TaskConversationData> {
+  const detail = await db.taskDetails.get(taskId);
+  if (!detail) {
+    const conversations = initializeConversation();
+    await db.taskDetails.put({ taskId, conversations });
+    return conversations;
+  }
+
+  if (!detail.conversations) {
+    const conversations = initializeConversation();
+    await db.taskDetails.update(taskId, { conversations });
+    return conversations;
+  }
+
+  return detail.conversations;
 }
 
 /**
@@ -42,42 +59,53 @@ export async function addMessageToThread(
   threadId: string,
   message: Omit<ChatMessage, 'id' | 'timestamp'>
 ): Promise<ChatMessage> {
-  const task = await db.tasks.get(taskId);
-  if (!task) throw new Error(`Task ${taskId} not found`);
+  const detail = await db.taskDetails.get(taskId);
+  if (!detail) throw new Error(`Task ${taskId} not found`);
 
   const newMessage: ChatMessage = {
     ...message,
     id: generateUUID(),
-    timestamp: Date.now(),
+    timestamp: Date.now()
   };
 
-  if (!task.conversations) {
-    task.conversations = initializeConversation();
+  if (!detail.conversations) {
+    detail.conversations = initializeConversation();
   }
 
   // 如果是主线程，直接修改
-  if (threadId === task.conversations.defaultThread.threadId) {
-    task.conversations.defaultThread.messages.push(newMessage);
-    task.conversations.defaultThread.updatedAt = Date.now();
-  } else if (task.conversations.additionalThreads) {
+  if (threadId === detail.conversations.defaultThread.threadId) {
+    detail.conversations.defaultThread.messages.push(newMessage);
+    detail.conversations.defaultThread.updatedAt = Date.now();
+  } else if (detail.conversations.additionalThreads) {
     // [预留] 其他线程支持
-    const thread = task.conversations.additionalThreads.find(t => t.threadId === threadId);
+    const thread = detail.conversations.additionalThreads.find((t) => t.threadId === threadId);
     if (thread) {
       thread.messages.push(newMessage);
       thread.updatedAt = Date.now();
     }
   }
 
-  await db.tasks.update(taskId, { conversations: task.conversations });
+  await db.taskDetails.update(taskId, { conversations: detail.conversations });
   return newMessage;
+}
+
+/**
+ * 向主线程添加消息（自动创建对话）
+ */
+export async function addMessageToMainThread(
+  taskId: string,
+  message: Omit<ChatMessage, 'id' | 'timestamp'>
+): Promise<ChatMessage> {
+  const conversations = await ensureConversation(taskId);
+  return addMessageToThread(taskId, conversations.defaultThread.threadId, message);
 }
 
 /**
  * 获取任务的所有聊天记录
  */
 export async function getConversations(taskId: string): Promise<TaskConversationData | null> {
-  const task = await db.tasks.get(taskId);
-  return task?.conversations || null;
+  const detail = await db.taskDetails.get(taskId);
+  return detail?.conversations || null;
 }
 
 /**
@@ -101,7 +129,7 @@ export async function generateConversationSummary(taskId: string): Promise<strin
 
   // 生成摘要
   const summary = recentMessages
-    .map(msg => `${msg.role === 'user' ? '用户' : '助手'}: ${msg.content}`)
+    .map((msg) => `${msg.role === 'user' ? '用户' : '助手'}: ${msg.content}`)
     .join('\n\n');
 
   return summary;
@@ -111,23 +139,33 @@ export async function generateConversationSummary(taskId: string): Promise<strin
  * 清空任务的所有聊天记录
  */
 export async function clearConversations(taskId: string): Promise<void> {
-  const task = await db.tasks.get(taskId);
-  if (!task) return;
+  const detail = await db.taskDetails.get(taskId);
+  if (!detail) return;
 
-  task.conversations = initializeConversation();
-  await db.tasks.update(taskId, { conversations: task.conversations });
+  detail.conversations = initializeConversation();
+  await db.taskDetails.update(taskId, { conversations: detail.conversations });
+}
+
+/**
+ * 覆盖主线程的消息列表（用于回退）
+ */
+export async function replaceMainThreadMessages(
+  taskId: string,
+  messages: ChatMessage[]
+): Promise<void> {
+  const conversations = await ensureConversation(taskId);
+  conversations.defaultThread.messages = [...messages];
+  conversations.defaultThread.updatedAt = Date.now();
+  await db.taskDetails.update(taskId, { conversations });
 }
 
 /**
  * 更新聊天摘要 (重评后调用)
  */
-export async function updateConversationSummary(
-  taskId: string,
-  summary: string
-): Promise<void> {
-  const task = await db.tasks.get(taskId);
-  if (!task || !task.conversations) return;
+export async function updateConversationSummary(taskId: string, summary: string): Promise<void> {
+  const detail = await db.taskDetails.get(taskId);
+  if (!detail || !detail.conversations) return;
 
-  task.conversations.conversationSummary = summary;
-  await db.tasks.update(taskId, { conversations: task.conversations });
+  detail.conversations.conversationSummary = summary;
+  await db.taskDetails.update(taskId, { conversations: detail.conversations });
 }

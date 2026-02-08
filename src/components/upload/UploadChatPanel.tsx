@@ -4,21 +4,34 @@
  * 特点：Material Design 3 风格，国际化支持，完全低耦合
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Send, MessageCircle, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { AlertCircle, Send, MessageCircle, Loader2, RotateCcw, Square } from 'lucide-react';
 import type { ChatMessage } from '@/types/conversation';
+import { TypewriterContent } from '@/components/chat/TypewriterContent';
 
 export interface UploadChatPanelProps {
   /** 聊天消息列表 */
   messages: ChatMessage[];
   /** 发送消息回调 */
   onSend: (message: string) => void;
+  /** 取消当前请求 */
+  onCancel?: () => void;
+  /** 当前激活的 AI 回复 ID */
+  activeAssistantId?: string | null;
   /** 是否加载中 */
   isLoading?: boolean;
   /** 错误消息 */
@@ -31,20 +44,27 @@ export interface UploadChatPanelProps {
   title?: string;
   /** 自定义空状态文本 */
   emptyStateText?: string;
+  /** 回退到指定检查点 */
+  onRollbackCheckpointAt?: (index: number) => void;
 }
 
 export function UploadChatPanel({
   messages,
   onSend,
+  onCancel,
+  activeAssistantId = null,
   isLoading = false,
   error = null,
   onClearError,
   disabled = false,
   title,
   emptyStateText,
+  onRollbackCheckpointAt
 }: UploadChatPanelProps) {
   const { t } = useTranslation();
-  const [input, setInput] = React.useState('');
+  const [input, setInput] = useState('');
+  const [isRollbackOpen, setIsRollbackOpen] = useState(false);
+  const [rollbackIndex, setRollbackIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,7 +80,7 @@ export function UploadChatPanel({
 
   // 处理发送消息
   const handleSend = () => {
-    if (input.trim() && !isLoading && !disabled) {
+    if (input.trim() && !disabled) {
       onSend(input);
       setInput('');
       inputRef.current?.focus();
@@ -83,7 +103,9 @@ export function UploadChatPanel({
         <CardTitle className="text-base sm:text-lg flex items-center gap-3">
           <MessageCircle className="h-5 w-5 text-primary/70" />
           <span>{title || t('chat.title') || '与智能体讨论'}</span>
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary ml-auto" />}
+          <div className="ml-auto flex items-center gap-2">
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+          </div>
         </CardTitle>
       </CardHeader>
 
@@ -103,27 +125,86 @@ export function UploadChatPanel({
           ) : (
             <div className="space-y-3 sm:space-y-4">
               {messages.map((msg, idx) => (
-                <div
-                  key={msg.id || idx}
-                  className={`flex gap-2 sm:gap-3 animate-in fade-in slide-in-from-bottom-2 ${
-                    msg.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
+                <div key={msg.id || idx} className="space-y-2">
                   <div
-                    className={`max-w-xs sm:max-w-sm px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-none shadow-sm'
-                        : 'bg-muted/60 text-foreground rounded-bl-none border border-border/30 backdrop-blur-sm'
+                    className={`flex gap-2 sm:gap-3 animate-in fade-in slide-in-from-bottom-2 ${
+                      msg.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
-                    {msg.content}
+                    <div
+                      className={`max-w-xs sm:max-w-sm px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-primary text-primary-foreground rounded-br-none shadow-sm'
+                          : 'bg-muted/60 text-foreground rounded-bl-none border border-border/30 backdrop-blur-sm'
+                      }`}
+                    >
+                      {msg.role === 'assistant' ? (
+                        <TypewriterContent
+                          text={msg.content}
+                          isActive={msg.id === activeAssistantId}
+                        />
+                      ) : (
+                        <span className="whitespace-pre-wrap">{msg.content}</span>
+                      )}
+                    </div>
                   </div>
+                  {msg.role === 'assistant' && (
+                    <div className="flex items-center justify-between gap-2 px-1">
+                      <span className="text-xs text-muted-foreground/80">
+                        {t('chat.checkpoint.label') || '检查点'} ·{' '}
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={disabled || isLoading || !onRollbackCheckpointAt}
+                        className="h-7 px-2 text-xs"
+                        onClick={() => {
+                          setRollbackIndex(idx);
+                          setIsRollbackOpen(true);
+                        }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                        {t('chat.checkpoint.rollback') || '回退到检查点'}
+                      </Button>
+                    </div>
+                  )}
+                  {msg.role === 'assistant' && idx < messages.length - 1 && (
+                    <div className="border-t border-dashed border-border/50" />
+                  )}
                 </div>
               ))}
               <div ref={scrollRef} />
             </div>
           )}
         </ScrollArea>
+
+        <Dialog open={isRollbackOpen} onOpenChange={setIsRollbackOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('chat.checkpoint.confirmTitle') || '确认回退'}</DialogTitle>
+              <DialogDescription>
+                {t('chat.checkpoint.confirmDescription') ||
+                  '回退将丢弃检查点之后的消息。此操作不可撤销。'}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRollbackOpen(false)}>
+                {t('chat.checkpoint.cancelAction') || '取消'}
+              </Button>
+              <Button
+                onClick={() => {
+                  if (rollbackIndex !== null) {
+                    onRollbackCheckpointAt?.(rollbackIndex);
+                  }
+                  setIsRollbackOpen(false);
+                }}
+              >
+                {t('chat.checkpoint.confirmAction') || '确认回退'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* 错误提示 */}
         {error && (
@@ -151,26 +232,40 @@ export function UploadChatPanel({
             <Textarea
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t('chat.inputPlaceholder') || '输入消息... (Cmd+Enter 发送)'}
-              disabled={isLoading || disabled}
+              disabled={disabled}
               className="min-h-10 max-h-24 resize-none text-sm rounded-lg border-border/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
               rows={1}
             />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading || disabled}
-              size="sm"
-              className="h-10 w-10 p-0 flex-shrink-0 rounded-lg"
-              title={t('chat.sendButton') || '发送'}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              {isLoading && (
+                <Button
+                  variant="outline"
+                  onClick={onCancel}
+                  disabled={!onCancel}
+                  size="sm"
+                  className="h-10 w-10 p-0 flex-shrink-0 rounded-lg"
+                  title={t('chat.stopButton') || '停止'}
+                >
+                  <Square className="h-4 w-4" />
+                </Button>
               )}
-            </Button>
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim() || disabled}
+                size="sm"
+                className="h-10 w-10 p-0 flex-shrink-0 rounded-lg"
+                title={t('chat.sendButton') || '发送'}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground/60 px-1">
             {t('chat.shortcut') || '按 Cmd+Enter 或 Ctrl+Enter 快速发送'}
@@ -180,5 +275,3 @@ export function UploadChatPanel({
     </Card>
   );
 }
-
-import React from 'react';

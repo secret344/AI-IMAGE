@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loadApiKey, saveApiKey } from '@/modules/storage/keys';
-import { loadProviderSettings, saveProviderSettings } from '@/modules/storage/settings';
+import { hydrateProviderSettings, saveProviderSettings } from '@/modules/storage/settings';
 import { clearLocalData } from '@/modules/storage/clearLocalData';
 import { healthCheck } from '@/modules/ai/client';
 import { ModelField } from '@/components/settings/ModelField';
@@ -19,21 +19,24 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { ProviderId, SettingState } from '@/components/settings/settingsConfig';
+import { useAppStore } from '@/state/useAppStore';
 
 export function SettingsPanel() {
   const { t } = useTranslation();
-  const settings = loadProviderSettings();
+  const { globalProviderSettings, setGlobalProviderSettings } = useAppStore();
+  const [initialSettings] = useState(() => globalProviderSettings ?? hydrateProviderSettings());
   const [cacheLoaded, setCacheLoaded] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-  const [provider, setProvider] = useState<ProviderId>(settings.provider);
-  const [model, setModel] = useState(settings.model);
-  const [fallbackModel, setFallbackModel] = useState(settings.fallbackModel ?? '');
-  const [baseUrl, setBaseUrl] = useState(settings.baseUrl);
-  const [label, setLabel] = useState(settings.keyLabel);
-  const [topAgents, setTopAgents] = useState(settings.topAgents ?? 3);
-  const [temperature, setTemperature] = useState(settings.temperature ?? 0.2);
-  const [maxTokens, setMaxTokens] = useState(settings.maxTokens ?? 1024);
-  const [timeoutMs, setTimeoutMs] = useState(settings.timeoutMs ?? 30000);
+  const [provider, setProvider] = useState<ProviderId>(initialSettings.provider);
+  const [model, setModel] = useState(initialSettings.model);
+  const [fallbackModel, setFallbackModel] = useState(initialSettings.fallbackModel ?? '');
+  const [baseUrl, setBaseUrl] = useState(initialSettings.baseUrl);
+  const [label, setLabel] = useState(initialSettings.keyLabel);
+  const [topAgents, setTopAgents] = useState(initialSettings.topAgents ?? 3);
+  const [temperature, setTemperature] = useState(initialSettings.temperature ?? 0.2);
+  const [maxTokens, setMaxTokens] = useState(initialSettings.maxTokens ?? 1024);
+  const [timeoutMs, setTimeoutMs] = useState(initialSettings.timeoutMs ?? 30000);
+  const [contextMaxChars, setContextMaxChars] = useState(initialSettings.contextMaxChars ?? 4000);
   const [apiKey, setApiKey] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [status, setStatus] = useState<string | null>(null);
@@ -42,6 +45,10 @@ export function SettingsPanel() {
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
   const [ollamaStatus, setOllamaStatus] = useState<string | null>(null);
   const [ollamaLoading, setOllamaLoading] = useState(false);
+
+  useEffect(() => {
+    setGlobalProviderSettings(initialSettings);
+  }, [initialSettings, setGlobalProviderSettings]);
 
   const getFieldValue = useCallback(
     (key: keyof SettingState) => {
@@ -54,6 +61,8 @@ export function SettingsPanel() {
           return maxTokens;
         case 'timeoutMs':
           return timeoutMs;
+        case 'contextMaxChars':
+          return contextMaxChars;
         case 'fallbackModel':
           return fallbackModel;
         case 'baseUrl':
@@ -66,7 +75,17 @@ export function SettingsPanel() {
           return '';
       }
     },
-    [baseUrl, fallbackModel, label, maxTokens, model, temperature, timeoutMs, topAgents]
+    [
+      baseUrl,
+      contextMaxChars,
+      fallbackModel,
+      label,
+      maxTokens,
+      model,
+      temperature,
+      timeoutMs,
+      topAgents
+    ]
   );
 
   const setFieldValue = useCallback(
@@ -83,6 +102,9 @@ export function SettingsPanel() {
           break;
         case 'timeoutMs':
           setTimeoutMs(value as number);
+          break;
+        case 'contextMaxChars':
+          setContextMaxChars(value as number);
           break;
         case 'fallbackModel':
           setFallbackModel(value as string);
@@ -108,6 +130,7 @@ export function SettingsPanel() {
       setModel,
       setTemperature,
       setTimeoutMs,
+      setContextMaxChars,
       setTopAgents
     ]
   );
@@ -126,6 +149,7 @@ export function SettingsPanel() {
         if (config.temperature !== undefined) setTemperature(config.temperature);
         if (config.maxTokens !== undefined) setMaxTokens(config.maxTokens);
         if (config.timeoutMs !== undefined) setTimeoutMs(config.timeoutMs);
+        if (config.contextMaxChars !== undefined) setContextMaxChars(config.contextMaxChars);
         if (config.topAgents !== undefined) setTopAgents(config.topAgents);
         setCacheLoaded(true);
         setInitialLoadDone(true);
@@ -153,6 +177,7 @@ export function SettingsPanel() {
       setTemperature(next.temperature);
       setMaxTokens(next.maxTokens);
       setTimeoutMs(next.timeoutMs);
+      setContextMaxChars(next.contextMaxChars);
     }
   }, [initialLoadDone, cacheLoaded, provider]);
 
@@ -167,6 +192,7 @@ export function SettingsPanel() {
       temperature,
       maxTokens,
       timeoutMs,
+      contextMaxChars,
       topAgents
     };
     localStorage.setItem('ai-model-cache', JSON.stringify(modelCache));
@@ -179,6 +205,7 @@ export function SettingsPanel() {
     temperature,
     maxTokens,
     timeoutMs,
+    contextMaxChars,
     topAgents
   ]);
 
@@ -286,7 +313,8 @@ export function SettingsPanel() {
       topAgents,
       temperature,
       maxTokens,
-      timeoutMs
+      timeoutMs,
+      contextMaxChars
     });
     window.dispatchEvent(new Event('settings-updated'));
     if (provider === 'ollama') {
@@ -313,6 +341,7 @@ export function SettingsPanel() {
     t,
     temperature,
     timeoutMs,
+    contextMaxChars,
     topAgents
   ]);
 
