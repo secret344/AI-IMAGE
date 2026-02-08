@@ -110,8 +110,32 @@ export function extractAnalysisSuggestion(lastAssistantMessage: ChatMessage | un
 
   if (hasAnalysisKeywords) {
     // 提取建议文本（通常是消息的最后一句）
-    const lines = lastAssistantMessage.content.split('\n');
-    const suggestion = lines[lines.length - 1] || lastAssistantMessage.content;
+    const lines = lastAssistantMessage.content.split('\n').filter((line) => line.trim());
+    
+    // 排除可能是代码块或 JSON 的行
+    let suggestion = '';
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      // 排除空行、纯 JSON、代码块标记
+      if (
+        !line ||
+        line === '}' ||
+        line === ']' ||
+        line === '```' ||
+        line.startsWith('```') ||
+        line.startsWith('{') ||
+        line.startsWith('[')
+      ) {
+        continue;
+      }
+      suggestion = line;
+      break;
+    }
+
+    // 如果没有找到有效的建议，使用完整最后一句
+    if (!suggestion) {
+      suggestion = lastAssistantMessage.content;
+    }
 
     return { shouldAnalyze: true, suggestion };
   }

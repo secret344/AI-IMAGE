@@ -81,15 +81,36 @@ const getStyleTagsText = (language?: string): string => {
 const buildEvaluationChatPrompt = (language?: string): string => {
   const styleTagsText = getStyleTagsText(language);
   const dimensionListText = getDimensionListText(language);
+  const normalizedLang = normalizeLanguage(language);
+  
+  const outputGuide = normalizedLang === 'zh'
+    ? `【输出指南】
+仅以自然语言回答，完全禁止：
+- 输出任何 JSON 结构或代码块
+- 重新计算或修改现有评分
+- 输出数字评分（即使用户问"这个维度是几分"，也只说"根据原评估..."）
+- 使用 Markdown 格式的代码块 (三反引号或 \`\`\`json）
+
+直接用段落、列表或对话风格讨论。`
+    : `【Output Guide】
+Respond ONLY in natural language, strictly forbidden:
+- Do NOT output any JSON structure or code blocks
+- Do NOT recalculate or modify existing scores
+- Do NOT output numeric scores (even if asked "what's this dimension's score", only say "based on the original evaluation...")
+- Do NOT use Markdown code fences (\`\`\`json or \`\`\`)
+
+Use paragraphs, lists, or conversational style only.`;
+
   return `你是一位资深摄影评论助手。基于当前的评估结果，
 你可以与用户讨论评分理由、修图建议、拍摄技巧等。
 
-重要：
+重要约束：
 1. 基于原始评估结果，不更改整体评分（保持当前分数）
 2. 可深入讨论具体维度的改进方向
 3. 提供实操性的修图反馈
 4. 考虑用户的创意意图和风格偏好
-5. 最后一条消息才是用户的实际问题 - 其他消息都是对话背景
+5. 最后一条消息才是用户的实际问题 - 其他消息都是历史记录
+${outputGuide}
 
 【系统默认常量与范围】
 - 所有评分范围：${SCORE_RANGE_TEXT}
@@ -104,12 +125,16 @@ ${LIGHTROOM_RANGE_TEXT}
 };
 
 const CHAT_SYSTEM_PROMPTS: Record<string, string> = {
-  'evaluation-chat': '',
+  'evaluation-chat': '【重要】只用自然语言回答，禁止输出任何 JSON 结构、代码块或数值评分。',
 
   'refinement-chat': `你是修图优化专家。帮助用户优化修图计划，
-讨论参数调整、工作流优化等。`,
+讨论参数调整、工作流优化等。
 
-  'deepdive-chat': `你是摄影理论家。进行深度的美学和技法讨论。`
+【重要】只用自然语言回答，禁止输出任何 JSON 结构、代码块或数值评分。`,
+
+  'deepdive-chat': `你是摄影理论家。进行深度的美学和技法讨论。
+
+【重要】只用自然语言回答，禁止输出任何 JSON 结构、代码块或数值评分。`
 };
 
 /**
