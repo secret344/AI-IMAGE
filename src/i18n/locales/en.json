@@ -74,7 +74,25 @@
     "emptyHint": "Ask the AI what it thinks about this image",
     "inputPlaceholder": "Type a message... (Cmd+Enter to send)",
     "sendButton": "Send",
+    "retry": "Retry",
+    "cancel": "Dismiss",
     "stopButton": "Stop",
+    "statusLabel": "Status",
+    "lastLatency": "Last latency",
+    "failureReason": "Failure reason",
+    "retryHint": "This reply failed. You can retry.",
+    "successHint": "Last response completed ({{latency}}ms). You can continue or retry.",
+    "failure": {
+      "timeout": "Request timed out",
+      "network": "Network error",
+      "canceled": "Canceled",
+      "unknown": "Unknown error"
+    },
+    "status": {
+      "loading": "Running",
+      "success": "Success",
+      "failed": "Failed"
+    },
     "shortcut": "Press Cmd+Enter or Ctrl+Enter to send",
     "thinking": {
       "label": "Thinking",
@@ -551,7 +569,8 @@
     "untitled": "Untitled",
     "compare": "Compare",
     "score": "Score",
-    "unknownAgent": "Unknown agent"
+    "unknownAgent": "Unknown agent",
+    "noAgent": "Unknown Agent"
   },
   "agent": {
     "cartierBresson": "Cartier-Bresson",

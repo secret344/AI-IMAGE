@@ -58,7 +58,7 @@ export function HistoryActionsBar({
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-wrap">
         <Button
           variant="outline"
           size="sm"

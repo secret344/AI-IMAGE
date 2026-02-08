@@ -367,10 +367,23 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (!currentTaskId) {
         throw new Error('No active task');
       }
+      
+      // 检查最后一条消息是否重复（相同内容和角色）
+      const existing = taskStateMapRef.current.get(currentTaskId) ?? DEFAULT_TASK_STATE;
+      const lastMessage = existing.chatMessages?.[existing.chatMessages.length - 1];
+      if (
+        lastMessage &&
+        lastMessage.role === message.role &&
+        lastMessage.content.trim() === message.content.trim()
+      ) {
+        // 重复消息，直接返回现有消息
+        return lastMessage;
+      }
+
       // Save to database
       const savedMessage = await addMessageToMainThread(currentTaskId, message);
+      
       // Update context state
-      const existing = taskStateMapRef.current.get(currentTaskId) ?? DEFAULT_TASK_STATE;
       setTaskStateForTask(currentTaskId, {
         chatMessages: [...(existing.chatMessages ?? []), savedMessage]
       });

@@ -3,6 +3,7 @@ import type { ChatMessage } from '@/types/conversation';
 import type { ProviderSettings } from '@/modules/storage/settings';
 import { useTaskContext } from '@/state/TaskContext';
 import { handleUploadChatMessage } from '@/modules/evaluation/uploadChatIntegration';
+import { limitConversationMessages } from '@/modules/ai/limitConversationMessages';
 
 /**
  * 上传聊天 hook 的配置选项
@@ -28,6 +29,7 @@ export interface UseUploadChatReturn {
   messages: ChatMessage[];
   isLoading: boolean;
   error: string | null;
+  lastLatencyMs: number | null;
   analysisSuggestion: string | null;
   shouldShowAnalysisSuggestion: boolean;
   activeAssistantId: string | null;
@@ -42,6 +44,7 @@ export interface UseUploadChatReturn {
 export function useUploadChat(options: UseUploadChatOptions): UseUploadChatReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
   const [analysisSuggestion, setAnalysisSuggestion] = useState<string | null>(null);
   const [shouldShowAnalysisSuggestion, setShouldShowAnalysisSuggestion] = useState(false);
   const [activeAssistantId, setActiveAssistantId] = useState<string | null>(null);
@@ -62,18 +65,22 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
       if (!content.trim()) {
         return;
       }
+
+      // 清除流消息（replaceId 表示需要替换的流消息ID，不为 null 则清除）
+      if (replaceId) {
+        setStreamingMessage(null);
+      }
+
       try {
-        if (replaceId && streamingAssistantIdRef.current === replaceId) {
-          setStreamingMessage(null);
-          streamingAssistantIdRef.current = null;
-        }
         const stored = await addChatMessage({
           role: 'assistant',
           content,
           modelUsed
         });
         setActiveAssistantId(replaceId ? null : stored.id);
-      } catch {
+      } catch (error) {
+        console.error('Failed to store assistant message:', error);
+        // 出错时只用临时消息显示，不重复添加到存储
         const fallbackId =
           typeof crypto !== 'undefined' && 'randomUUID' in crypto
             ? crypto.randomUUID()
@@ -85,10 +92,6 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
           timestamp: Date.now(),
           modelUsed
         };
-        if (replaceId && streamingAssistantIdRef.current === replaceId) {
-          setStreamingMessage(null);
-          streamingAssistantIdRef.current = null;
-        }
         setStreamingMessage(fallbackMessage);
         setActiveAssistantId(replaceId ? null : fallbackId);
       }
@@ -134,6 +137,7 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
       setError(null);
       setIsLoading(true);
       setActiveAssistantId(null);
+      const startTime = Date.now();
       if (abortRef.current) {
         abortRef.current.abort();
       }
@@ -147,7 +151,10 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
           role: 'user',
           content: userMessage
         });
-        const nextHistory = historySnapshot;
+        const nextHistory = limitConversationMessages(
+          historySnapshot,
+          options.taskSettings?.contextMaxChars
+        );
 
         // 调用聊天处理，传递图片、任务设置和密码短语
         await handleUploadChatMessage(
@@ -199,6 +206,7 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
         if (abortRef.current === controller) {
           abortRef.current = null;
         }
+        setLastLatencyMs(Date.now() - startTime);
         setIsLoading(false);
       }
     },
@@ -252,6 +260,7 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
     messages,
     isLoading,
     error,
+    lastLatencyMs,
     analysisSuggestion,
     shouldShowAnalysisSuggestion,
     activeAssistantId,

@@ -4,12 +4,13 @@
  * 特点：Material Design 3，完全国际化，自包含
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UploadChatPanel } from '@/components/upload/UploadChatPanel';
+import { TaskChatPanel } from '@/components/chat/TaskChatPanel';
 import type { UseUploadChatReturn } from '@/hooks/useUploadChat';
 import { useAppStore } from '@/state/useAppStore';
 import { getDefaultProviderSettings } from '@/modules/storage/settings';
+import { recordChatFailure } from '@/modules/storage/chatAnalytics';
 
 export interface UploadChatWrapperProps {
   /** 聊天hook返回值 */
@@ -34,6 +35,8 @@ export function UploadChatWrapper({
   title
 }: UploadChatWrapperProps) {
   const { t } = useTranslation();
+  const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
+  const lastLoggedErrorRef = useRef<string | null>(null);
   const settings =
     useAppStore((state) => state.globalProviderSettings) ?? getDefaultProviderSettings();
 
@@ -42,20 +45,64 @@ export function UploadChatWrapper({
     async (message: string) => {
       // 注：密码短语应从用户输入或会话中获取
       // 当前实现使用空字符串（向后兼容无密码存储的密钥）
+      setLastUserMessage(message);
       await chatState.sendMessage(message);
     },
     [chatState]
   );
+
+  const handleRetry = useCallback(async () => {
+    if (!lastUserMessage || disabled || chatState.isLoading) {
+      return;
+    }
+    await chatState.sendMessage(lastUserMessage);
+  }, [chatState, disabled, lastUserMessage]);
 
   // 处理清除错误
   const handleClearError = useCallback(() => {
     chatState.clearError();
   }, [chatState]);
 
+  const classifyFailure = useCallback(
+    (message: string | null) => {
+      if (!message) {
+        return { category: 'unknown' as const, label: null };
+      }
+      const lower = message.toLowerCase();
+      if (lower.includes('timeout') || message.includes('超时')) {
+        return { category: 'timeout' as const, label: t('chat.failure.timeout') };
+      }
+      if (lower.includes('network') || message.includes('网络')) {
+        return { category: 'network' as const, label: t('chat.failure.network') };
+      }
+      if (lower.includes('abort') || message.includes('取消')) {
+        return { category: 'canceled' as const, label: t('chat.failure.canceled') };
+      }
+      return { category: 'unknown' as const, label: t('chat.failure.unknown') };
+    },
+    [t]
+  );
+
+  useEffect(() => {
+    if (!chatState.error || chatState.isLoading) {
+      return;
+    }
+    if (chatState.error === lastLoggedErrorRef.current) {
+      return;
+    }
+    const { category } = classifyFailure(chatState.error);
+    recordChatFailure(category, chatState.error);
+    lastLoggedErrorRef.current = chatState.error;
+  }, [chatState.error, chatState.isLoading, classifyFailure]);
+
   return (
-    <UploadChatPanel
+    <TaskChatPanel
       messages={chatState.messages}
       onSend={handleSend}
+      onRetry={handleRetry}
+      canRetry={Boolean(lastUserMessage)}
+      lastLatencyMs={chatState.lastLatencyMs}
+      retryHint={classifyFailure(chatState.error).label}
       onCancel={chatState.cancelCurrent}
       isLoading={chatState.isLoading}
       error={chatState.error}

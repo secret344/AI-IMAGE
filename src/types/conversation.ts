@@ -6,7 +6,7 @@
 /** 聊天消息 */
 export interface ChatMessage {
   id: string; // UUID
-  role: 'user' | 'assistant'; // 消息角色
+  role: 'system' | 'user' | 'assistant'; // 消息角色
   content: string; // 消息内容
   timestamp: number; // 时间戳 (ms)
   threadId?: string; // [预留] 线程ID，用于多线程支持

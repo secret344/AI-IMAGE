@@ -1,6 +1,6 @@
 /**
- * 上传阶段的聊天面板组件
- * 职责：独立的聊天框，用于上传阶段的图片讨论
+ * 任务聊天面板组件
+ * 职责：独立的聊天框，用于单任务的用户交互
  * 特点：Material Design 3 风格，国际化支持，完全低耦合
  */
 
@@ -19,15 +19,23 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { AlertCircle, Send, MessageCircle, Loader2, RotateCcw, Square } from 'lucide-react';
+import { Send, MessageCircle, Loader2, RotateCcw, Square } from 'lucide-react';
 import type { ChatMessage } from '@/types/conversation';
 import { TypewriterContent } from '@/components/chat/TypewriterContent';
 
-export interface UploadChatPanelProps {
+export interface TaskChatPanelProps {
   /** 聊天消息列表 */
   messages: ChatMessage[];
   /** 发送消息回调 */
   onSend: (message: string) => void;
+  /** 重试上一条消息 */
+  onRetry?: () => void;
+  /** 是否可重试 */
+  canRetry?: boolean;
+  /** 上次请求耗时 */
+  lastLatencyMs?: number | null;
+  /** 失败原因提示 */
+  retryHint?: string | null;
   /** 取消当前请求 */
   onCancel?: () => void;
   /** 当前激活的 AI 回复 ID */
@@ -48,9 +56,13 @@ export interface UploadChatPanelProps {
   onRollbackCheckpointAt?: (index: number) => void;
 }
 
-export function UploadChatPanel({
+export function TaskChatPanel({
   messages,
   onSend,
+  onRetry,
+  canRetry = false,
+  lastLatencyMs = null,
+  retryHint = null,
   onCancel,
   activeAssistantId = null,
   isLoading = false,
@@ -60,13 +72,23 @@ export function UploadChatPanel({
   title,
   emptyStateText,
   onRollbackCheckpointAt
-}: UploadChatPanelProps) {
+}: TaskChatPanelProps) {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
   const [isRollbackOpen, setIsRollbackOpen] = useState(false);
   const [rollbackIndex, setRollbackIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const hasFailure = Boolean(error || retryHint);
+  const statusLabel = isLoading
+    ? t('chat.status.loading')
+    : hasFailure
+      ? t('chat.status.failed')
+      : lastLatencyMs !== null
+        ? t('chat.status.success')
+        : null;
+  const failureSummary = retryHint || error;
+  const failureDetail = retryHint && error && retryHint !== error ? error : null;
 
   // 自动滚动到底部
   useEffect(() => {
@@ -107,7 +129,30 @@ export function UploadChatPanel({
             {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
           </div>
         </CardTitle>
+        {(statusLabel || lastLatencyMs !== null) && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground/80">
+            {statusLabel && (
+              <span>
+                {t('chat.statusLabel') || '状态'}: {statusLabel}
+              </span>
+            )}
+            {lastLatencyMs !== null && (
+              <span>
+                {t('chat.lastLatency') || '上次耗时'}: {lastLatencyMs}ms
+              </span>
+            )}
+          </div>
+        )}
       </CardHeader>
+
+      {!isLoading && !hasFailure && lastLatencyMs !== null && (
+        <Alert className="mx-4 mt-3 border-border/50 bg-primary/5">
+          <AlertDescription className="text-xs text-muted-foreground/80">
+            {t('chat.successHint', { latency: lastLatencyMs }) ||
+              `上次响应已完成（${lastLatencyMs}ms），可继续对话或重试。`}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* 中间：消息区域 */}
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
@@ -169,6 +214,35 @@ export function UploadChatPanel({
                       </Button>
                     </div>
                   )}
+                  {msg.role === 'assistant' && hasFailure && idx === messages.length - 1 && (
+                    <div className="space-y-1 px-1">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <span className="text-xs text-muted-foreground/70">
+                          {t('chat.retryHint') || '本条回复失败，可重试'}
+                        </span>
+                        <span className="inline-flex items-center rounded-full border border-destructive/40 bg-destructive/15 px-2 py-0.5 text-[11px] text-destructive">
+                          {failureSummary}
+                        </span>
+                        {onRetry && canRetry && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={onRetry}
+                            disabled={disabled || isLoading}
+                            className="h-7 px-2 text-xs"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                            {t('chat.retry') || '重试'}
+                          </Button>
+                        )}
+                      </div>
+                      {failureDetail && (
+                        <div className="text-xs text-muted-foreground/80 text-right">
+                          {failureDetail}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {msg.role === 'assistant' && idx < messages.length - 1 && (
                     <div className="border-t border-dashed border-border/50" />
                   )}
@@ -206,70 +280,52 @@ export function UploadChatPanel({
           </DialogContent>
         </Dialog>
 
-        {/* 错误提示 */}
-        {error && (
-          <Alert variant="destructive" className="m-4 mt-2 border-destructive/50 bg-destructive/10">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <AlertDescription className="ml-2 flex items-center justify-between gap-2">
-              <span className="text-sm line-clamp-2">{error}</span>
-              {onClearError && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClearError}
-                  className="h-6 px-2 text-xs hover:bg-destructive/20"
-                >
-                  {t('common.close') || '关闭'}
-                </Button>
-              )}
-            </AlertDescription>
-          </Alert>
+        {failureSummary && onClearError && (
+          <div className="mx-4 mt-2 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearError}
+              className="h-6 px-2 text-xs"
+            >
+              {t('chat.cancel') || '关闭'}
+            </Button>
+          </div>
         )}
 
-        {/* 底部：输入框 */}
-        <div className="border-t border-border/30 bg-gradient-to-r from-background/50 via-background/30 to-background/50 p-3 sm:p-4 space-y-2">
-          <div className="flex gap-2">
+        {/* 底部：输入区域 */}
+        <div className="border-t border-border/30 p-4 sm:p-5 bg-background/60">
+          <div className="flex gap-2 items-end">
             <Textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t('chat.inputPlaceholder') || '输入消息... (Cmd+Enter 发送)'}
-              disabled={disabled}
-              className="min-h-10 max-h-24 resize-none text-sm rounded-lg border-border/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
-              rows={1}
+              disabled={isLoading || disabled}
+              className="min-h-[40px] max-h-[120px] resize-none"
+              rows={2}
             />
-            <div className="flex items-center gap-2">
-              {isLoading && (
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading || disabled}
+                className="px-3"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+              {isLoading && onCancel && (
                 <Button
-                  variant="outline"
                   onClick={onCancel}
-                  disabled={!onCancel}
+                  variant="outline"
                   size="sm"
-                  className="h-10 w-10 p-0 flex-shrink-0 rounded-lg"
-                  title={t('chat.stopButton') || '停止'}
+                  className="px-3"
                 >
                   <Square className="h-4 w-4" />
                 </Button>
               )}
-              <Button
-                onClick={handleSend}
-                disabled={!input.trim() || disabled}
-                size="sm"
-                className="h-10 w-10 p-0 flex-shrink-0 rounded-lg"
-                title={t('chat.sendButton') || '发送'}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground/60 px-1">
-            {t('chat.shortcut') || '按 Cmd+Enter 或 Ctrl+Enter 快速发送'}
-          </p>
         </div>
       </CardContent>
     </Card>

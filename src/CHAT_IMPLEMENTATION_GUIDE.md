@@ -91,9 +91,9 @@
 - └─ generateEvaluationSummary(): 生成评估结果摘要
 -
 - UI 组件
-- ├─ ChatPanel (src/components/result/ChatPanel.tsx): 主面板
-- ├─ ChatMessageItem (src/components/result/ChatMessageItem.tsx): 单条消息
-- ├─ ChatInput (src/components/result/ChatInput.tsx): 输入框
+- ├─ TaskChatPanel (src/components/chat/TaskChatPanel.tsx): 主面板
+- ├─ ChatMessageItem (src/components/chat/ChatMessageItem.tsx): 单条消息
+- ├─ ChatInput (src/components/chat/ChatInput.tsx): 输入框
 - └─ ResultChatContainer (src/components/result/ResultChatContainer.tsx): 结果+聊天集成
 -
 - ============================================================

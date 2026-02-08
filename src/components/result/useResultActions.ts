@@ -7,6 +7,7 @@ import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
 import { runEvaluation } from '@/modules/evaluation/runEvaluation';
 import { buildXmp } from '@/modules/export/xmp';
+import { limitConversationMessages } from '@/modules/ai/limitConversationMessages';
 import {
   computeImageHash,
   findCachedTaskByImageHash,
@@ -161,7 +162,10 @@ export function useResultActions({
       const apiKey = loadedKey ?? '';
 
       // Get conversation history from context (no direct DB access)
-      const conversationHistory = taskState.chatMessages ?? [];
+      const conversationHistory = limitConversationMessages(
+        taskState.chatMessages ?? [],
+        settings.contextMaxChars
+      );
       console.log(
         '[Evaluation] Using conversation history from context:',
         conversationHistory.length,
@@ -182,7 +186,8 @@ export function useResultActions({
           maxTokens: settings.maxTokens,
           timeoutMs: settings.timeoutMs,
           language: normalizeLanguage(t('meta.languageCode')),
-          conversationHistory
+          conversationHistory,
+          contextMaxChars: settings.contextMaxChars
         });
 
       let result;

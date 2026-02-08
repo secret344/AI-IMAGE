@@ -74,7 +74,25 @@
     "emptyHint": "你可以问问 AI 对这张图片的看法",
     "inputPlaceholder": "输入消息... (Cmd+Enter 发送)",
     "sendButton": "发送",
+    "retry": "重试",
+    "cancel": "关闭",
     "stopButton": "停止",
+    "statusLabel": "状态",
+    "lastLatency": "上次耗时",
+    "failureReason": "失败原因",
+    "retryHint": "本条回复失败，可重试",
+    "successHint": "上次响应已完成（{{latency}}ms），可继续对话或重试。",
+    "failure": {
+      "timeout": "请求超时",
+      "network": "网络异常",
+      "canceled": "已取消",
+      "unknown": "未知错误"
+    },
+    "status": {
+      "loading": "进行中",
+      "success": "成功",
+      "failed": "失败"
+    },
     "shortcut": "按 Cmd+Enter 或 Ctrl+Enter 快速发送",
     "thinking": {
       "label": "思考过程",
@@ -549,7 +567,8 @@
     "untitled": "未命名",
     "compare": "对比",
     "score": "分数",
-    "unknownAgent": "未知摄影师"
+    "unknownAgent": "未知摄影师",
+    "noAgent": "未知摄影师"
   },
   "agent": {
     "cartierBresson": "卡蒂埃-布雷松",

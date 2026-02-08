@@ -74,7 +74,25 @@
     "emptyHint": "この画像について AI に聞いてみてください",
     "inputPlaceholder": "メッセージを入力... (Cmd+Enter で送信)",
     "sendButton": "送信",
+    "retry": "再試行",
+    "cancel": "閉じる",
     "stopButton": "停止",
+    "statusLabel": "状態",
+    "lastLatency": "前回の所要時間",
+    "failureReason": "失敗理由",
+    "retryHint": "この応答は失敗しました。再試行できます。",
+    "successHint": "前回の応答は完了しました（{{latency}}ms）。続行または再試行できます。",
+    "failure": {
+      "timeout": "タイムアウト",
+      "network": "ネットワークエラー",
+      "canceled": "キャンセル済み",
+      "unknown": "不明なエラー"
+    },
+    "status": {
+      "loading": "実行中",
+      "success": "成功",
+      "failed": "失敗"
+    },
     "shortcut": "Cmd+Enter または Ctrl+Enter で送信",
     "thinking": {
       "label": "思考内容",
@@ -551,7 +569,8 @@
     "untitled": "無題",
     "compare": "比較",
     "score": "スコア",
-    "unknownAgent": "不明な写真家"
+    "unknownAgent": "不明な写真家",
+    "noAgent": "不明なエージェント"
   },
   "agent": {
     "cartierBresson": "卡蒂埃-布雷松",

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +40,7 @@ export function HistoryTaskGrid({
   };
 
   return (
-    <div className="mt-6 grid auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="mt-6 grid auto-rows-fr gap-4 sm:grid-cols-1 xl:grid-cols-2">
       {tasks.map((task) => {
         const taskActions = buildActions(task);
         return (
@@ -85,6 +85,13 @@ function ThumbnailCard({
 }: ThumbnailCardProps) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
 
+  // styletags格式化文本
+  const formatStyleTags = useCallback(() => {
+    return task.styleTags
+      .map((tag) => `${t(`styleTags.${tag.name}`, { defaultValue: tag.name })} ${tag.weight}`)
+      .join(' · ');
+  }, [task.styleTags, t]);
+
   useEffect(() => {
     if (task.thumbnail) {
       blobToDataUrl(task.thumbnail).then(setThumbnailUrl);
@@ -128,16 +135,8 @@ function ThumbnailCard({
 
       <CardContent className="flex flex-1 flex-col gap-2 text-xs text-muted-foreground">
         {task.styleTags && task.styleTags.length > 0 && (
-          <p className="line-clamp-1 text-foreground/80 font-medium">
-            {task.styleTags
-              .slice(0, 2)
-              .map(
-                (tag) =>
-                  `${t(`styleTags.${tag.name}`, { defaultValue: tag.name })} ${Math.round(
-                    tag.weight * 100
-                  )}%`
-              )
-              .join(' · ')}
+          <p className="line-clamp-2 text-foreground/80 font-medium" title={formatStyleTags()}>
+            {formatStyleTags()}
           </p>
         )}
         <p className="text-[11px] text-muted-foreground/70">
@@ -145,7 +144,7 @@ function ThumbnailCard({
         </p>
       </CardContent>
 
-      <CardFooter className="mt-auto flex flex-col gap-2 border-t border-border/40 pt-3">
+      <CardFooter className="mt-auto flex flex-wrap gap-2 border-t border-border/40 pt-3">
         {taskActions.map((action, index) => {
           const variant =
             action.variant === 'primary'

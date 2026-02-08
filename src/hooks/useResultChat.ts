@@ -9,6 +9,7 @@ import {
   generateEvaluationSummary,
   processChatMessage
 } from '@/modules/evaluation/chatIntegration';
+import { limitConversationMessages } from '@/modules/ai/limitConversationMessages';
 
 /**
  * 结果聊天 hook 的配置选项
@@ -74,7 +75,10 @@ export function useResultChat(options: UseResultChatOptions): UseResultChatRetur
             ? ''
             : await loadApiKey(settings.keyLabel || settings.provider, options.passphrase || '');
 
-        const conversationHistory = taskState.chatMessages ?? [];
+        const conversationHistory = limitConversationMessages(
+          taskState.chatMessages ?? [],
+          settings.contextMaxChars
+        );
 
         const chatContext: ChatContext = {
           taskId: options.taskId,

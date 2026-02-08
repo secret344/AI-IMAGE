@@ -56,7 +56,8 @@ interface TypewriterContentProps {
 export function TypewriterContent({ text, isActive, speedMs = 14 }: TypewriterContentProps) {
   const { t } = useTranslation();
   const [displayText, setDisplayText] = useState(text);
-  const [isThinkingOpen, setIsThinkingOpen] = useState(true);
+  // 历史记录加载时默认收起思考内容；实时流式时展开
+  const [isThinkingOpen, setIsThinkingOpen] = useState(isActive);
   const prevThinkingEndRef = useRef(false);
 
   useEffect(() => {

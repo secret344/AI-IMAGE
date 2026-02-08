@@ -7,6 +7,7 @@ import { assemblePrompt } from '@/modules/prompt/assemblePrompt';
 import { callAiProvider } from '@/modules/ai/client';
 import { validateResult } from '@/modules/validation/validateResult';
 import { wrapMemorySafeAiCall } from '@/modules/ai/memoryOptimization';
+import { limitConversationMessages } from '@/modules/ai/limitConversationMessages';
 
 /**
  * 运行评估的输入参数
@@ -25,6 +26,7 @@ export interface RunEvaluationInput {
   timeoutMs: number;
   language?: LanguageCode;
   conversationHistory?: ChatMessage[];
+  contextMaxChars?: number;
 }
 
 export async function runEvaluation(input: RunEvaluationInput) {
@@ -41,7 +43,11 @@ export async function runEvaluation(input: RunEvaluationInput) {
   );
 
   // Convert chat history to messages format for AI
-  const messages = input.conversationHistory?.map((msg) => ({
+  const limitedHistory = limitConversationMessages(
+    input.conversationHistory ?? [],
+    input.contextMaxChars
+  );
+  const messages = limitedHistory.map((msg) => ({
     role: msg.role as 'system' | 'user' | 'assistant',
     content: msg.content
   }));

@@ -8,6 +8,7 @@ import {
 import { loadApiKey } from '@/modules/storage/keys';
 import { loadProviderSettings } from '@/modules/storage/settings';
 import type { ProviderSettings } from '@/modules/storage/settings';
+import { limitConversationMessages } from '@/modules/ai/limitConversationMessages';
 import { callAiProvider } from '@/modules/ai/client';
 import type { ChatMessage } from '@/types/conversation';
 
@@ -244,6 +245,7 @@ export async function recognizeStyle(
 
   let response = '';
   try {
+    const limitedHistory = limitConversationMessages(chatHistory ?? [], settings.contextMaxChars);
     response = await callAiProvider({
       base64Image,
       systemPrompt,
@@ -255,7 +257,7 @@ export async function recognizeStyle(
       temperature: 0.3, // Lower temperature for consistency
       maxTokens: settings.maxTokens,
       timeoutMs: settings.timeoutMs,
-      messages: chatHistory?.map((message) => ({
+      messages: limitedHistory.map((message) => ({
         role: message.role,
         content: message.content
       }))
