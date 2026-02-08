@@ -4,343 +4,179 @@
 
 ## Overview
 
-**AI Image Quality Analyzer** is a privacy-first browser tool that helps photographers quickly assess and improve their work through intelligent AI analysis. It features zero-backend storage architecture, provides multi-persona evaluation from 5 photographer styles, and delivers real-time feedback across 4 dimensions (composition, lighting, color, subject), along with actionable Lightroom/Photoshop retouching steps.
-UI languages: English, Simplified Chinese, Japanese.
+**AI Image Quality Analyzer** is a privacy-first browser tool for photographers to assess and improve their work through AI analysis. It features zero-backend storage, multi-persona evaluation from 5 photographer styles, and detailed scoring across 4 dimensions (composition, lighting, color, subject).
+
+**Supported Languages**: English, Simplified Chinese, Japanese
 
 **Key Features:**
 
-- 🔐 **Zero Backend Storage**: All processing happens in your browser; images never upload to servers
-- 🎯 **Multi-Persona AI**: 5 photographer style evaluations (Cartier-Bresson, Ansel Adams, Fan Ho, Peter Lindbergh, Kodak Portra)
-- 📊 **Structured Feedback**: 4-dimension scoring with detailed reasoning
-- 🖼️ **Plug-and-Play Export**: Generate Lightroom-compatible XMP files
-- ⚡ **Privacy-First**: Auto EXIF cleanup, encrypted API keys, local-only storage
+- 🔐 **Privacy-First**: All processing in-browser; images never upload to servers
+- 🎯 **5 Photographer Personas**: Cartier-Bresson, Ansel Adams, Fan Ho, Peter Lindbergh, Kodak Portra
+- 📊 **4-Dimension Scoring**: Composition, Lighting, Color, Subject (0-100 scale)
+- 💬 **AI-Powered Discussion**: Chat with evaluation results for deeper analysis
+- 🖼️ **XMP Export**: Direct Lightroom integration
+- 🔑 **BYOK Model**: Bring your own API keys (no subscriptions)
 
 ---
 
 ## Quick Start
 
-### 1. Upload Photo
-
-- Drag & drop or click to upload JPEG, PNG, WebP formats
-- Max size: 50MB (recommend ≤10MB)
-- EXIF data auto-extracted and cleaned (privacy protection)
-
-### 2. Choose Evaluation Style
-
-Select from 5 photographer styles:
-
-- **Street Narrative**: Decisive moments, compositional narrative (Cartier-Bresson)
-- **Landscape Epic**: Tonal range, depth layers (Ansel Adams)
-- **Urban Geometry**: Light-shadow geometry, minimalism (Fan Ho)
-- **Portrait Texture**: Texture fidelity, eye light, naturalness (Peter Lindbergh)
-- **Film Color**: Soft tones, color richness (Kodak Portra)
-
-### 3. Get AI Scores
-
-Get instant 4-dimension scoring:
-
-- ✅ **Composition**: Subject placement, visual flow, negative space
-- ✅ **Lighting**: Exposure accuracy, contrast, light quality
-- ✅ **Color**: Tonal harmony, saturation, color mood
-- ✅ **Subject**: Sharpness, focus accuracy, texture richness
-
-### 4. Export Results
-
-- Download Lightroom XMP sidecar file for one-click import
-- Review retouching steps (exposure, clarity, tone curves, etc.)
-- Support iterative evaluation with task linking
+1. **Upload** → Drag & drop JPEG, PNG, WebP (≤50MB recommended ≤10MB)
+2. **Wait** → Auto style recognition (~1-2s)
+3. **Review** → Select photographer style and view AI scores
+4. **Discuss** → Chat with the agent to explore deeper insights
+5. **Export** → Download Lightroom XMP sidecar file
 
 ---
 
 ## Features
 
-### Image Upload & Processing
+### Core Workflow
 
-- **Drag-drop or click** to upload JPEG, PNG, WebP formats
-- **Auto-compression** via Canvas API (4096px max edge, 0.85 JPEG quality)
-- **EXIF Cleanup**: Remove location & device S/N, keep exposure data (ISO, aperture, shutter)
-- **File limits**: Max 50MB per file; ≤10MB recommended for best performance
+- **Image Upload**: Drag-drop or click; auto Canvas compression (4096px max, 0.85 quality)
+- **Style Recognition**: Rule engine classification into 16 style categories
+- **AI Evaluation**: Multi-persona scoring with dimension-specific reasoning
+- **Result Discussion**: Chat with AI to explore feedback and ask follow-up questions
+- **Smart History**: IndexedDB storage of last 10 evaluations with one-click re-evaluation
+- **XMP Export**: Generate Lightroom-compatible sidecar files
 
-### Style Recognition
+### Photographer Styles
 
-- Auto multi-label classification (urban, documentary, landscape, portrait, street, etc. - 16 categories)
-- Top-3 style weights guide Agent recommendations
-- Lightweight rule engine (MVP) or MobileNet model (Phase 2)
+| Style | Photographer | Focus |
+|:------|:------------|:------|
+| Street Narrative | Cartier-Bresson | Decisive moments, composition |
+| Landscape Epic | Ansel Adams | Tonal range, depth |
+| Urban Geometry | Fan Ho | Light/shadow geometry, minimalism |
+| Portrait Texture | Peter Lindbergh | Texture, eye light, naturalness |
+| Film Color | Kodak Portra | Soft tones, color richness |
 
-### AI Multi-Persona Evaluation
+### Privacy & Security
 
-- **5 photographer styles** with unique aesthetic standards
-- **4-dimension scoring** (composition, lighting, color, subject), 0-100 scale + reasoning
-- **Dynamic prompting** combining system, agent-specific, EXIF, and style context
-- **Multi-AI provider support**: OpenAI Vision, Google Gemini, Claude 3
-
-### Retouching Guidance
-
-- **Structured steps** (Lightroom/Photoshop) with specific parameters
-- **Parameter mapping** directly corresponds to Lightroom slider adjustments
-- **Style-aware suggestions** based on chosen photographer style
-- **XMP sidecar generation** for direct Lightroom import
-
-### Local History & Task Linking
-
-- **IndexedDB storage** of last 10 evaluations with thumbnails
-- **Smart deduplication**: One record per image+agent combination; re-evaluating same image with same agent updates the existing record
-- **Task linking** via parentTaskId for iterative improvement workflow
-- **One-click re-evaluation** with history browsing
-- **Custom agents**: Create personalized evaluation personas with custom name, description, and tag weight distributions
-- **One-button data clear** removes all local data
-
----
-
-## System Architecture
-
-```
-Browser SPA (Vite + React 18 + Tailwind + ShadcnUI)
-├── Upload & Preprocessing
-│   ├── Canvas compression & format conversion
-│   ├── EXIF extraction & cleanup
-│   └── Thumbnail generation
-├── Style Recognition
-│   ├── Rule engine (MVP) or MobileNet (Phase 2)
-│   └── Top-3 label weighting
-├── Agent Recommendation
-│   ├── Tag-to-persona matching
-│   └── Scoring algorithm
-├── Dynamic Prompt Assembly
-│   ├── System prompt templates
-│   ├── Agent-specific prompts
-│   ├── EXIF context injection
-│   └── Style tag context
-├── AI API Integration
-│   ├── OpenAI Vision
-│   ├── Google Gemini Pro Vision
-│   └── Anthropic Claude 3
-├── Result Validation
-│   ├── JSON schema validation
-│   └── Error handling & fallbacks
-├── Result Display
-│   ├── Radar chart (4 dimensions)
-│   ├── Score cards
-│   └── Step-by-step guidance
-└── Export Engine
-    ├── XMP sidecar generation
-    └── Preset file downloads
-
-Storage:
-├── IndexedDB: Task history (max 10)
-└── LocalStorage: Encrypted API keys (AES-GCM)
-```
-
----
-
-## Photographer Styles
-
-| Style                | Representative        | Focus                                          |
-| :------------------- | :-------------------- | :--------------------------------------------- |
-| **Street Narrative** | Henri Cartier-Bresson | Decisive moments, compositional story, tension |
-| **Landscape Epic**   | Ansel Adams           | Tonal range, depth, horizon balance            |
-| **Urban Geometry**   | Fan Ho                | Light-shadow geometry, minimalism, contrast    |
-| **Portrait Texture** | Peter Lindbergh       | Texture fidelity, eye light, naturalness       |
-| **Film Color**       | Kodak Portra          | Soft tones, highlight rolloff, color layers    |
+- **EXIF Cleanup**: Remove GPS, device S/N; keep exposure data
+- **Key Encryption**: AES-GCM 256-bit local storage
+- **Offline Processing**: No backend needed
+- **GDPR Compliant**: No tracking, one-button data clear
 
 ---
 
 ## Technology Stack
 
-| Layer                    | Technology           | Purpose                      |
-| :----------------------- | :------------------- | :--------------------------- |
-| **Build**                | Vite 5.0+            | Fast bundling & HMR          |
-| **Framework**            | React 18+            | UI components & state        |
-| **Styling**              | Tailwind 3.3+        | Design system                |
-| **Components**           | ShadcnUI             | Professional UI kit          |
-| **Language**             | TypeScript 5.0+      | Type safety                  |
-| **State**                | Zustand              | State management             |
-| **Internationalization** | react-i18next        | Multi-language UI (EN/ZH/JP) |
-| **Forms**                | react-hook-form      | Custom agent & settings      |
-| **Storage**              | IndexedDB (Dexie.js) | Local task history           |
-| **Encryption**           | Web Crypto API       | AES-GCM key storage          |
-| **Images**               | Canvas API, exif-js  | Compression & EXIF           |
-| **AI Integration**       | LangChain.js         | Multi-vendor abstraction     |
-| **Deployment**           | Vercel / Netlify     | Static hosting               |
+| Component | Technology | Purpose |
+|:----------|:-----------|:--------|
+| **Build** | Vite 5.0+ | Fast bundling |
+| **Framework** | React 18 + TypeScript | UI & logic |
+| **Styling** | Tailwind + ShadcnUI | Design system |
+| **State** | Zustand | Global state |
+| **Storage** | IndexedDB (Dexie) | Task history |
+| **Crypto** | Web Crypto API | AES-GCM keys |
+| **i18n** | react-i18next | EN/ZH/JP support |
+| **AI** | OpenAI/Gemini/Claude | Evaluation engine |
+| **Deployment** | Vercel/Netlify | Static hosting |
 
 ---
 
-## Development Roadmap
-
-### Phase 1: MVP (Weeks 1-2)
-
-**Goal**: Core upload-to-evaluation workflow
-
-**Key Tasks**:
-
-- [ ] Project initialization (Vite + React + TypeScript)
-- [ ] Image upload & Canvas compression
-- [ ] EXIF extraction & cleanup
-- [ ] Style recognition (rule engine)
-- [ ] AI evaluation & prompt assembly
-- [ ] Result display & XMP export
-- [ ] Error handling & fallback strategies
-
-**Acceptance Criteria**:
-
-- Users can upload images and get AI evaluation
-- 4-dimension scoring with detailed reasoning
-- XMP export works in Lightroom
-
-### Phase 2: Enhancement (Weeks 3-4)
-
-**Goal**: Improve UX, add persistence & export features
-
-**Key Tasks**:
-
-- [ ] IndexedDB history storage
-- [ ] Task linking & re-evaluation
-- [ ] Style recognition upgrade (MobileNet)
-- [ ] Multi-AI provider support
-- [ ] Mobile responsive layout
-- [ ] Loading states & error messages
-
-**Acceptance Criteria**:
-
-- 10 history records with thumbnails
-- Mobile UI fully functional
-- All providers available (OpenAI/Gemini/Claude)
-
-### Phase 3: Optimization (Weeks 5-6)
-
-**Goal**: Advanced features, performance & cost control
-
-**Key Tasks**:
-
-- [ ] RAW format support (.ARW)
-- [ ] HEIC format support
-- [ ] Image hash deduplication
-- [ ] PWA offline support
-- [ ] Custom Agent configuration
-- [ ] Cost monitoring & quotas
-
-**Acceptance Criteria**:
-
-- RAW/HEIC format support
-- Duplicate images use cache (zero cost)
-- PWA works offline
-
----
-
-## Core Design Principles
-
-### Zero Backend Storage
-
-✅ Images never upload to servers  
-✅ No database persistence  
-✅ All computation in-browser  
-✅ Refresh clears all data
-
-### Privacy-First
-
-✅ EXIF auto-cleanup (location removed)  
-✅ API keys encrypted locally (AES-GCM)  
-✅ No third-party tracking  
-✅ Optional "burn after reading" mode
-
-### Static Deployment
-
-✅ Vercel, Netlify, GitHub Pages compatible  
-✅ CORS proxy for API calls  
-✅ Zero server maintenance  
-✅ Global CDN distribution
-
-### BYOK Model (Bring Your Own Key)
-
-✅ Users provide their own API keys  
-✅ No account registration needed  
-✅ No subscription fees  
-✅ Complete cost transparency
-
----
-
-## Getting Started
-
-### Installation
+## Installation & Setup
 
 ```bash
+# Clone repository
 git clone <repository-url>
 cd ai-image
+
+# Install dependencies
 npm install
+
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Run type checking
+npm run type-check
 ```
 
 ### Configuration
 
-1. **Add API Keys** (Settings panel):
+1. **Add API Keys** in Settings panel:
    - OpenAI Vision: https://platform.openai.com/api-keys
    - Google Gemini: https://aistudio.google.com/app/apikey
-   - Claude: https://console.anthropic.com/account/keys
+   - Claude: https://console.anthropic.com (for testing)
 
-2. **Key Storage**:
-   - AES-GCM encrypted
-   - Stored only in browser localStorage
-   - Never sent to third parties
+2. **Keys are encrypted locally** (AES-GCM) and never sent to third parties
 
-3. **First Evaluation**:
-   - Click "Upload Photo" or drag file
-   - Wait for style recognition (~1-2s)
-   - View recommended Agent
-   - Select preferred style
-   - Review results & download XMP
+3. **For local development with Ollama**:
+   - Install Ollama: https://ollama.ai
+   - Pull a vision model: `ollama pull llama2-vision`
+   - No API key needed
 
 ---
 
-## API Cost Estimation
+## Design Principles
 
-| Provider                   | Per-Image Cost | Notes                           |
-| :------------------------- | :------------- | :------------------------------ |
-| **OpenAI Vision (GPT-4V)** | ~$0.015-0.03   | Based on prompt & output length |
-| **Google Gemini Pro**      | ~$0.005-0.01   | Character-based billing         |
-| **Claude 3 Vision**        | ~$0.005-0.015  | Similar to Gemini               |
+### 🔐 Privacy First
+- Images never uploaded to servers
+- All computation in-browser
+- EXIF data auto-cleaned (GPS, serial numbers removed)
+- API keys encrypted locally (AES-GCM 256-bit)
 
-**Cost Optimization**:
+### 💰 BYOK Model (Bring Your Own Key)
+- No account required
+- No subscriptions
+- Full cost transparency
+- Users control their API spending
 
-- Image hash deduplication: Save 20-30%
-- Style pre-filtering: Skip low-confidence images
-- User quotas: 5 free images/day
+### ⚡ Zero Backend
+- Static deployment only (Vercel/Netlify/GitHub Pages)
+- No server maintenance
+- Global CDN support
+- Optional CORS proxy for API calls
 
 ---
 
-## Security & Compliance
+## API Cost Guidelines
+
+| Provider | Per-Image Cost | Notes |
+|:---------|:---------------|:------|
+| OpenAI Vision | ~$0.01-0.03 | Based on image size + prompt |
+| Google Gemini | ~$0.005-0.01 | Character-based billing |
+| Claude 3 Vision | ~$0.01-0.02 | Input/output tokens |
+
+**Cost Tips**:
+- Use Ollama for local, free evaluation
+- Re-evaluate same image with same agent = zero cost (cached)
+- Message history is automatically limited to prevent token bloat
+
+---
+
+## Security & Privacy
 
 ### Data Protection
+- **EXIF Cleanup**: Removes GPS coordinates, device serial numbers
+- **Key Encryption**: AES-GCM 256-bit encryption for all API keys
+- **Local Only**: Images stored only in IndexedDB; never transmitted
+- **No Tracking**: Zero third-party analytics or cookies
 
-- EXIF cleanup: Remove GPS, device S/N
-- Key encryption: AES-GCM 256-bit (Web Crypto API)
-- No third-party services: Zero tracking
-- Threat model: API key leakage, prompt injection
-
-### GDPR Compliance
-
-✅ Data minimization (images not stored)  
-✅ User consent on first use  
-✅ "Clear all data" button  
-✅ No personal data collection
+### GDPR Compliant
+- Data minimization (images not persisted on servers)
+- One-click "Clear All Data" option
+- No personal data collection
+- Optional encrypted passphrase for key storage
 
 ---
 
-## Documentation
+## Documentation & Support
 
-- 📖 **Full Technical Spec**: [V1_TECHNICAL_SPEC_EN.md](V1_TECHNICAL_SPEC_EN.md)
-- 🌐 **Chinese Version**: [README_cn.md](README_cn.md)
-- 📊 **Sync Status**: [SYNC_STATUS.md](SYNC_STATUS.md)
+- 📖 **Technical Specification**: [V1_TECHNICAL_SPEC_EN.md](V1_TECHNICAL_SPEC_EN.md)
+- 🌐 **中文 README**: [README_cn.md](README_cn.md)
 - ✅ **Completion Checklist**: [COMPLETION_CHECKLIST.md](COMPLETION_CHECKLIST.md)
+- 🔄 **Sync Status**: [SYNC_STATUS.md](SYNC_STATUS.md)
 
----
+## Contributing
 
-## Support
-
-- 🐛 **Report Issues**: [GitHub Issues](../../issues)
-- 💬 **Discussions**: [GitHub Discussions](../../discussions)
-- 📧 **Contact**: [contact-info]
-
----
+We welcome contributions! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request with clear description
 
 ## License
 
@@ -348,10 +184,6 @@ MIT License - See LICENSE file
 
 ---
 
-**Last Updated**: 2026-01-28  
-**Status**: ✅ Ready for Phase 1 development  
-**Version**: 1.0.0
-
-```
-
-```
+**Version**: 1.0.0  
+**Status**: ✅ Active Development  
+**Last Updated**: 2026-02-08
