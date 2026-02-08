@@ -23,8 +23,9 @@ export interface UploadChatWrapperProps {
 }
 
 /**
- * 封装聊天面板与上传流程的集成
- * 处理本地化、错误处理、样式等
+ * Upload chat wrapper component encapsulating chat panel and upload process
+ * @param {UploadChatWrapperProps} props - Component properties
+ * @return {JSX.Element} Upload chat wrapper element
  */
 export function UploadChatWrapper({
   chatState,

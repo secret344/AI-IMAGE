@@ -9,6 +9,10 @@ import type { LanguageCode } from '@/config/i18n-config';
 import { recognizeStyle } from './recognizeStyle';
 import type { StyleRecognitionResult } from './recognizeStyle';
 
+/**
+ * 风格分析选项
+ * 包含图片数据、语言、提供商设置和回调函数
+ */
 export interface AnalyzeStyleOptions {
   base64Image: string;
   userLanguage: LanguageCode;
@@ -22,8 +26,9 @@ export interface AnalyzeStyleOptions {
 }
 
 /**
- * 执行风格分析
- * 支持多种触发方式：用户点击按钮、聊天中建议触发等
+ * Execute style analysis from user input
+ * @param {AnalyzeStyleOptions} options - Analysis configuration with image, language, provider settings
+ * @return {Promise<StyleRecognitionResult>} Style recognition result with tags and analysis
  */
 export async function analyzeStyleWithChat(
   options: AnalyzeStyleOptions
@@ -62,8 +67,9 @@ export async function analyzeStyleWithChat(
 }
 
 /**
- * 判断聊天消息是否包含分析请求
- * 用于在聊天中自动识别AI的分析建议
+ * Detect if chat message contains analysis suggestion
+ * @param {ChatMessage|undefined} lastAssistantMessage - Last assistant message to check
+ * @return {boolean} True if analysis should be triggered
  */
 export function shouldTriggerAnalysisFromChat(
   lastAssistantMessage: ChatMessage | undefined
@@ -88,8 +94,9 @@ export function shouldTriggerAnalysisFromChat(
 }
 
 /**
- * 从聊天消息中提取分析建议
- * 返回是否应该自动触发分析，以及建议文案
+ * Extract analysis suggestion from assistant message
+ * @param {ChatMessage|undefined} lastAssistantMessage - Last assistant message to extract from
+ * @return {Object} Object with shouldAnalyze flag and suggestion text
  */
 export function extractAnalysisSuggestion(lastAssistantMessage: ChatMessage | undefined): {
   shouldAnalyze: boolean;

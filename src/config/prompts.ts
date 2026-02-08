@@ -199,12 +199,13 @@ export function buildSystemPrompt(language: Language): string {
 }
 
 /**
- * 构建用户提示词 - 包含 Agent 特定指引、风格标签、EXIF 数据和语言要求
- * @param {string} agentPrompt Agent 特定的提示词部分
- * @param {string} styles 风格标签字符串（逗号分隔）
- * @param {string} exif 相机参数字符串
- * @param {Language} language 语言代码（'zh' 或 'en'）
- * @return {string} 完整的用户提示词字符串
+ * Build user prompt with agent instructions, style tags, EXIF data and language requirements
+ * @param {string} agentPrompt - Agent-specific prompt section
+ * @param {string} styles - Style tags string (comma-separated)
+ * @param {string} exif - Camera parameters string
+ * @param {string} styleDescription - Style description text
+ * @param {Language} language - Language code ('zh' or 'en')
+ * @return {string} Complete user prompt string
  */
 export function buildUserPrompt(
   agentPrompt: string,

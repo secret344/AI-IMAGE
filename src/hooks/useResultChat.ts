@@ -10,6 +10,9 @@ import {
   processChatMessage
 } from '@/modules/evaluation/chatIntegration';
 
+/**
+ * 结果聊天 hook 的配置选项
+ */
 export interface UseResultChatOptions {
   taskId: string | null;
   agentStyle: string;
@@ -20,6 +23,10 @@ export interface UseResultChatOptions {
   taskSettings?: ProviderSettings | null;
 }
 
+/**
+ * 结果聊天 hook 的返回值
+ * 包含消息列表、加载状态和错误信息
+ */
 export interface UseResultChatReturn {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -28,6 +35,11 @@ export interface UseResultChatReturn {
   clearError: () => void;
 }
 
+/**
+ * Result chat hook for evaluation result discussion
+ * @param {UseResultChatOptions} options - Hook configuration options
+ * @return {UseResultChatReturn} Chat state and message operations
+ */
 export function useResultChat(options: UseResultChatOptions): UseResultChatReturn {
   const { taskState, addChatMessage } = useTaskContext();
   const [isLoading, setIsLoading] = useState(false);

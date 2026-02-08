@@ -8,6 +8,10 @@ import { callAiProvider } from '@/modules/ai/client';
 import { validateResult } from '@/modules/validation/validateResult';
 import { wrapMemorySafeAiCall } from '@/modules/ai/memoryOptimization';
 
+/**
+ * 运行评估的输入参数
+ * 包含处理后的图片、风格识别结果、代理配置和 AI 提供商设置
+ */
 export interface RunEvaluationInput {
   processedImage: ProcessedImage;
   styleResult: StyleRecognitionResult;

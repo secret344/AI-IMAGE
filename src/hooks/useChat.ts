@@ -7,6 +7,10 @@
 import { useState, useCallback } from 'react';
 import type { ChatMessage } from '@/types/conversation';
 
+/**
+ * 聊天状态
+ * 包含消息列表、加载状态、错误和当前线程 ID
+ */
 export interface UseChatState {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -14,6 +18,10 @@ export interface UseChatState {
   currentThreadId: string;
 }
 
+/**
+ * 聊天操作
+ * 包含添加、清除消息和状态管理方法
+ */
 export interface UseChatActions {
   addMessage: (message: ChatMessage) => void;
   addUserMessage: (content: string) => ChatMessage;
@@ -23,10 +31,9 @@ export interface UseChatActions {
 }
 
 /**
- * 聊天状态 Hook
- * 用法：
- * const chat = useChat(initialMessages);
- * chat.addUserMessage('你认为这张图片的构图如何？');
+ * Chat state management hook
+ * @param {ChatMessage[]} [initialMessages] - Initial chat messages
+ * @return {*} Chat state and action methods
  */
 export function useChat(initialMessages: ChatMessage[] = []): UseChatState & UseChatActions {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);

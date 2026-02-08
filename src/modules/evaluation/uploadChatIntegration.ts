@@ -11,6 +11,10 @@ import { loadProviderSettings } from '@/modules/storage/settings';
 import { loadApiKey } from '@/modules/storage/keys';
 import { extractAnalysisSuggestion } from '@/modules/style/analyzeStyleWithChat';
 
+/**
+ * 上传聊天集成回调接口
+ * 用于接收聊天处理的各个步骤的事件
+ */
 export interface UploadChatIntegrationCallbacks {
   onMessageReceived: (message: ChatMessage) => void;
   onAnalysisSuggested: (suggestion: string) => void;
@@ -19,12 +23,15 @@ export interface UploadChatIntegrationCallbacks {
 }
 
 /**
- * 在上传阶段处理聊天消息
- * 支持：
- * 1. 用户手动输入消息
- * 2. AI响应
- * 3. AI自动建议分析
- * 4. 用户确认后触发分析
+ * Handle chat messages during upload phase
+ * @param {string} userMessage - User input message
+ * @param {ChatMessage[]} conversationHistory - Previous conversation messages
+ * @param {string} imageBase64 - Base64 encoded image data
+ * @param {Object} config - Configuration with task and agent settings
+ * @param {UploadChatIntegrationCallbacks} callbacks - Event callbacks for message/error handling
+ * @param {string} [passphrase] - Optional encryption passphrase for API keys
+ * @param {AbortSignal} [signal] - Optional abort signal for request cancellation
+ * @return {Promise<void>} Promise resolving when message is processed
  */
 export async function handleUploadChatMessage(
   userMessage: string,
@@ -96,8 +103,9 @@ export async function handleUploadChatMessage(
 }
 
 /**
- * 用户手动要求分析
- * 在聊天中检测到分析请求关键词时触发
+ * Detect analysis request in user message by keyword matching
+ * @param {string} userMessage - User input message to check
+ * @return {boolean} True if analysis request detected
  */
 export function detectAnalysisRequest(userMessage: string): boolean {
   const analysisKeywords = ['分析', 'analyze', '风格', 'style', '我来看看', '看看', 'check'];

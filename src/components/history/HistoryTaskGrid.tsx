@@ -6,6 +6,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import type { TaskRecord } from '@/modules/storage/db';
 import type { TaskItemActionConfig } from '@/components/history/taskActions';
 
+/**
+ * 历史任务网格组件的 Props
+ */
 interface HistoryTaskGridProps {
   tasks: TaskRecord[];
   selectedIds: Set<string>;
@@ -57,6 +60,9 @@ export function HistoryTaskGrid({
   );
 }
 
+/**
+ * 任务缩略图卡片组件的 Props
+ */
 interface ThumbnailCardProps {
   task: TaskRecord;
   taskActions: TaskItemActionConfig[];

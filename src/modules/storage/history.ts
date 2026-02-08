@@ -10,6 +10,10 @@ import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
 
 const MAX_TASKS = 10;
 
+/**
+ * 保存任务的输入参数
+ * 包含完整的评估结果、图片和设置
+ */
 export interface SaveTaskInput {
   evaluation: EvaluationResult;
   thumbnailBase64: string;
@@ -25,6 +29,10 @@ export interface SaveTaskInput {
   parentTaskId?: string;
 }
 
+/**
+ * 保存任务摘要的输入参数
+ * 用于快速保存任务摘要，不含完整的评估结果
+ */
 export interface SaveTaskSummaryInput {
   taskId?: string;
   thumbnailBase64: string;

@@ -71,7 +71,7 @@ const buildTaskItemActions = (
         modelUsed: 'history-recovery'
       } as StyleRecognitionResult;
       const recommendedAgents = recommendAgents(
-        task.styleTags as any,
+        task.styleTags as StyleRecognitionResult['styleTags'],
         { limit: globalProviderSettings.topAgents },
         language
       );

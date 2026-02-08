@@ -12,8 +12,9 @@ import {
 } from '@/modules/storage/conversation';
 
 /**
- * 为重评准备聊天上下文
- * 返回可注入到提示词中的聊天摘要
+ * Prepare chat context for re-evaluation by summarizing previous messages
+ * @param {ChatMessage[]} messages - Previous chat messages
+ * @return {Promise<string>} Formatted chat context string for prompt injection
  */
 export async function prepareChatContextForReEvaluation(messages: ChatMessage[]): Promise<string> {
   try {
@@ -32,8 +33,9 @@ export async function prepareChatContextForReEvaluation(messages: ChatMessage[])
 }
 
 /**
- * 重评完成后，更新聊天摘要
- * 在 TaskRecord 中保存聊天摘要，用于后续参考
+ * Update chat summary in task after re-evaluation completes
+ * @param {string} taskId - Task identifier
+ * @return {Promise<void>} Promise resolving when updated
  */
 export async function updateChatSummaryAfterReEvaluation(taskId: string): Promise<void> {
   try {
@@ -47,8 +49,10 @@ export async function updateChatSummaryAfterReEvaluation(taskId: string): Promis
 }
 
 /**
- * [预留] 构建用于新重评的完整聊天提示词
- * 格式：原始评估结果 + 用户反馈 = 新的评估上下文
+ * Build complete chat prompt for re-evaluation with new prompt
+ * @param {string} originalPrompt - Original evaluation prompt
+ * @param {string} chatContext - Previous conversation context
+ * @return {string} Combined prompt string for re-evaluation
  */
 export function buildChatAugmentedPrompt(originalPrompt: string, chatContext: string): string {
   if (!chatContext) {

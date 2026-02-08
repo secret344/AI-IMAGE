@@ -1,6 +1,10 @@
 import imageCompression from 'browser-image-compression';
 import { extractExif } from '@/lib/exif';
 
+/**
+ * 处理后的图片信息
+ * 包含原始文件名、处理后的 Blob、Base64 编码、EXIF 和尺寸
+ */
 export interface ProcessedImage {
   originalName: string;
   processedBlob: Blob;

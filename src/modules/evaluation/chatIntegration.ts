@@ -9,11 +9,12 @@ import { callAgentChat } from '@/modules/ai/chatClient';
 import type { EvaluationResult } from '@/types/evaluation';
 
 /**
- * 处理用户发送消息的完整流程
- * 1. 存储用户消息
- * 2. 调用 AI 获取回复
- * 3. 存储 AI 回复
- * 4. 返回两条消息
+ * Process user chat message with AI provider
+ * @param {string} userMessage - User input message
+ * @param {ChatContext} chatContext - Chat context with evaluation data
+ * @param {ChatRequestConfig} chatConfig - AI provider configuration
+ * @param {ChatMessage[]} conversationHistory - Previous chat messages
+ * @return {Promise<ChatMessage|null>} Assistant response message or null on error
  */
 export async function processChatMessage(
   userMessage: string,
@@ -36,8 +37,10 @@ export async function processChatMessage(
 }
 
 /**
- * 为重评生成聊天摘要
- * 用于在重评时注入用户与智能体的讨论反馈
+ * Get chat context formatted for re-evaluation from messages
+ * @param {ChatMessage[]} messages - Array of chat messages
+ * @param {number} [maxMessages=5] - Maximum number of recent messages to include
+ * @return {Promise<string>} Formatted chat context string
  */
 export async function getChatContextForReEvaluation(
   messages: ChatMessage[],
@@ -65,7 +68,9 @@ export async function getChatContextForReEvaluation(
 }
 
 /**
- * 生成评估结果摘要，用于聊天时的上下文
+ * Generate evaluation result summary for chat context injection
+ * @param {EvaluationResult} result - Evaluation result with dimensions and tips
+ * @return {string} Formatted evaluation summary text
  */
 export function generateEvaluationSummary(result: EvaluationResult): string {
   const dimensionsSummary = result.dimensions

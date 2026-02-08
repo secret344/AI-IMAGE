@@ -1,6 +1,10 @@
 import { getAllAgents, resolveAgentLocale, type AgentProfile } from '@/config/agents';
 import type { StyleTagScore } from '@/config/style-tags';
 
+/**
+ * 代理推荐结果
+ * 包含代理 ID、名称、匹配度评分和匹配的风格标签
+ */
 export interface AgentRecommendation {
   id: string;
   name: string;
@@ -9,6 +13,9 @@ export interface AgentRecommendation {
   description: string;
 }
 
+/**
+ * 代理推荐选项
+ */
 export interface RecommendOptions {
   limit?: number;
 }

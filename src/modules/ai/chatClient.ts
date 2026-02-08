@@ -26,6 +26,11 @@ const DIMENSION_KEY_MAP: Record<(typeof EVALUATION_DIMENSIONS)[number], string> 
   Color: 'color',
   Subject: 'subject'
 };
+/**
+ * Format evaluation dimensions list for prompt
+ * @param {string} [language] - Optional language code
+ * @return {string} Formatted dimensions list text
+ */
 const getDimensionListText = (language?: string): string => {
   const normalized = normalizeLanguage(language);
   const separator = normalized === 'zh' ? '、' : ', ';
@@ -39,6 +44,11 @@ const LIGHTROOM_RANGE_TEXT = `  - Exposure: ${formatRange(LIGHTROOM_PARAM_RANGES
   - Highlights: ${formatRange(LIGHTROOM_PARAM_RANGES.Highlights)}
   - Shadows: ${formatRange(LIGHTROOM_PARAM_RANGES.Shadows)}`;
 
+/**
+ * Build output constraints prompt for avoiding reasoning loops
+ * @param {string} [language] - Optional language code
+ * @return {string} Output constraint text
+ */
 const buildChatOutputGuard = (language?: string): string => {
   const normalized = normalizeLanguage(language);
   if (normalized === 'zh') {
@@ -57,6 +67,11 @@ const buildChatOutputGuard = (language?: string): string => {
 - Avoid padding or rambling; keep the response dense and relevant.`;
 };
 
+/**
+ * Format available style tags for prompt
+ * @param {string} [language] - Optional language code
+ * @return {string} Formatted style tags list text
+ */
 const getStyleTagsText = (language?: string): string => {
   const normalized = normalizeLanguage(language);
   const separator = normalized === 'zh' ? '、' : ', ';
@@ -96,6 +111,11 @@ const CHAT_SYSTEM_PROMPTS: Record<string, string> = {
   'deepdive-chat': `你是摄影理论家。进行深度的美学和技法讨论。`
 };
 
+/**
+ * Sanitize and normalize chat message content
+ * @param {unknown} value - Raw content value
+ * @return {string} Cleaned and trimmed string
+ */
 function sanitizeChatContent(value: unknown): string {
   if (typeof value !== 'string') {
     return '';
@@ -103,6 +123,12 @@ function sanitizeChatContent(value: unknown): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Build and truncate conversation history for context
+ * @param {ChatMessage[]} messages - Array of chat messages
+ * @param {number} [maxChars] - Maximum character limit for total length
+ * @return {ChatMessage[]} Truncated message array
+ */
 function buildConversationMessages(messages: ChatMessage[], maxChars?: number): ChatMessage[] {
   if (!Array.isArray(messages) || messages.length === 0) {
     return [];
@@ -130,7 +156,10 @@ function buildConversationMessages(messages: ChatMessage[], maxChars?: number): 
 }
 
 /**
- * 构建聊天提示词
+ * Build complete chat system prompt with evaluation context
+ * @param {ChatContext} context - Chat context with evaluation and agent data
+ * @param {string} [modelType] - Optional model type for different prompt templates
+ * @return {string} Complete system prompt text
  */
 function buildChatPrompt(context: ChatContext, modelType?: string): string {
   const normalizedLanguage = normalizeLanguage(i18n.language);
@@ -156,8 +185,12 @@ function buildChatPrompt(context: ChatContext, modelType?: string): string {
 }
 
 /**
- * 核心聊天函数 - 与 AI 进行对话
- * 低耦合：只需传入 context 和配置，返回单条消息
+ * Core chat function to communicate with AI provider
+ * @param {ChatContext} context - Chat context with evaluation and agent data
+ * @param {string} userMessage - User input message
+ * @param {ChatRequestConfig} config - AI provider configuration
+ * @param {AbortSignal} [signal] - Optional abort signal for request cancellation
+ * @return {Promise<ChatMessage>} Assistant response message
  */
 export async function callAgentChat(
   context: ChatContext,

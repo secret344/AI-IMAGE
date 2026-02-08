@@ -7,7 +7,10 @@
 import type { ChatMessage, ConversationThread, TaskConversationData } from '@/types/conversation';
 import { db } from './db';
 
-/** 生成 UUID v4 */
+/**
+ * Generate UUID v4 identifier for threads and messages
+ * @return {string} Generated UUID v4 string
+ */
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = (Math.random() * 16) | 0;
@@ -17,7 +20,8 @@ function generateUUID(): string {
 }
 
 /**
- * 初始化新对话 (创建任务时调用)
+ * Initialize new conversation with default main thread
+ * @return {TaskConversationData} Task conversation data with default thread
  */
 export function initializeConversation(): TaskConversationData {
   const defaultThread: ConversationThread = {
@@ -34,6 +38,11 @@ export function initializeConversation(): TaskConversationData {
   };
 }
 
+/**
+ * Ensure task conversation exists, creating if necessary
+ * @param {string} taskId - Task identifier
+ * @return {Promise<TaskConversationData>} Task conversation data
+ */
 async function ensureConversation(taskId: string): Promise<TaskConversationData> {
   const detail = await db.taskDetails.get(taskId);
   if (!detail) {
@@ -52,7 +61,11 @@ async function ensureConversation(taskId: string): Promise<TaskConversationData>
 }
 
 /**
- * 向主线程添加消息
+ * Add message to specific conversation thread
+ * @param {string} taskId - Task identifier
+ * @param {string} threadId - Thread identifier
+ * @param {Object} message - Chat message to add
+ * @return {Promise<ChatMessage>} Created chat message with id and timestamp
  */
 export async function addMessageToThread(
   taskId: string,
@@ -90,7 +103,10 @@ export async function addMessageToThread(
 }
 
 /**
- * 向主线程添加消息（自动创建对话）
+ * Add message to main conversation thread, auto-creating if needed
+ * @param {string} taskId - Task identifier
+ * @param {Object} message - Chat message to add
+ * @return {Promise<ChatMessage>} Created chat message with id and timestamp
  */
 export async function addMessageToMainThread(
   taskId: string,
@@ -101,7 +117,9 @@ export async function addMessageToMainThread(
 }
 
 /**
- * 获取任务的所有聊天记录
+ * Get all conversations for a task
+ * @param {string} taskId - Task identifier
+ * @return {Promise<TaskConversationData|null>} Task conversation data or null if not found
  */
 export async function getConversations(taskId: string): Promise<TaskConversationData | null> {
   const detail = await db.taskDetails.get(taskId);
@@ -109,7 +127,9 @@ export async function getConversations(taskId: string): Promise<TaskConversation
 }
 
 /**
- * 获取主线程的消息列表
+ * Get messages from main conversation thread
+ * @param {string} taskId - Task identifier
+ * @return {Promise<ChatMessage[]>} Array of chat messages from main thread
  */
 export async function getMainThreadMessages(taskId: string): Promise<ChatMessage[]> {
   const conversations = await getConversations(taskId);
@@ -117,8 +137,9 @@ export async function getMainThreadMessages(taskId: string): Promise<ChatMessage
 }
 
 /**
- * 生成聊天摘要 (用于重评时注入上下文)
- * 策略：提取最后5条消息的关键信息
+ * Generate conversation summary from recent messages for re-evaluation context
+ * @param {string} taskId - Task identifier
+ * @return {Promise<string>} Formatted conversation summary text
  */
 export async function generateConversationSummary(taskId: string): Promise<string> {
   const messages = await getMainThreadMessages(taskId);
@@ -136,7 +157,9 @@ export async function generateConversationSummary(taskId: string): Promise<strin
 }
 
 /**
- * 清空任务的所有聊天记录
+ * Clear all conversations for a task
+ * @param {string} taskId - Task identifier
+ * @return {Promise<void>} Promise resolving when cleared
  */
 export async function clearConversations(taskId: string): Promise<void> {
   const detail = await db.taskDetails.get(taskId);
@@ -147,7 +170,10 @@ export async function clearConversations(taskId: string): Promise<void> {
 }
 
 /**
- * 覆盖主线程的消息列表（用于回退）
+ * Replace main thread messages (for rollback scenarios)
+ * @param {string} taskId - Task identifier
+ * @param {ChatMessage[]} messages - New messages to set
+ * @return {Promise<void>} Promise resolving when replaced
  */
 export async function replaceMainThreadMessages(
   taskId: string,
@@ -160,7 +186,10 @@ export async function replaceMainThreadMessages(
 }
 
 /**
- * 更新聊天摘要 (重评后调用)
+ * Update conversation summary after re-evaluation
+ * @param {string} taskId - Task identifier
+ * @param {string} summary - New conversation summary text
+ * @return {Promise<void>} Promise resolving when updated
  */
 export async function updateConversationSummary(taskId: string, summary: string): Promise<void> {
   const detail = await db.taskDetails.get(taskId);

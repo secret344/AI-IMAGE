@@ -4,11 +4,18 @@ export interface LocaleMeta {
   promptLanguageLabel?: string;
 }
 
+/**
+ * 风格识别相关的国际化数据
+ */
 export interface StyleRecognitionLocale {
   mockDescription?: string;
   descriptionPrefix?: string;
 }
 
+/**
+ * 国际化消息结合体
+ * 包含语言元数据和各模块的翻译文本
+ */
 export interface LocaleMessages {
   meta?: LocaleMeta;
   styleRecognition?: StyleRecognitionLocale;

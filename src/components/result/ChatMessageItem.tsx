@@ -7,7 +7,9 @@ import { cn } from '@/lib/utils';
 import { TypewriterContent } from '@/components/chat/TypewriterContent';
 
 /**
- * 格式化时间戳为可读格式
+ * Format timestamp to human-readable format
+ * @param {number} timestamp - Millisecond timestamp
+ * @return {string} Formatted time string
  */
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
@@ -26,6 +28,9 @@ function formatTime(timestamp: number): string {
   return date.toLocaleDateString('zh-CN');
 }
 
+/**
+ * 聊天消息项组件的 Props
+ */
 export interface ChatMessageProps {
   message: ChatMessage;
   isLatestAssistant?: boolean;

@@ -1,5 +1,9 @@
 import { OptimizedStringBuffer } from '@/modules/ai/memoryOptimization';
 
+/**
+ * AI 请求配置
+ * 包含图片、提示词、提供商信息和流式输出配置
+ */
 export interface AiRequest {
   base64Image: string;
   systemPrompt: string;

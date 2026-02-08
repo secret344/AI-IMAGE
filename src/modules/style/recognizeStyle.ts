@@ -11,6 +11,10 @@ import type { ProviderSettings } from '@/modules/storage/settings';
 import { callAiProvider } from '@/modules/ai/client';
 import type { ChatMessage } from '@/types/conversation';
 
+/**
+ * 风格识别结果
+ * 包含识别到的风格标签、描述、推理时间和使用的模型
+ */
 export interface StyleRecognitionResult {
   styleTags: StyleTagScore[];
   styleDescription: string;

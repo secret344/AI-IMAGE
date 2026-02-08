@@ -2,12 +2,20 @@ import type { TaskConversationData } from './conversation';
 
 export type DimensionName = 'Composition' | 'Lighting' | 'Color' | 'Subject';
 
+/**
+ * 单一评估维度结果
+ * 包含分数、评价理由等信息
+ */
 export interface EvaluationDimension {
   name: DimensionName;
   score: number;
   reason: string;
 }
 
+/**
+ * 修图步骤建议
+ * 包含使用的工具、具体步骤和预期效果说明
+ */
 export interface RetouchStep {
   tool: 'Lightroom' | 'Photoshop';
   step: string;
@@ -16,6 +24,10 @@ export interface RetouchStep {
   reason: string;
 }
 
+/**
+ * 完整的图像评估结果
+ * 包含综合评分、各维度评价、拍摄建议和修图方案
+ */
 export interface EvaluationResult {
   score: number;
   dimensions: EvaluationDimension[];
@@ -36,6 +48,10 @@ export interface TaskSummaryRecord {
   fileName?: string;
 }
 
+/**
+ * 任务详情记录
+ * 包含评估结果、提示词、设置和处理后的图片数据，用于任务重新加载和历史查看
+ */
 export interface TaskDetailRecord {
   taskId: string;
   evaluationResult?: EvaluationResult; // 可选，用于兼容旧数据
@@ -49,6 +65,10 @@ export interface TaskDetailRecord {
   };
 }
 
+/**
+ * 完整任务记录
+ * 汇总摘要记录和详情记录，用于历史面板显示和任务列表
+ */
 export interface TaskRecord {
   taskId: string;
   parentTaskId?: string; // 迭代链

@@ -4,6 +4,9 @@ import type { EvaluationDimension } from '@/types/evaluation';
 import { getAgentById } from '@/modules/agent/recommendAgents';
 import { resolveAgentLocale } from '@/config/agents';
 
+/**
+ * 历史对比面板组件的 Props
+ */
 interface HistoryComparePanelProps {
   tasks: TaskRecord[];
 }

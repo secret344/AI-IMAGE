@@ -4,6 +4,9 @@ import type { ProviderSettings } from '@/modules/storage/settings';
 import { useTaskContext } from '@/state/TaskContext';
 import { handleUploadChatMessage } from '@/modules/evaluation/uploadChatIntegration';
 
+/**
+ * 上传聊天 hook 的配置选项
+ */
 export interface UseUploadChatOptions {
   taskId: string;
   agentStyle: string;
@@ -17,6 +20,10 @@ export interface UseUploadChatOptions {
   taskSettings?: ProviderSettings | null;
 }
 
+/**
+ * 上传聊天 hook 的返回值
+ * 包含消息列表、加载状态、错误和各种操作方法
+ */
 export interface UseUploadChatReturn {
   messages: ChatMessage[];
   isLoading: boolean;

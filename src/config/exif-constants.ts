@@ -46,9 +46,9 @@ export const COMMON_EXIF_KEYS = [
 export const COMMON_EXIF_KEYS_SET = new Set<string>(COMMON_EXIF_KEYS);
 
 /**
- * 过滤EXIF数据，只保留常用字段
- * @param exif 完整的EXIF数据
- * @return 只包含常用字段的EXIF数据
+ * Filter EXIF data to keep only common fields
+ * @param {Record<string, string|number>} exif - Complete EXIF data
+ * @return {Record<string, string|number>} EXIF data containing only common fields
  */
 export function filterCommonExif(
   exif: Record<string, string | number>

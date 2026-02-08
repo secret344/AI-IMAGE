@@ -1,5 +1,9 @@
 import { useAppStore } from '@/state/useAppStore';
 
+/**
+ * AI 提供商设置
+ * 包含模型、API 配置和生成参数
+ */
 export interface ProviderSettings {
   provider: 'openai' | 'gemini' | 'claude' | 'ollama' | 'mock';
   model: string;

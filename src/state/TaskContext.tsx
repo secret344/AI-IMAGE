@@ -30,6 +30,10 @@ import type { EvaluationResult } from '@/types/evaluation';
 import type { TaskRecord } from '@/modules/storage/db';
 import type { ChatMessage } from '@/types/conversation';
 
+/**
+ * 单个任务的完整状态
+ * 包含上传、风格识别、推荐、评估和聊天的各个阶段数据
+ */
 export interface TaskState {
   selectedFileName: string | null;
   processedImage: ProcessedImage | null;
@@ -58,6 +62,10 @@ const DEFAULT_TASK_STATE: TaskState = {
   chatMessages: []
 };
 
+/**
+ * TaskContext 的值类型
+ * 提供任务状态访问、更新方法和全局设置
+ */
 interface TaskContextValue {
   currentTaskId: string | null;
   setCurrentTaskId: (taskId: string | null) => void;
