@@ -24,6 +24,7 @@ For detailed, path-specific instructions, see `.github/instructions/` directory.
 - ✅ **Mobile-first**: Responsive design, max image 2048px edge
 - ✅ **shadcn/ui mandatory**: No native HTML for UI elements
 - ✅ **TypeScript strict**: No `any`, optional chaining, type safety
+- ✅ **No generated artifacts**: Do not commit Vite/TypeScript outputs (e.g., `.vite/`, `vite.config.d.ts`, `*.tsbuildinfo`)
 
 ---
 

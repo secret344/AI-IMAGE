@@ -4,6 +4,10 @@ dist
 .DS_Store
 coverage
 
+# Vite cache and generated config outputs
+.vite/
+vite.config.d.ts
+
 # TypeScript build cache
 *.tsbuildinfo
 
