@@ -38,7 +38,8 @@ npm run format       # Prettier
 npm run build        # Production build
 ```
 
-**Before Commit**:  
+**Before Commit**:
+
 1. `npm run type-check` → 0 errors
 2. `npm run lint` → no warnings
 3. `npm run build` → success
@@ -73,6 +74,7 @@ src/
 ## Key Rules / 核心规则
 
 ### Code Quality
+
 - Strict TypeScript: `strictNullChecks: true`, no `any` types
 - Absolute imports with `@/` alias
 - Early returns, optional chaining (`?.`), nullish coalescing (`??`)
@@ -80,39 +82,46 @@ src/
 - JSDoc comments: File-level + Props interface + Export function
 
 ### UI & Styling
+
 - **ALL UI elements use shadcn/ui** (no native HTML tags for UI)
 - Tailwind semantic tokens: `text-foreground`, `bg-card`, `border-border`
 - 8px spacing scale: `gap-2` (8px), `gap-3` (12px), `p-4` (16px), etc.
 - Mobile-first responsive: `flex flex-col sm:flex-row lg:grid`
 
 ### Data & Storage
+
 - Zero backend persistence (IndexedDB/localStorage only)
 - Never expose/log API keys (client-side AES-GCM encryption)
 - Validate all external data (strict JSON from AI)
 - Safe EXIF serialization/deserialization
 
 ### State Management
+
 - Use Zustand store with selectors (never subscribe to entire store)
 - Application settings: `useAppStore((s) => s.globalProviderSettings) ?? getDefaults()`
 - Track state changes with `useRef` to avoid duplicate updates
 - Pass settings to children via props, not store access
 
 ### Error Handling & Analytics
+
 - Classify errors: timeout, network, canceled, unknown
 - Support both English & Chinese error detection
 - Record errors once per unique message (use `useRef` to track)
 - Return typed object: `{ category: 'timeout'|'network'|..., label: string|null }`
 
 ### Internationalization
+
 - All user text via i18n (import `useTranslation()` from react-i18next)
 - Pattern: `namespace.key` (e.g., `upload.title`, `result.score`)
 - Update both en.json and zh.json together
 - No hardcoded strings in components
 
 ### Advanced Patterns
+
 - **Checkpoint/Rollback**: Support rollback for multi-round conversations
 - **useRef for deduplication**: Detect state changes without causing re-renders
 - **API Key Passphrase**: Support encrypted key encryption with optional passphrase
+- **Avoid duplicated logic**: Before adding any new logic, search for existing helpers/utilities and reuse or extend them. Keep shared operations centralized (e.g., `src/utils/`) instead of re-implementing per module. For thinking/content separation, centralize in `src/utils/thinking.ts` and do not re-implement per module.
 - **Important Technical Details**:
   - Image limits: ≤50MB (recommended ≤10MB)
   - Canvas preprocessing: 4096px max, JPEG 0.85 quality

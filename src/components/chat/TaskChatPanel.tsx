@@ -77,7 +77,9 @@ export function TaskChatPanel({
   const [input, setInput] = useState('');
   const [isRollbackOpen, setIsRollbackOpen] = useState(false);
   const [rollbackIndex, setRollbackIndex] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true); // 是否应该自动滚动
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const hasFailure = Boolean(error || retryHint);
   const statusLabel = isLoading
@@ -90,15 +92,42 @@ export function TaskChatPanel({
   const failureSummary = retryHint || error;
   const failureDetail = retryHint && error && retryHint !== error ? error : null;
 
+  const activeMessageId = activeAssistantId;
+
+  // 监听滚动事件，检测用户是否手动滚动
+  useEffect(() => {
+    const root = scrollRootRef.current;
+    if (!root) return;
+
+    const viewport = root.querySelector(
+      '[data-radix-scroll-area-viewport]'
+    ) as HTMLDivElement | null;
+    if (!viewport) return;
+    scrollViewportRef.current = viewport;
+
+    const handleScroll = () => {
+      // 如果滚动距离底部超过100px，认为用户在向上滚动
+      const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      if (distanceFromBottom > 100) {
+        setShouldAutoScroll(false);
+      } else {
+        // 在底部区域，恢复自动滚动
+        setShouldAutoScroll(true);
+      }
+    };
+
+    viewport.addEventListener('scroll', handleScroll);
+    return () => viewport.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // 自动滚动到底部
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (scrollRef.current?.parentElement) {
-        scrollRef.current.parentElement.scrollTop = scrollRef.current.parentElement.scrollHeight;
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [messages]);
+    if (!shouldAutoScroll) return;
+
+    const viewport = scrollViewportRef.current;
+    if (!viewport) return;
+    viewport.scrollTop = viewport.scrollHeight;
+  }, [messages, shouldAutoScroll]);
 
   // 处理发送消息
   const handleSend = () => {
@@ -156,7 +185,10 @@ export function TaskChatPanel({
 
       {/* 中间：消息区域 */}
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-        <ScrollArea className="flex-1 p-4 sm:p-5">
+        <ScrollArea 
+          ref={scrollRootRef}
+          className="flex-1 p-4 sm:p-5"
+        >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-8">
               <MessageCircle className="h-12 w-12 text-muted-foreground/20 mb-3" />
@@ -185,8 +217,10 @@ export function TaskChatPanel({
                     >
                       {msg.role === 'assistant' ? (
                         <TypewriterContent
-                          text={msg.content}
-                          isActive={msg.id === activeAssistantId}
+                          messageId={msg.id}
+                          content={msg.content}
+                          thinking={msg.thinking}
+                          isActive={msg.id === activeMessageId}
                         />
                       ) : (
                         <span className="whitespace-pre-wrap">{msg.content}</span>
@@ -248,7 +282,6 @@ export function TaskChatPanel({
                   )}
                 </div>
               ))}
-              <div ref={scrollRef} />
             </div>
           )}
         </ScrollArea>
@@ -282,12 +315,7 @@ export function TaskChatPanel({
 
         {failureSummary && onClearError && (
           <div className="mx-4 mt-2 flex justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearError}
-              className="h-6 px-2 text-xs"
-            >
+            <Button variant="ghost" size="sm" onClick={onClearError} className="h-6 px-2 text-xs">
               {t('chat.cancel') || '关闭'}
             </Button>
           </div>
@@ -312,15 +340,14 @@ export function TaskChatPanel({
                 disabled={!input.trim() || isLoading || disabled}
                 className="px-3"
               >
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
               {isLoading && onCancel && (
-                <Button
-                  onClick={onCancel}
-                  variant="outline"
-                  size="sm"
-                  className="px-3"
-                >
+                <Button onClick={onCancel} variant="outline" size="sm" className="px-3">
                   <Square className="h-4 w-4" />
                 </Button>
               )}

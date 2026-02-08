@@ -17,9 +17,7 @@ export function limitConversationMessages(messages: MessageList, maxChars?: numb
   }
 
   const systemMessages = messages.filter((message) => message.role === 'system');
-  const latestSystem = systemMessages.length
-    ? systemMessages[systemMessages.length - 1]
-    : null;
+  const latestSystem = systemMessages.length ? systemMessages[systemMessages.length - 1] : null;
   const history = messages.filter((message) => message.role !== 'system');
   const limited: MessageList = [];
   const systemLength = latestSystem ? normalizeContentLength(latestSystem.content) : 0;

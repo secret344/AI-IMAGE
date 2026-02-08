@@ -132,6 +132,8 @@
   "result": {
     "title": "评估结果",
     "description": "AI分析后将显示结果。强制使用仅JSON输出。",
+    "parseRecoveredTitle": "结果已恢复",
+    "parseRecoveredDescription": "AI 输出包含额外文本或重复内容，已从首个有效 JSON 中恢复结果。",
     "offline": "离线模式：重新连接之前AI调用不可用。",
     "activeAgent": "当前摄影师",
     "overallScore": "总体分数",
@@ -144,6 +146,7 @@
     "noRetouchPlan": "未提供修图方案。",
     "exifButton": "EXIF",
     "exifDialogTitle": "EXIF 参数",
+    "exifDialogDescription": "查看并筛选图片的 EXIF 元数据。",
     "exifSearchPlaceholder": "搜索 EXIF 字段或值",
     "exifCommonOnly": "仅常用",
     "exifCopyJson": "复制 JSON",

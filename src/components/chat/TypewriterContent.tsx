@@ -1,124 +1,234 @@
+/**
+ * 思考内容展示组件 - 重构版
+ * 职责：展示模型思考过程与最终答复
+ * 数据流：props → useMemo(有效数据) → useState(显示状态) → useEffect(动画控制) → render
+ */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-
-const THINKING_START_MARKER = '[[THINKING]]';
-const THINKING_END_MARKER = '[[/THINKING]]';
-const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/i;
-const THINK_FENCE_REGEX = /```(?:thinking|think|thoughts)[\s\S]*?```/i;
-
-function splitThinkingContent(text: string): {
-  hasThinking: boolean;
-  thinking: string;
-  answer: string;
-} {
-  const startIndex = text.indexOf(THINKING_START_MARKER);
-  const endIndex = text.indexOf(THINKING_END_MARKER);
-
-  if (startIndex >= 0) {
-    const thinkingStart = startIndex + THINKING_START_MARKER.length;
-    const thinkingEnd = endIndex >= 0 ? endIndex : text.length;
-    const thinking = text.slice(thinkingStart, thinkingEnd).trim();
-    const answerStart = endIndex >= 0 ? endIndex + THINKING_END_MARKER.length : text.length;
-    const answer = text.slice(answerStart).trimStart();
-    return { hasThinking: true, thinking, answer };
-  }
-
-  const tagMatch = text.match(THINK_TAG_REGEX);
-  if (tagMatch) {
-    const thinking = tagMatch[0].replace(/<\/?think>/gi, '').trim();
-    const answer = text.replace(THINK_TAG_REGEX, '').trimStart();
-    return { hasThinking: true, thinking, answer };
-  }
-
-  const fenceMatch = text.match(THINK_FENCE_REGEX);
-  if (fenceMatch) {
-    const thinking = fenceMatch[0]
-      .replace(/```(?:thinking|think|thoughts)/i, '')
-      .replace(/```$/, '')
-      .trim();
-    const answer = text.replace(THINK_FENCE_REGEX, '').trimStart();
-    return { hasThinking: true, thinking, answer };
-  }
-
-  return { hasThinking: false, thinking: '', answer: text };
-}
+import { normalizeThinkingResult } from '@/utils/thinking';
 
 interface TypewriterContentProps {
-  text: string;
+  content: string;
+  thinking?: string;
   isActive: boolean;
   speedMs?: number;
+  thinkingSpeedMs?: number;
+  messageId?: string;
 }
 
-export function TypewriterContent({ text, isActive, speedMs = 14 }: TypewriterContentProps) {
+export function TypewriterContent({
+  content,
+  thinking,
+  isActive,
+  speedMs = 8,
+  thinkingSpeedMs,
+  messageId
+}: TypewriterContentProps) {
   const { t } = useTranslation();
-  const [displayText, setDisplayText] = useState(text);
-  // 历史记录加载时默认收起思考内容；实时流式时展开
-  const [isThinkingOpen, setIsThinkingOpen] = useState(isActive);
-  const prevThinkingEndRef = useRef(false);
+  const resolvedThinkingSpeedMs = thinkingSpeedMs ?? Math.max(4, Math.floor(speedMs * 0.6));
 
-  useEffect(() => {
+  // Step 1: 提取有效内容（不会在render中重复计算）
+  const { effectiveContent, effectiveThinking } = useMemo(() => {
+    if (thinking) {
+      return { effectiveContent: content, effectiveThinking: thinking };
+    }
+    if (!content) {
+      return { effectiveContent: '', effectiveThinking: '' };
+    }
     if (!isActive) {
-      setDisplayText(text);
-      return;
+      return { effectiveContent: content, effectiveThinking: '' };
     }
-    setDisplayText('');
-    let index = 0;
-    const interval = window.setInterval(() => {
-      index += 1;
-      setDisplayText(text.slice(0, index));
-      if (index >= text.length) {
-        window.clearInterval(interval);
-      }
-    }, speedMs);
-    return () => window.clearInterval(interval);
-  }, [isActive, speedMs, text]);
+    const normalized = normalizeThinkingResult(content);
+    return {
+      effectiveContent: normalized.content,
+      effectiveThinking: normalized.thinking
+    };
+  }, [content, isActive, thinking]);
 
-  const { hasThinking, thinking, answer } = useMemo(
-    () => splitThinkingContent(displayText),
-    [displayText]
-  );
-  const hasThinkingEnd = useMemo(() => {
-    if (!hasThinking) {
-      return false;
-    }
-    if (displayText.includes(THINKING_END_MARKER)) {
-      return true;
-    }
-    return THINK_TAG_REGEX.test(displayText) || THINK_FENCE_REGEX.test(displayText);
-  }, [displayText, hasThinking]);
+  // Step 2: 显示状态（独立管理）
+  const [displayText, setDisplayText] = useState(effectiveContent);
+  const [displayThinking, setDisplayThinking] = useState(effectiveThinking);
+  const [isThinkingOpen, setIsThinkingOpen] = useState(isActive && Boolean(effectiveThinking));
+
+  // 用于判断内容是否发生变化
+  const prevContentRef = useRef(effectiveContent);
+  const prevThinkingRef = useRef(effectiveThinking);
+  const contentIntervalRef = useRef<number | null>(null);
+  const thinkingIntervalRef = useRef<number | null>(null);
+  const segmentDelayMs = 70;
+  const autoOpenedRef = useRef(false);
+  const userToggledRef = useRef(false);
+  const lastMessageIdRef = useRef(messageId ?? null);
 
   useEffect(() => {
-    if (!hasThinking) {
-      prevThinkingEndRef.current = false;
+    const nextId = messageId ?? null;
+    if (lastMessageIdRef.current !== nextId) {
+      lastMessageIdRef.current = nextId;
+      autoOpenedRef.current = false;
+      userToggledRef.current = false;
+      setIsThinkingOpen(isActive && Boolean(effectiveThinking));
+      prevContentRef.current = effectiveContent;
+      prevThinkingRef.current = effectiveThinking;
+    }
+  }, [effectiveContent, effectiveThinking, isActive, messageId]);
+
+  const renderSegments = (text: string) => {
+    return text
+      .split(/\n{2,}/)
+      .filter((segment) => segment.trim().length > 0)
+      .map((segment, index) => (
+        <div
+          key={`${segment.slice(0, 16)}-${index}`}
+          className="animate-in fade-in"
+          style={{ animationDelay: `${index * segmentDelayMs}ms` }}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{segment}</ReactMarkdown>
+        </div>
+      ));
+  };
+
+  const renderCursor = () => (
+    <span className="inline-block h-4 w-1.5 animate-pulse rounded-sm bg-foreground/70 align-text-bottom" />
+  );
+
+  // Step 3: 内容动画控制
+  useEffect(() => {
+    if (!effectiveContent) {
+      setDisplayText('');
       return;
     }
 
-    if (!hasThinkingEnd) {
-      prevThinkingEndRef.current = false;
+    if (!isActive) {
+      // 非活跃状态直接设置
+      setDisplayText(effectiveContent);
+      prevContentRef.current = effectiveContent;
+      if (contentIntervalRef.current) {
+        clearInterval(contentIntervalRef.current);
+        contentIntervalRef.current = null;
+      }
       return;
     }
 
-    if (!prevThinkingEndRef.current) {
+    // 活跃状态下，内容变化时才启动动画
+    if (prevContentRef.current !== effectiveContent) {
+      const currentLength = displayText.length;
+      const shouldAppend = effectiveContent.startsWith(displayText);
+      if (!shouldAppend) {
+        setDisplayText('');
+      }
+      let index = shouldAppend ? currentLength : 0;
+      contentIntervalRef.current = window.setInterval(() => {
+        index += 1;
+        setDisplayText(effectiveContent.slice(0, index));
+        if (index >= effectiveContent.length) {
+          if (contentIntervalRef.current) {
+            clearInterval(contentIntervalRef.current);
+            contentIntervalRef.current = null;
+          }
+        }
+      }, speedMs);
+      prevContentRef.current = effectiveContent;
+    }
+
+    return () => {
+      if (contentIntervalRef.current) {
+        clearInterval(contentIntervalRef.current);
+      }
+    };
+  }, [effectiveContent, isActive, speedMs]);
+
+  // Step 4: 思考内容动画控制
+  useEffect(() => {
+    if (!effectiveThinking) {
+      setDisplayThinking('');
+      if (thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    if (!isActive) {
+      // 非活跃状态直接显示
+      setDisplayThinking(effectiveThinking);
+      prevThinkingRef.current = effectiveThinking;
+      if (thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // 活跃状态下，思考内容变化时启动动画
+    if (prevThinkingRef.current !== effectiveThinking) {
+      const currentLength = displayThinking.length;
+      const shouldAppend = effectiveThinking.startsWith(displayThinking);
+      if (!shouldAppend) {
+        setDisplayThinking('');
+      }
+      let index = shouldAppend ? currentLength : 0;
+      thinkingIntervalRef.current = window.setInterval(() => {
+        index += 1;
+        setDisplayThinking(effectiveThinking.slice(0, index));
+        if (index >= effectiveThinking.length) {
+          if (thinkingIntervalRef.current) {
+            clearInterval(thinkingIntervalRef.current);
+            thinkingIntervalRef.current = null;
+          }
+        }
+      }, resolvedThinkingSpeedMs);
+      prevThinkingRef.current = effectiveThinking;
+    }
+
+    return () => {
+      if (thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+      }
+    };
+  }, [effectiveThinking, isActive, resolvedThinkingSpeedMs, speedMs, displayThinking]);
+
+  // Step 5: 自动打开思考面板
+  useEffect(() => {
+    if (!isActive && autoOpenedRef.current && !userToggledRef.current) {
       setIsThinkingOpen(false);
     }
-    prevThinkingEndRef.current = true;
-  }, [hasThinking, hasThinkingEnd]);
+    if (isActive && effectiveThinking && !isThinkingOpen && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setIsThinkingOpen(true);
+    }
+  }, [isActive, effectiveThinking, isThinkingOpen]);
 
-  if (!hasThinking) {
+  // Step 6: 渲染
+  // 如果没有思考内容，只显示回复
+  if (!effectiveThinking) {
     return (
       <div className="whitespace-pre-wrap break-words">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
+        {isActive ? (
+          <>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
+            {renderCursor()}
+          </>
+        ) : (
+          renderSegments(displayText)
+        )}
       </div>
     );
   }
 
+  // 有思考内容时，显示折叠面板 + 回复
   return (
     <div className="space-y-2">
-      <Collapsible open={isThinkingOpen} onOpenChange={setIsThinkingOpen}>
+      <Collapsible
+        open={isThinkingOpen}
+        onOpenChange={(open) => {
+          userToggledRef.current = true;
+          setIsThinkingOpen(open);
+        }}
+      >
         <div className="flex items-center gap-2">
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
@@ -132,12 +242,32 @@ export function TypewriterContent({ text, isActive, speedMs = 14 }: TypewriterCo
           </span>
         </div>
         <CollapsibleContent className="mt-2 rounded-md border border-border/50 bg-background/60 p-2 text-xs leading-relaxed whitespace-pre-wrap break-words">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{thinking}</ReactMarkdown>
+          {isActive && !effectiveThinking ? (
+            <div className="space-y-2">
+              <div className="h-3 w-5/6 animate-pulse rounded bg-muted/60" />
+              <div className="h-3 w-4/6 animate-pulse rounded bg-muted/60" />
+              <div className="h-3 w-3/6 animate-pulse rounded bg-muted/60" />
+            </div>
+          ) : isActive ? (
+            <>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayThinking}</ReactMarkdown>
+              {renderCursor()}
+            </>
+          ) : (
+            renderSegments(displayThinking)
+          )}
         </CollapsibleContent>
       </Collapsible>
-      {answer ? (
+      {displayText ? (
         <div className="whitespace-pre-wrap break-words">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
+          {isActive ? (
+            <>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
+              {renderCursor()}
+            </>
+          ) : (
+            renderSegments(displayText)
+          )}
         </div>
       ) : null}
     </div>

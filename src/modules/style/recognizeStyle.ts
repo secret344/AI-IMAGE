@@ -25,7 +25,7 @@ export interface StyleRecognitionResult {
 
 const STYLE_TAG_SET = new Set(STYLE_TAGS);
 
-const STYLE_SYSTEM_PROMPT_STATIC = [
+const STYLE_SYSTEM_PROMPT_EN = [
   'You are a professional photography style analyzer.',
   'Analyze the image and identify photographic style tags.',
   'CRITICAL: You MUST return ONLY valid JSON in this exact format: {"styleTags":[{"name":"TagName","weight":0.5,"confidence":0.9}],"description":"..."}',
@@ -36,35 +36,57 @@ const STYLE_SYSTEM_PROMPT_STATIC = [
   '4. Do not include thinking tags or any other content.'
 ];
 
-const STYLE_USER_PROMPT_STATIC = [
+const STYLE_SYSTEM_PROMPT_ZH = [
+  '你是一名专业的摄影风格分析师。',
+  '请分析图片并识别摄影风格标签。',
+  '关键要求：你必须只返回严格有效的 JSON，格式为：{"styleTags":[{"name":"TagName","weight":0.5,"confidence":0.9}],"description":"..."}',
+  '规则：',
+  '1. 仅输出 JSON 对象，不得输出其他内容。',
+  '2. 禁止解释文字、Markdown、代码块或反引号。',
+  '3. JSON 必须可解析。',
+  '4. 不要输出思考标签或其他额外内容。'
+];
+
+const STYLE_USER_PROMPT_EN = [
   'Analyze this image and return only JSON with 3-5 style tags.',
   'Weights must sum to ~1.0. Confidence is 0.0-1.0.',
   'Do not translate tag names; if you add any explanatory text, keep it in the required language.'
 ];
 
-function buildStyleSystemPrompt(languageLabel: string): string {
+const STYLE_USER_PROMPT_ZH = [
+  '请分析这张图片，并仅返回包含 3-5 个风格标签的 JSON。',
+  '权重之和应约等于 1.0，置信度范围 0.0-1.0。',
+  '不要翻译标签名称；如需任何说明文字，务必使用要求的语言。'
+];
+
+function buildStyleSystemPrompt(language: LanguageCode, languageLabel: string): string {
+  const useZh = language.toLowerCase().startsWith('zh');
+  const base = useZh ? STYLE_SYSTEM_PROMPT_ZH : STYLE_SYSTEM_PROMPT_EN;
+  const languageHint = useZh
+    ? '所有可读文本（如描述）必须使用简体中文。'
+    : `Any human-readable text (like description) must be written in ${languageLabel}.`;
+
   return [
-    STYLE_SYSTEM_PROMPT_STATIC[0],
-    STYLE_SYSTEM_PROMPT_STATIC[1],
-    `Any human-readable text (like description) must be written in ${languageLabel}.`,
-    STYLE_SYSTEM_PROMPT_STATIC[2],
-    STYLE_SYSTEM_PROMPT_STATIC[3],
-    STYLE_SYSTEM_PROMPT_STATIC[4],
-    STYLE_SYSTEM_PROMPT_STATIC[5],
-    STYLE_SYSTEM_PROMPT_STATIC[6],
-    STYLE_SYSTEM_PROMPT_STATIC[7]
+    base[0],
+    base[1],
+    languageHint,
+    base[2],
+    base[3],
+    base[4],
+    base[5],
+    base[6],
+    base[7]
   ].join('\n');
 }
 
-function buildStyleUserPrompt(): string {
-  const basePrompt = [
-    STYLE_USER_PROMPT_STATIC[0],
-    `Tags (choose ONLY from this list): ${STYLE_TAGS.join(', ')}.`,
-    STYLE_USER_PROMPT_STATIC[1],
-    STYLE_USER_PROMPT_STATIC[2]
-  ].join('\n');
+function buildStyleUserPrompt(language: LanguageCode): string {
+  const useZh = language.toLowerCase().startsWith('zh');
+  const base = useZh ? STYLE_USER_PROMPT_ZH : STYLE_USER_PROMPT_EN;
+  const tagLine = useZh
+    ? `标签（仅可从以下列表中选择）：${STYLE_TAGS.join(', ')}。`
+    : `Tags (choose ONLY from this list): ${STYLE_TAGS.join(', ')}.`;
 
-  return basePrompt;
+  return [base[0], tagLine, base[1], base[2]].join('\n');
 }
 
 type RawStyleTag = {
@@ -240,13 +262,13 @@ export async function recognizeStyle(
   }
 
   // Create the style recognition prompt - keep it short to prevent excessive thinking
-  const systemPrompt = buildStyleSystemPrompt(languageLabel);
-  const userPrompt = buildStyleUserPrompt();
+  const systemPrompt = buildStyleSystemPrompt(userLanguage, languageLabel);
+  const userPrompt = buildStyleUserPrompt(userLanguage);
 
   let response = '';
   try {
     const limitedHistory = limitConversationMessages(chatHistory ?? [], settings.contextMaxChars);
-    response = await callAiProvider({
+    const apiResponse = await callAiProvider({
       base64Image,
       systemPrompt,
       userPrompt,
@@ -262,6 +284,8 @@ export async function recognizeStyle(
         content: message.content
       }))
     });
+    // callAiProvider 现在返回 { content, thinking }
+    response = apiResponse.content;
   } catch (error) {
     console.error('Style recognition API call failed:', error);
     response = '';

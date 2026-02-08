@@ -1,5 +1,5 @@
 ---
-applyTo: "src/components/**/*.tsx"
+applyTo: 'src/components/**/*.tsx'
 ---
 
 # React Components Guidelines / React 组件指南
@@ -16,13 +16,14 @@ All React components are **functional components** using hooks. Never use class 
 - Component names: Match file name
 - Props interface: `{ComponentName}Props`
 - Example:
+
   ```typescript
   // File: src/components/upload/UploadPanel.tsx
   interface UploadPanelProps {
     onUpload: (file: File) => void;
     isLoading?: boolean;
   }
-  
+
   export function UploadPanel({ onUpload, isLoading }: UploadPanelProps) {
     // ...
   }
@@ -76,11 +77,13 @@ export function UploadChatWrapper(props: UploadChatWrapperProps) {
 **关键**：所有 UI 元素必须使用从 `@/components/ui/` 导入的 shadcn/ui 组件。
 
 Never use:
+
 - Native HTML: `<button>`, `<input>`, `<label>`, `<div className="...">` for layout
 - Custom styled components
 - Arbitrary Tailwind values
 
 Always use:
+
 - `<Button />`, `<Input />`, `<Label />`, `<Card />`
 - Semantic Tailwind tokens: `text-foreground`, `bg-card`, `border-border`
 - 8px spacing scale: `gap-2`, `gap-3`, `gap-4`, `p-3`, `p-4`, `p-6`
@@ -107,6 +110,7 @@ export function MyComponent() {
 ```
 
 Add translations to:
+
 - `src/i18n/en.json` (English)
 - `src/i18n/zh.json` (Chinese) - keep parity
 
@@ -131,13 +135,14 @@ import Button from '../ui/button.tsx';
 - **Don't use**: Redux, Context (Zustand is already configured)
 
 Example:
+
 ```typescript
 import { useAppStore } from '@/state/useAppStore';
 
 export function MyComponent() {
   const [localValue, setLocal] = useState('');
   const globalValue = useAppStore((state) => state.someValue);
-  
+
   return <div>{globalValue}</div>;
 }
 ```
@@ -150,7 +155,7 @@ Use `useEffect` correctly with proper dependency arrays:
 useEffect(() => {
   const handler = () => console.log('event');
   window.addEventListener('resize', handler);
-  
+
   return () => window.removeEventListener('resize', handler); // Cleanup!
 }, []); // Empty array = mount/unmount only
 ```
@@ -201,13 +206,14 @@ All layouts must be mobile-first:
 
 ```typescript
 // ✅ Correct: mobile first
-className="flex flex-col sm:flex-row gap-2 sm:gap-4"
+className = 'flex flex-col sm:flex-row gap-2 sm:gap-4';
 
 // ❌ Wrong: desktop first
-className="flex flex-row md:flex-col"
+className = 'flex flex-row md:flex-col';
 ```
 
 Responsive breakpoints:
+
 - `sm:` - phone to tablet (~640px)
 - `lg:` - tablet to desktop (~1024px)
 - `xl:` - large desktop (~1280px)

@@ -53,20 +53,20 @@ export async function runEvaluation(input: RunEvaluationInput) {
   }));
 
   // When there's conversation history as context, prepend a clarification to explain
-  // that the messages are background context and this is an independent evaluation
+  // that only non-system messages are background context and this is an independent evaluation
   let userPrompt = assembled.user;
   if (messages.length > 0) {
     const contextClue =
       input.language === 'zh'
         ? `【重要说明】
-以下消息是与该图片相关的历史讨论内容（仅供参考）。这些讨论中的调整、建议或评论不适用于当前的新评估任务。
+      以下非 system 角色的消息（不包括当前这条 user 请求）是与该图片相关的历史讨论内容（仅供参考）。这些讨论中的调整、建议或评论不适用于当前的新评估任务。
 你需要忽略历史消息中的任何评分或建议，针对该图片进行全新、独立的评估，返回严格的 JSON 格式结果。
 
 ---
 
 `
         : `【Important Note】
-The following messages are historical discussion content related to this image (for reference only). Any adjustments, suggestions, or comments in these discussions do not apply to the current new evaluation task.
+      The following non-system messages (excluding the current user request) are historical discussion content related to this image (for reference only). Any adjustments, suggestions, or comments in these discussions do not apply to the current new evaluation task.
 You must ignore any scores or suggestions in the historical messages and perform a fresh, independent evaluation of the image, returning strict JSON format results.
 
 ---
@@ -95,8 +95,13 @@ You must ignore any scores or suggestions in the historical messages and perform
     )
   );
 
-  const payload = safeParseJson(response);
-  return validateResult(payload, input.language || 'en');
+  // callAiProvider 现在返回 { content, thinking }，只需 content 用于解析
+  const parsed = safeParseJson(response.content);
+  if (parsed.recovered) {
+    console.warn('[Evaluation] JSON recovery applied: mixed or duplicated output detected.');
+  }
+  const result = validateResult(parsed.payload, input.language || 'en');
+  return { ...result, parseRecovered: parsed.recovered };
 }
 
 async function callWithRetry<T>(fn: () => Promise<T>, retries: number): Promise<T> {
@@ -117,17 +122,23 @@ async function callWithRetry<T>(fn: () => Promise<T>, retries: number): Promise<
   }
 }
 
-function safeParseJson(text: string) {
+function safeParseJson(text: string): { payload: unknown; recovered: boolean } {
   const trimmed = text.trim();
-  const candidates = [trimmed, extractJsonBlock(trimmed)].filter(Boolean) as string[];
-  for (const candidate of candidates) {
+  const candidates = [
+    trimmed,
+    extractJsonBlock(trimmed),
+    ...extractJsonObjects(trimmed),
+    extractFirstJsonObject(trimmed)
+  ].filter(Boolean) as string[];
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
     try {
-      return JSON.parse(candidate);
+      return { payload: JSON.parse(candidate), recovered: index > 0 };
     } catch {
       continue;
     }
   }
-  return null;
+  return { payload: null, recovered: false };
 }
 
 function extractJsonBlock(text: string): string | null {
@@ -135,10 +146,89 @@ function extractJsonBlock(text: string): string | null {
   if (fenced?.[1]) {
     return fenced[1];
   }
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start !== -1 && end !== -1 && end > start) {
-    return text.slice(start, end + 1);
-  }
   return null;
+}
+
+function extractFirstJsonObject(text: string): string | null {
+  const start = text.indexOf('{');
+  if (start === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i += 1) {
+    const char = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\' && inString) {
+      escaped = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) {
+      continue;
+    }
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function extractJsonObjects(text: string): string[] {
+  const results: string[] = [];
+  let start = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\' && inString) {
+      escaped = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) {
+      continue;
+    }
+
+    if (char === '{') {
+      if (depth === 0) {
+        start = i;
+      }
+      depth += 1;
+    } else if (char === '}') {
+      if (depth > 0) {
+        depth -= 1;
+        if (depth === 0 && start !== -1) {
+          results.push(text.slice(start, i + 1));
+          start = -1;
+        }
+      }
+    }
+  }
+
+  return results;
 }

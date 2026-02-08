@@ -8,6 +8,7 @@ export interface ChatMessage {
   id: string; // UUID
   role: 'system' | 'user' | 'assistant'; // 消息角色
   content: string; // 消息内容
+  thinking?: string; // 思考内容（可选，已与正文分离）
   timestamp: number; // 时间戳 (ms)
   threadId?: string; // [预留] 线程ID，用于多线程支持
   modelUsed?: string; // [预留] 使用的模型名称
@@ -41,8 +42,8 @@ export interface ChatRequestConfig {
   maxTokens?: number; // 最大令牌数
   timeoutMs?: number; // 超时
   contextMaxChars?: number; // 上下文消息长度限制
-  onToken?: (chunk: string) => void; // 流式输出回调
-  includeThinking?: boolean; // 是否展示思考内容（仅聊天）
+  onToken?: (chunk: string) => void; // 流式输出回调 (content)
+  onThinkingToken?: (chunk: string) => void; // 流式输出回调 (thinking)
 }
 
 /** 聊天上下文信息 (传递给AI的关键信息) */

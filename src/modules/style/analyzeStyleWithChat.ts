@@ -111,7 +111,7 @@ export function extractAnalysisSuggestion(lastAssistantMessage: ChatMessage | un
   if (hasAnalysisKeywords) {
     // 提取建议文本（通常是消息的最后一句）
     const lines = lastAssistantMessage.content.split('\n').filter((line) => line.trim());
-    
+
     // 排除可能是代码块或 JSON 的行
     let suggestion = '';
     for (let i = lines.length - 1; i >= 0; i--) {

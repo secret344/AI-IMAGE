@@ -20,6 +20,7 @@ export interface UploadChatIntegrationCallbacks {
   onAnalysisSuggested: (suggestion: string) => void;
   onError: (error: Error) => void;
   onStreamChunk?: (chunk: string) => void;
+  onThinkingChunk?: (chunk: string) => void;
 }
 
 /**
@@ -80,7 +81,7 @@ export async function handleUploadChatMessage(
       timeoutMs: settings.timeoutMs,
       contextMaxChars: settings.contextMaxChars,
       onToken: callbacks.onStreamChunk,
-      includeThinking: true
+      onThinkingToken: callbacks.onThinkingChunk
     };
 
     // 调用AI聊天

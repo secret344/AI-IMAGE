@@ -134,6 +134,8 @@
   "result": {
     "title": "Evaluation Result",
     "description": "Results will appear after AI analysis. JSON-only output is enforced.",
+    "parseRecoveredTitle": "Partial JSON recovered",
+    "parseRecoveredDescription": "The AI response contained extra text or duplicates. Results were recovered from the first valid JSON block.",
     "offline": "Offline mode: AI calls are unavailable until you reconnect.",
     "activeAgent": "Active Agent",
     "overallScore": "Overall score",
@@ -146,6 +148,7 @@
     "noRetouchPlan": "No retouch plan provided.",
     "exifButton": "EXIF",
     "exifDialogTitle": "EXIF Details",
+    "exifDialogDescription": "Review and filter the image EXIF metadata.",
     "exifSearchPlaceholder": "Search EXIF keys or values",
     "exifCommonOnly": "Common only",
     "exifCopyJson": "Copy JSON",

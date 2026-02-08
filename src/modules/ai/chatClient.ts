@@ -56,6 +56,7 @@ const buildChatOutputGuard = (language?: string): string => {
 【输出约束】
 - 禁止输出思考过程或自我反思，只输出最终答复。
 - 禁止循环或重复同一内容；回答完成后立刻停止。
+- 如用户提出“绝对/必须/百分之百”等要求导致无法满足或出现循环，请改为尽量满足其具体意图，明确说明已在可行范围内完成。
 - 如需要列表，请保持简洁。
 - 避免无意义填充或延展，确保信息密度。`;
   }
@@ -63,6 +64,7 @@ const buildChatOutputGuard = (language?: string): string => {
 [Output Constraints]
 - Do not output chain-of-thought or self-reflection; provide only the final answer.
 - Do not loop or repeat the same content; stop immediately after completing the answer.
+- If the user demands absolute guarantees that cause loops or are impossible to satisfy, fulfill the concrete intent as much as possible and clearly state the feasible scope.
 - If a list is needed, keep it concise.
 - Avoid padding or rambling; keep the response dense and relevant.`;
 };
@@ -82,9 +84,10 @@ const buildEvaluationChatPrompt = (language?: string): string => {
   const styleTagsText = getStyleTagsText(language);
   const dimensionListText = getDimensionListText(language);
   const normalizedLang = normalizeLanguage(language);
-  
-  const outputGuide = normalizedLang === 'zh'
-    ? `【输出指南】
+
+  const outputGuide =
+    normalizedLang === 'zh'
+      ? `【输出指南】
 仅以自然语言回答，完全禁止：
 - 输出任何 JSON 结构或代码块
 - 重新计算或修改现有评分
@@ -92,7 +95,7 @@ const buildEvaluationChatPrompt = (language?: string): string => {
 - 使用 Markdown 格式的代码块 (三反引号或 \`\`\`json）
 
 直接用段落、列表或对话风格讨论。`
-    : `【Output Guide】
+      : `【Output Guide】
 Respond ONLY in natural language, strictly forbidden:
 - Do NOT output any JSON structure or code blocks
 - Do NOT recalculate or modify existing scores
@@ -248,7 +251,7 @@ export async function callAgentChat(
     : [];
   const conversationMessages = buildConversationMessages(recentMessages, config.contextMaxChars);
 
-  let responseContent: string;
+  let responseContent: import('./client').AiResponse;
 
   try {
     // 使用配置模型，如果未配置则使用供应商默认模型
@@ -263,9 +266,10 @@ export async function callAgentChat(
 
     // Mark the latest user message clearly to prevent scoring confusion
     const normalizedLang = normalizeLanguage(i18n.language);
-    const latestUserPrompt = normalizedLang === 'zh'
-      ? `【用户最新问题】\n${userMessage}`
-      : `[Latest User Question]\n${userMessage}`;
+    const latestUserPrompt =
+      normalizedLang === 'zh'
+        ? `【用户最新问题】\n${userMessage}`
+        : `[Latest User Question]\n${userMessage}`;
 
     responseContent = await callAiProvider({
       base64Image: context.imageBase64 || '',
@@ -284,7 +288,7 @@ export async function callAgentChat(
       timeoutMs: config.timeoutMs ?? 30000,
       signal,
       onToken: config.onToken,
-      includeThinking: config.includeThinking
+      onThinkingToken: config.onThinkingToken
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -293,10 +297,12 @@ export async function callAgentChat(
   }
 
   // 返回新消息对象 (存储层会生成 id 和 timestamp)
+  // responseContent 已经是分离好的 { content, thinking }，不需要再解析
   return {
     id: '', // 存储层会生成
     role: 'assistant',
-    content: responseContent,
+    content: responseContent.content,
+    thinking: responseContent.thinking,
     timestamp: 0, // 存储层会设置
     modelUsed: config.provider
   };

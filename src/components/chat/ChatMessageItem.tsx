@@ -1,5 +1,7 @@
 /**
  * 聊天消息项组件
+ * 职责：显示单条聊天消息
+ * 特点：支持思考内容与正文分离
  */
 
 import type { ChatMessage } from '@/types/conversation';
@@ -32,11 +34,19 @@ function formatTime(timestamp: number): string {
  * 聊天消息项组件的 Props
  */
 export interface ChatMessageProps {
+  /** 消息对象 */
   message: ChatMessage;
+  /** 是否为最新 assistant 消息 */
   isLatestAssistant?: boolean;
+  /** 是否处于流式显示 */
   isStreaming?: boolean;
 }
 
+/**
+ * Chat message item renderer
+ * @param {ChatMessageProps} props - Component properties
+ * @return {JSX.Element} Chat message item element
+ */
 export function ChatMessageItem({
   message,
   isLatestAssistant = false,
@@ -57,7 +67,11 @@ export function ChatMessageItem({
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <TypewriterContent text={message.content} isActive={isLatestAssistant && isStreaming} />
+          <TypewriterContent
+            content={message.content}
+            thinking={message.thinking}
+            isActive={isLatestAssistant && isStreaming}
+          />
         )}
       </div>
       <div className="text-xs text-muted-foreground flex items-end pb-1">

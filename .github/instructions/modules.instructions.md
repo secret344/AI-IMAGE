@@ -1,5 +1,5 @@
 ---
-applyTo: "src/modules/**/*.ts,src/modules/**/*.tsx"
+applyTo: 'src/modules/**/*.ts,src/modules/**/*.tsx'
 ---
 
 # Business Logic Modules / 业务逻辑模块
@@ -11,6 +11,7 @@ All files in `src/modules/` contain reusable business logic, utilities, and API 
 ## File Naming / 文件命名
 
 Use **camelCase** for module files:
+
 - ✅ `processImage.ts`, `callProvider.ts`, `validateJSON.ts`
 - ❌ `ProcessImage.ts`, `call-provider.ts`
 
@@ -62,7 +63,7 @@ export async function callAiProvider(request: AIRequest): Promise<AIResponse> {
     // Classify error for analytics
     let category: ErrorCategory = 'unknown';
     const message = String(error).toLowerCase();
-    
+
     if (message.includes('timeout')) {
       category = 'timeout';
     } else if (message.includes('network') || message.includes('fetch')) {
@@ -70,7 +71,7 @@ export async function callAiProvider(request: AIRequest): Promise<AIResponse> {
     } else if (message.includes('abort')) {
       category = 'canceled';
     }
-    
+
     throw error; // Re-throw; component will classify & log
   }
 }
@@ -94,7 +95,9 @@ export async function processImage(file: File): Promise<ProcessedImage> {
     throw new Error('Image exceeds 50MB limit');
   }
   // ...
-  return { /* ProcessedImage */ };
+  return {
+    /* ProcessedImage */
+  };
 }
 ```
 
@@ -103,25 +106,27 @@ export async function processImage(file: File): Promise<ProcessedImage> {
 ### 1. `src/modules/ai/` - AI Provider Integration
 
 Handles calls to OpenAI, Gemini, Claude. Always:
+
 - Validate API keys are encrypted
 - Pass `messages` array for multi-turn conversations
 - Validate JSON responses before returning
 - Implement timeout handling
 
 Example:
+
 ```typescript
 // src/modules/ai/client.ts
 export async function callOpenAI(request: OpenAIRequest): Promise<EvaluationResult> {
   const apiKey = decrypt(getEncryptedKey('openai'));
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}` },
+    headers: { Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      messages: request.messages,
+      messages: request.messages
       // ...
-    }),
+    })
   });
-  
+
   const data = await response.json();
   return validateAndParseJSON(data);
 }
@@ -130,12 +135,14 @@ export async function callOpenAI(request: OpenAIRequest): Promise<EvaluationResu
 ### 2. `src/modules/storage/` - IndexedDB & localStorage
 
 Handles all persistent storage. Rules:
+
 - IndexedDB for images, chat history (last 10)
 - localStorage for encrypted API keys, UI settings
 - Always use Dexie.js wrapper in `db.ts`
 - Implement proper error handling for quota
 
 Example:
+
 ```typescript
 // src/modules/storage/history.ts
 export async function saveTask(task: Task): Promise<void> {
@@ -153,6 +160,7 @@ export async function saveTask(task: Task): Promise<void> {
 ### 3. `src/modules/upload/` - Image Processing
 
 Canvas compression, EXIF extraction. Always:
+
 - Limit canvas to 4096px max edge
 - JPEG quality 0.85
 - Remove GPS from EXIF (privacy)
@@ -161,6 +169,7 @@ Canvas compression, EXIF extraction. Always:
 ### 4. `src/modules/style/` - Style Recognition
 
 Rule-based or ML-based style classification. Must:
+
 - Return top-3 style tags with weights
 - Confidence scores 0-100
 - Map to one of 5 photographer personas
@@ -168,6 +177,7 @@ Rule-based or ML-based style classification. Must:
 ### 5. `src/modules/export/` - XMP Export
 
 Generate Lightroom-compatible XMP sidecar files. Remember:
+
 - XMP is XML format
 - Exposure, Contrast, Highlights, Shadows adjustments
 - Valid file structure for Lightroom import
@@ -184,11 +194,11 @@ export async function parseAIResponse(response: unknown): Promise<EvaluationResu
     type: 'object',
     properties: {
       scores: { type: 'object' },
-      reasoning: { type: 'string' },
+      reasoning: { type: 'string' }
     },
-    required: ['scores', 'reasoning'],
+    required: ['scores', 'reasoning']
   };
-  
+
   const validated = await validateJSONSchema(response, schema);
   return validated as EvaluationResult;
 }
@@ -197,6 +207,7 @@ export async function parseAIResponse(response: unknown): Promise<EvaluationResu
 ## Testing / 测试
 
 No formal test framework, but verify logic:
+
 - Call functions with edge cases (null, undefined, empty)
 - Test error paths
 - Console log any assumptions

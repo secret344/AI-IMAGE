@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChatMessage, ChatContext, ChatRequestConfig } from '@/types/conversation';
 import type { EvaluationResult } from '@/types/evaluation';
 import type { ProviderSettings } from '@/modules/storage/settings';
@@ -10,10 +10,8 @@ import {
   processChatMessage
 } from '@/modules/evaluation/chatIntegration';
 import { limitConversationMessages } from '@/modules/ai/limitConversationMessages';
+import { normalizeThinkingResult } from '@/utils/thinking';
 
-/**
- * 结果聊天 hook 的配置选项
- */
 export interface UseResultChatOptions {
   taskId: string | null;
   agentStyle: string;
@@ -24,10 +22,6 @@ export interface UseResultChatOptions {
   taskSettings?: ProviderSettings | null;
 }
 
-/**
- * 结果聊天 hook 的返回值
- * 包含消息列表、加载状态和错误信息
- */
 export interface UseResultChatReturn {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -37,25 +31,102 @@ export interface UseResultChatReturn {
 }
 
 /**
- * Result chat hook for evaluation result discussion
- * @param {UseResultChatOptions} options - Hook configuration options
- * @return {UseResultChatReturn} Chat state and message operations
+ * Hook for managing chat in the result evaluation panel with real-time streaming
+ * Displays messages from storage plus real-time chunks as they arrive
+ * @param {UseResultChatOptions} options - Configuration options for the result chat
+ * @return {UseResultChatReturn} Chat state and handlers for messaging in result panel
  */
 export function useResultChat(options: UseResultChatOptions): UseResultChatReturn {
   const { taskState, addChatMessage } = useTaskContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
+  const streamingAssistantIdRef = useRef<string | null>(null);
+  const contentBufferRef = useRef<string>('');
+  const thinkingBufferRef = useRef<string>('');
 
   const evaluationSummary = useMemo(
     () => (options.evaluation ? generateEvaluationSummary(options.evaluation) : ''),
     [options.evaluation]
   );
 
-  const sendMessage = useCallback(
-    async (message: string) => {
-      if (!message.trim()) {
+  const displayedMessages = useMemo(
+    () =>
+      streamingMessage
+        ? [...(taskState.chatMessages ?? []), streamingMessage]
+        : (taskState.chatMessages ?? []),
+    [streamingMessage, taskState.chatMessages]
+  );
+
+  const applyContentChunk = useCallback(
+    (chunk: string) => {
+      if (!chunk) return;
+      contentBufferRef.current += chunk;
+      const currentId = streamingAssistantIdRef.current;
+
+      if (!currentId) {
+        const nextId =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `stream-${Date.now()}`;
+        streamingAssistantIdRef.current = nextId;
+        const msgPayload = {
+          id: nextId,
+          role: 'assistant' as const,
+          content: contentBufferRef.current,
+          thinking: thinkingBufferRef.current || undefined,
+          timestamp: Date.now(),
+          modelUsed: options.taskSettings?.provider
+        };
+        setStreamingMessage(msgPayload);
         return;
       }
+
+      setStreamingMessage((prev) => {
+        return prev && prev.id === currentId
+          ? { ...prev, content: contentBufferRef.current }
+          : prev;
+      });
+    },
+    [options.taskSettings?.provider]
+  );
+
+  const applyThinkingChunk = useCallback(
+    (chunk: string) => {
+      if (!chunk) return;
+      thinkingBufferRef.current += chunk;
+      const currentId = streamingAssistantIdRef.current;
+
+      if (!currentId) {
+        const nextId =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `stream-${Date.now()}`;
+        streamingAssistantIdRef.current = nextId;
+        const msgPayload = {
+          id: nextId,
+          role: 'assistant' as const,
+          content: contentBufferRef.current,
+          thinking: thinkingBufferRef.current || undefined,
+          timestamp: Date.now(),
+          modelUsed: options.taskSettings?.provider
+        };
+        setStreamingMessage(msgPayload);
+        return;
+      }
+
+      setStreamingMessage((prev) => {
+        return prev && prev.id === currentId
+          ? { ...prev, thinking: thinkingBufferRef.current }
+          : prev;
+      });
+    },
+    []
+  );
+
+  const sendMessage = useCallback(
+    async (message: string) => {
+      if (!message.trim()) return;
       if (!options.taskId) {
         setError('No active task');
         return;
@@ -63,18 +134,19 @@ export function useResultChat(options: UseResultChatOptions): UseResultChatRetur
 
       setError(null);
       setIsLoading(true);
+      setStreamingMessage(null);
+      streamingAssistantIdRef.current = null;
+      contentBufferRef.current = '';
+      thinkingBufferRef.current = '';
 
       try {
         const settings = options.taskSettings ?? loadProviderSettings();
-        if (!settings) {
-          throw new Error('Settings not found');
-        }
+        if (!settings) throw new Error('Settings not found');
 
         const apiKey =
           settings.provider === 'ollama'
             ? ''
             : await loadApiKey(settings.keyLabel || settings.provider, options.passphrase || '');
-
         const conversationHistory = limitConversationMessages(
           taskState.chatMessages ?? [],
           settings.contextMaxChars
@@ -98,7 +170,8 @@ export function useResultChat(options: UseResultChatOptions): UseResultChatRetur
           maxTokens: settings.maxTokens,
           timeoutMs: settings.timeoutMs,
           contextMaxChars: settings.contextMaxChars,
-          includeThinking: true
+          onToken: applyContentChunk,
+          onThinkingToken: applyThinkingChunk
         };
 
         await addChatMessage({ role: 'user', content: message });
@@ -110,22 +183,37 @@ export function useResultChat(options: UseResultChatOptions): UseResultChatRetur
           conversationHistory
         );
 
+        streamingAssistantIdRef.current = null;
+        setStreamingMessage(null);
+        contentBufferRef.current = '';
+        thinkingBufferRef.current = '';
+
         if (assistantMessage?.content) {
+          const normalized = normalizeThinkingResult(
+            assistantMessage.content,
+            assistantMessage.thinking
+          );
           await addChatMessage({
             role: 'assistant',
-            content: assistantMessage.content,
+            content: normalized.content,
+            thinking: normalized.thinking || undefined,
             modelUsed: assistantMessage.modelUsed ?? settings.provider
           });
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError(errorMessage);
+        streamingAssistantIdRef.current = null;
+        setStreamingMessage(null);
+        contentBufferRef.current = '';
+        thinkingBufferRef.current = '';
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsLoading(false);
       }
     },
     [
       addChatMessage,
+      applyContentChunk,
+      applyThinkingChunk,
       evaluationSummary,
       options.agentPhotographer,
       options.agentStyle,
@@ -137,15 +225,11 @@ export function useResultChat(options: UseResultChatOptions): UseResultChatRetur
     ]
   );
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
   return {
-    messages: taskState.chatMessages ?? [],
+    messages: displayedMessages,
     isLoading,
     error,
     sendMessage,
-    clearError
+    clearError: useCallback(() => setError(null), [])
   };
 }

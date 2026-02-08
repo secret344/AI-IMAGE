@@ -1,4 +1,14 @@
 import { OptimizedStringBuffer } from '@/modules/ai/memoryOptimization';
+import { StreamingThinkingParser } from '@/utils/thinking';
+
+/**
+ * AI 响应结果
+ * 包含分离的 content 和可选的 thinking 内容
+ */
+export interface AiResponse {
+  content: string;
+  thinking?: string;
+}
 
 /**
  * AI 请求配置
@@ -17,23 +27,12 @@ export interface AiRequest {
   timeoutMs: number;
   signal?: AbortSignal;
   onToken?: (chunk: string) => void;
+  onThinkingToken?: (chunk: string) => void;
   includeThinking?: boolean;
   messages?: Array<{
     role: 'system' | 'user' | 'assistant';
     content: string;
   }>;
-}
-
-const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
-const THINK_FENCE_REGEX = /```(?:thinking|think|thoughts)[\s\S]*?```/gi;
-const THINKING_START_MARKER = '[[THINKING]]';
-const THINKING_END_MARKER = '[[/THINKING]]';
-
-function stripThinkingSegments(text?: string | null): string {
-  if (!text) {
-    return '';
-  }
-  return text.replace(THINK_TAG_REGEX, '').replace(THINK_FENCE_REGEX, '').trim();
 }
 
 interface JsonRequestOptions {
@@ -85,12 +84,18 @@ async function sendJsonRequest(options: JsonRequestOptions): Promise<Response> {
   return response;
 }
 
+interface StreamChunk {
+  content?: string;
+  thinking?: string;
+}
+
 async function readSseStream(
   response: Response,
-  extractContentFn: (data: Record<string, unknown>) => string | null,
+  extractChunkFn: (data: Record<string, unknown>) => StreamChunk | null,
   _provider: string,
-  onToken?: (chunk: string) => void
-): Promise<string> {
+  onToken?: (chunk: string) => void,
+  onThinkingToken?: (chunk: string) => void
+): Promise<AiResponse> {
   if (!response.body) {
     throw new Error('Response body is missing');
   }
@@ -98,7 +103,8 @@ async function readSseStream(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let lineBuffer = '';
-  const contentBuffer = new OptimizedStringBuffer();
+  const contentParser = new StreamingThinkingParser();
+  const thinkingBuffer = new OptimizedStringBuffer();
 
   const processLine = (rawLine: string) => {
     const line = rawLine.trim();
@@ -113,10 +119,23 @@ async function readSseStream(
 
     try {
       const data = JSON.parse(payload) as Record<string, unknown>;
-      const content = extractContentFn(data);
-      if (content) {
-        contentBuffer.append(content);
-        onToken?.(content);
+      const chunk = extractChunkFn(data);
+      if (!chunk) {
+        return;
+      }
+      if (chunk.thinking) {
+        thinkingBuffer.append(chunk.thinking);
+        onThinkingToken?.(chunk.thinking);
+      }
+      if (chunk.content) {
+        const parsed = contentParser.append(chunk.content);
+        if (parsed.thinking) {
+          thinkingBuffer.append(parsed.thinking);
+          onThinkingToken?.(parsed.thinking);
+        }
+        if (parsed.content) {
+          onToken?.(parsed.content);
+        }
       }
     } catch {
       // Ignore malformed SSE payloads
@@ -145,9 +164,18 @@ async function readSseStream(
       processLine(lineBuffer);
     }
 
-    return contentBuffer.toString();
+    const parsedResult = contentParser.getResult();
+    const rawThinking = thinkingBuffer.toString();
+    const combinedThinking =
+      rawThinking && parsedResult.thinking
+        ? `${rawThinking}\n${parsedResult.thinking}`
+        : rawThinking || parsedResult.thinking;
+    return {
+      content: parsedResult.content,
+      thinking: combinedThinking || undefined
+    };
   } finally {
-    contentBuffer.clear();
+    thinkingBuffer.clear();
     lineBuffer = '';
     reader.cancel().catch(() => {
       // Ignore cancel errors
@@ -166,18 +194,23 @@ function getArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function extractOpenAiContent(data: Record<string, unknown>): string | null {
+function extractOpenAiChunk(data: Record<string, unknown>): StreamChunk | null {
   const choices = getArray(data.choices);
   const firstChoice = getRecord(choices[0]);
   const delta = getRecord(firstChoice?.delta);
-  if (!delta || delta.thinking || delta.reasoning_content) {
+  if (!delta) {
     return null;
+  }
+
+  const reasoning = typeof delta.reasoning_content === 'string' ? delta.reasoning_content : '';
+  const thinking = typeof delta.thinking === 'string' ? delta.thinking : '';
+  if (reasoning || thinking) {
+    return { thinking: reasoning || thinking };
   }
 
   const rawContent = delta.content;
   if (typeof rawContent === 'string') {
-    const sanitized = stripThinkingSegments(rawContent);
-    return sanitized || null;
+    return { content: rawContent };
   }
 
   if (Array.isArray(rawContent)) {
@@ -187,31 +220,30 @@ function extractOpenAiContent(data: Record<string, unknown>): string | null {
         return typeof record?.text === 'string' ? record.text : '';
       })
       .join('');
-    const sanitized = stripThinkingSegments(combined);
-    return sanitized || null;
+    return { content: combined };
   }
 
   return null;
 }
 
-function extractClaudeContent(data: Record<string, unknown>): string | null {
+function extractClaudeChunk(data: Record<string, unknown>): StreamChunk | null {
   const type = typeof data.type === 'string' ? data.type : null;
   if (type === 'content_block_delta') {
     const delta = getRecord(data.delta);
     const deltaType = typeof delta?.type === 'string' ? delta.type : null;
     if (deltaType === 'thinking_delta') {
-      return null;
+      const thinking = typeof delta?.text === 'string' ? delta.text : '';
+      return thinking ? { thinking } : null;
     }
     if (deltaType === 'text_delta') {
       const deltaText = typeof delta?.text === 'string' ? delta.text : '';
-      const sanitized = stripThinkingSegments(deltaText);
-      return sanitized || null;
+      return deltaText ? { content: deltaText } : null;
     }
   }
   return null;
 }
 
-function extractGeminiContent(data: Record<string, unknown>): string | null {
+function extractGeminiChunk(data: Record<string, unknown>): StreamChunk | null {
   const candidates = getArray(data.candidates);
   const candidate = getRecord(candidates[0]);
   if (!candidate) {
@@ -229,21 +261,18 @@ function extractGeminiContent(data: Record<string, unknown>): string | null {
         return typeof record?.text === 'string' ? record.text : '';
       })
       .join('');
-    const sanitized = stripThinkingSegments(text);
-    return sanitized || null;
+    return text ? { content: text } : null;
   }
 
   const deltaText = typeof candidateDelta?.text === 'string' ? candidateDelta.text : '';
   if (deltaText) {
-    const sanitized = stripThinkingSegments(deltaText);
-    return sanitized || null;
+    return { content: deltaText };
   }
 
   const parts = Array.isArray(candidateContent?.parts) ? candidateContent?.parts : [];
   const firstPart = getRecord(parts[0]);
   const partText = typeof firstPart?.text === 'string' ? firstPart.text : '';
-  const sanitized = stripThinkingSegments(partText);
-  return sanitized || null;
+  return partText ? { content: partText } : null;
 }
 
 function buildOpenAiMessages(request: AiRequest) {
@@ -343,21 +372,28 @@ function buildGeminiContents(request: AiRequest) {
 // Helper function to read Gemini streaming response
 async function readGeminiStreamResponse(
   response: Response,
-  onToken?: (chunk: string) => void
-): Promise<string> {
-  const content = await readSseStream(response, extractGeminiContent, 'Gemini', onToken);
-  if (!content) {
+  onToken?: (chunk: string) => void,
+  onThinkingToken?: (chunk: string) => void
+): Promise<AiResponse> {
+  const result = await readSseStream(
+    response,
+    extractGeminiChunk,
+    'Gemini',
+    onToken,
+    onThinkingToken
+  );
+  if (!result.content) {
     throw new Error('Gemini response missing content.');
   }
-  return content;
+  return result;
 }
 
 // Helper function to read Ollama streaming response
 async function readOllamaStreamResponse(
   response: Response,
   onToken?: (chunk: string) => void,
-  includeThinking?: boolean
-): Promise<string> {
+  onThinkingToken?: (chunk: string) => void
+): Promise<AiResponse> {
   if (!response.body) {
     throw new Error('Response body is missing');
   }
@@ -365,9 +401,8 @@ async function readOllamaStreamResponse(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  let fullContent = '';
-  let hasThinking = false;
-  let hasAnswer = false;
+  const contentParser = new StreamingThinkingParser();
+  const thinkingBuffer = new OptimizedStringBuffer();
 
   try {
     // eslint-disable-next-line no-constant-condition
@@ -391,27 +426,22 @@ async function readOllamaStreamResponse(
           const messageContent = typeof message?.content === 'string' ? message.content : '';
           const responseText = typeof data.response === 'string' ? data.response : '';
 
-          if (thinkingChunk && includeThinking) {
-            if (!hasThinking) {
-              fullContent += THINKING_START_MARKER;
-              onToken?.(THINKING_START_MARKER);
-            }
-            fullContent += thinkingChunk;
-            hasThinking = true;
-            onToken?.(thinkingChunk);
+          // Handle thinking chunk
+          if (thinkingChunk) {
+            thinkingBuffer.append(thinkingChunk);
+            onThinkingToken?.(thinkingChunk);
           }
 
+          // Handle content chunk
           const chunk = messageContent || responseText;
           if (chunk) {
-            const sanitized = stripThinkingSegments(chunk);
-            if (sanitized) {
-              if (includeThinking && hasThinking && !hasAnswer) {
-                fullContent += `${THINKING_END_MARKER}\n\n`;
-                onToken?.(`${THINKING_END_MARKER}\n\n`);
-              }
-              hasAnswer = true;
-              fullContent += sanitized;
-              onToken?.(sanitized);
+            const parsed = contentParser.append(chunk);
+            if (parsed.thinking) {
+              thinkingBuffer.append(parsed.thinking);
+              onThinkingToken?.(parsed.thinking);
+            }
+            if (parsed.content) {
+              onToken?.(parsed.content);
             }
           }
         } catch {
@@ -429,27 +459,20 @@ async function readOllamaStreamResponse(
         const messageContent = typeof message?.content === 'string' ? message.content : '';
         const responseText = typeof data.response === 'string' ? data.response : '';
 
-        if (thinkingChunk && includeThinking) {
-          if (!hasThinking) {
-            fullContent += THINKING_START_MARKER;
-            onToken?.(THINKING_START_MARKER);
-          }
-          fullContent += thinkingChunk;
-          hasThinking = true;
-          onToken?.(thinkingChunk);
+        if (thinkingChunk) {
+          thinkingBuffer.append(thinkingChunk);
+          onThinkingToken?.(thinkingChunk);
         }
 
         const chunk = messageContent || responseText;
         if (chunk) {
-          const sanitized = stripThinkingSegments(chunk);
-          if (sanitized) {
-            if (includeThinking && hasThinking && !hasAnswer) {
-              fullContent += `${THINKING_END_MARKER}\n\n`;
-              onToken?.(`${THINKING_END_MARKER}\n\n`);
-            }
-            hasAnswer = true;
-            fullContent += sanitized;
-            onToken?.(sanitized);
+          const parsed = contentParser.append(chunk);
+          if (parsed.thinking) {
+            thinkingBuffer.append(parsed.thinking);
+            onThinkingToken?.(parsed.thinking);
+          }
+          if (parsed.content) {
+            onToken?.(parsed.content);
           }
         }
       } catch {
@@ -460,7 +483,16 @@ async function readOllamaStreamResponse(
     reader.releaseLock();
   }
 
-  return fullContent;
+  const parsedResult = contentParser.getResult();
+  const rawThinking = thinkingBuffer.toString();
+  const combinedThinking =
+    rawThinking && parsedResult.thinking
+      ? `${rawThinking}\n${parsedResult.thinking}`
+      : rawThinking || parsedResult.thinking;
+  return {
+    content: parsedResult.content,
+    thinking: combinedThinking || undefined
+  };
 }
 
 // Helper function for Ollama requests with better timeout handling
@@ -489,7 +521,7 @@ async function fetchOllamaWithCorsSupport(
   }
 }
 
-export async function callAiProvider(request: AiRequest): Promise<string> {
+export async function callAiProvider(request: AiRequest): Promise<AiResponse> {
   if (request.provider === 'mock') {
     throw new Error('Mock provider does not call APIs.');
   }
@@ -510,7 +542,7 @@ export async function callAiProvider(request: AiRequest): Promise<string> {
   throw new Error(`Provider ${request.provider} not implemented.`);
 }
 
-async function callOpenAi(request: AiRequest): Promise<string> {
+async function callOpenAi(request: AiRequest): Promise<AiResponse> {
   const response = await sendJsonRequest({
     url: `${request.baseUrl}/chat/completions`,
     providerLabel: 'OpenAI',
@@ -530,10 +562,17 @@ async function callOpenAi(request: AiRequest): Promise<string> {
     }
   });
 
-  return readSseStream(response, extractOpenAiContent, 'OpenAI', request.onToken);
+  const result = await readSseStream(
+    response,
+    extractOpenAiChunk,
+    'OpenAI',
+    request.onToken,
+    request.onThinkingToken
+  );
+  return result;
 }
 
-async function callGemini(request: AiRequest): Promise<string> {
+async function callGemini(request: AiRequest): Promise<AiResponse> {
   // Use streaming endpoint
   const url = `${request.baseUrl}/models/${request.model}:streamGenerateContent?key=${request.apiKey!}&alt=sse`;
   const response = await sendJsonRequest({
@@ -554,10 +593,10 @@ async function callGemini(request: AiRequest): Promise<string> {
     }
   });
 
-  return readGeminiStreamResponse(response, request.onToken);
+  return readGeminiStreamResponse(response, request.onToken, request.onThinkingToken);
 }
 
-async function callClaude(request: AiRequest): Promise<string> {
+async function callClaude(request: AiRequest): Promise<AiResponse> {
   const response = await sendJsonRequest({
     url: `${request.baseUrl}/messages`,
     providerLabel: 'Claude',
@@ -578,10 +617,17 @@ async function callClaude(request: AiRequest): Promise<string> {
     }
   });
 
-  return readSseStream(response, extractClaudeContent, 'Claude', request.onToken);
+  const result = await readSseStream(
+    response,
+    extractClaudeChunk,
+    'Claude',
+    request.onToken,
+    request.onThinkingToken
+  );
+  return result;
 }
 
-async function callOllama(request: AiRequest): Promise<string> {
+async function callOllama(request: AiRequest): Promise<AiResponse> {
   // 聊天时可能没有图片，只处理有图片的情况
   let messages: Array<{ role: string; content: string; images?: string[] }> = [];
 
@@ -647,7 +693,7 @@ async function callOllama(request: AiRequest): Promise<string> {
     }
   });
 
-  return readOllamaStreamResponse(response, request.onToken, request.includeThinking);
+  return readOllamaStreamResponse(response, request.onToken, request.onThinkingToken);
 }
 
 function extractDataUrl(dataUrl: string) {

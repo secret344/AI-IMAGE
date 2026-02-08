@@ -42,13 +42,13 @@
 
 ### Photographer Styles
 
-| Style | Photographer | Focus |
-|:------|:------------|:------|
-| Street Narrative | Cartier-Bresson | Decisive moments, composition |
-| Landscape Epic | Ansel Adams | Tonal range, depth |
-| Urban Geometry | Fan Ho | Light/shadow geometry, minimalism |
-| Portrait Texture | Peter Lindbergh | Texture, eye light, naturalness |
-| Film Color | Kodak Portra | Soft tones, color richness |
+| Style            | Photographer    | Focus                             |
+| :--------------- | :-------------- | :-------------------------------- |
+| Street Narrative | Cartier-Bresson | Decisive moments, composition     |
+| Landscape Epic   | Ansel Adams     | Tonal range, depth                |
+| Urban Geometry   | Fan Ho          | Light/shadow geometry, minimalism |
+| Portrait Texture | Peter Lindbergh | Texture, eye light, naturalness   |
+| Film Color       | Kodak Portra    | Soft tones, color richness        |
 
 ### Privacy & Security
 
@@ -61,17 +61,17 @@
 
 ## Technology Stack
 
-| Component | Technology | Purpose |
-|:----------|:-----------|:--------|
-| **Build** | Vite 5.0+ | Fast bundling |
-| **Framework** | React 18 + TypeScript | UI & logic |
-| **Styling** | Tailwind + ShadcnUI | Design system |
-| **State** | Zustand | Global state |
-| **Storage** | IndexedDB (Dexie) | Task history |
-| **Crypto** | Web Crypto API | AES-GCM keys |
-| **i18n** | react-i18next | EN/ZH/JP support |
-| **AI** | OpenAI/Gemini/Claude | Evaluation engine |
-| **Deployment** | Vercel/Netlify | Static hosting |
+| Component      | Technology            | Purpose           |
+| :------------- | :-------------------- | :---------------- |
+| **Build**      | Vite 5.0+             | Fast bundling     |
+| **Framework**  | React 18 + TypeScript | UI & logic        |
+| **Styling**    | Tailwind + ShadcnUI   | Design system     |
+| **State**      | Zustand               | Global state      |
+| **Storage**    | IndexedDB (Dexie)     | Task history      |
+| **Crypto**     | Web Crypto API        | AES-GCM keys      |
+| **i18n**       | react-i18next         | EN/ZH/JP support  |
+| **AI**         | OpenAI/Gemini/Claude  | Evaluation engine |
+| **Deployment** | Vercel/Netlify        | Static hosting    |
 
 ---
 
@@ -114,18 +114,21 @@ npm run type-check
 ## Design Principles
 
 ### 🔐 Privacy First
+
 - Images never uploaded to servers
 - All computation in-browser
 - EXIF data auto-cleaned (GPS, serial numbers removed)
 - API keys encrypted locally (AES-GCM 256-bit)
 
 ### 💰 BYOK Model (Bring Your Own Key)
+
 - No account required
 - No subscriptions
 - Full cost transparency
 - Users control their API spending
 
 ### ⚡ Zero Backend
+
 - Static deployment only (Vercel/Netlify/GitHub Pages)
 - No server maintenance
 - Global CDN support
@@ -135,13 +138,14 @@ npm run type-check
 
 ## API Cost Guidelines
 
-| Provider | Per-Image Cost | Notes |
-|:---------|:---------------|:------|
-| OpenAI Vision | ~$0.01-0.03 | Based on image size + prompt |
-| Google Gemini | ~$0.005-0.01 | Character-based billing |
-| Claude 3 Vision | ~$0.01-0.02 | Input/output tokens |
+| Provider        | Per-Image Cost | Notes                        |
+| :-------------- | :------------- | :--------------------------- |
+| OpenAI Vision   | ~$0.01-0.03    | Based on image size + prompt |
+| Google Gemini   | ~$0.005-0.01   | Character-based billing      |
+| Claude 3 Vision | ~$0.01-0.02    | Input/output tokens          |
 
 **Cost Tips**:
+
 - Use Ollama for local, free evaluation
 - Re-evaluate same image with same agent = zero cost (cached)
 - Message history is automatically limited to prevent token bloat
@@ -151,12 +155,14 @@ npm run type-check
 ## Security & Privacy
 
 ### Data Protection
+
 - **EXIF Cleanup**: Removes GPS coordinates, device serial numbers
 - **Key Encryption**: AES-GCM 256-bit encryption for all API keys
 - **Local Only**: Images stored only in IndexedDB; never transmitted
 - **No Tracking**: Zero third-party analytics or cookies
 
 ### GDPR Compliant
+
 - Data minimization (images not persisted on servers)
 - One-click "Clear All Data" option
 - No personal data collection
@@ -174,6 +180,7 @@ npm run type-check
 ## Contributing
 
 We welcome contributions! Please:
+
 1. Fork the repository
 2. Create a feature branch
 3. Submit a pull request with clear description

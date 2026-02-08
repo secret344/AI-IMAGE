@@ -4,6 +4,7 @@ import type { ProviderSettings } from '@/modules/storage/settings';
 import { useTaskContext } from '@/state/TaskContext';
 import { handleUploadChatMessage } from '@/modules/evaluation/uploadChatIntegration';
 import { limitConversationMessages } from '@/modules/ai/limitConversationMessages';
+import { normalizeThinkingResult } from '@/utils/thinking';
 
 /**
  * 上传聊天 hook 的配置选项
@@ -51,6 +52,8 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
   const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const streamingAssistantIdRef = useRef<string | null>(null);
+  const contentBufferRef = useRef<string>('');
+  const thinkingBufferRef = useRef<string>('');
 
   // Get messages from TaskContext instead of local state
   const { taskState, addChatMessage, clearChatMessages, setChatMessages } = useTaskContext();
@@ -61,10 +64,12 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
   );
 
   const appendAssistantMessage = useCallback(
-    async (content: string, modelUsed?: string, replaceId?: string | null) => {
+    async (content: string, thinking?: string, modelUsed?: string, replaceId?: string | null) => {
       if (!content.trim()) {
         return;
       }
+
+      const normalized = normalizeThinkingResult(content, thinking);
 
       // 清除流消息（replaceId 表示需要替换的流消息ID，不为 null 则清除）
       if (replaceId) {
@@ -74,7 +79,8 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
       try {
         const stored = await addChatMessage({
           role: 'assistant',
-          content,
+          content: normalized.content,
+          thinking: normalized.thinking || undefined,
           modelUsed
         });
         setActiveAssistantId(replaceId ? null : stored.id);
@@ -88,7 +94,8 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
         const fallbackMessage: ChatMessage = {
           id: fallbackId,
           role: 'assistant',
-          content,
+          content: normalized.content,
+          thinking: normalized.thinking || undefined,
           timestamp: Date.now(),
           modelUsed
         };
@@ -99,11 +106,12 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
     [addChatMessage]
   );
 
-  const applyStreamChunk = useCallback(
+  const applyContentChunk = useCallback(
     (chunk: string) => {
       if (!chunk) {
         return;
       }
+      contentBufferRef.current += chunk;
       const currentId = streamingAssistantIdRef.current;
       if (!currentId) {
         const nextId =
@@ -114,20 +122,58 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
         const message: ChatMessage = {
           id: nextId,
           role: 'assistant',
-          content: chunk,
+          content: contentBufferRef.current,
+          thinking: thinkingBufferRef.current || undefined,
           timestamp: Date.now(),
           modelUsed: options.taskSettings?.provider
         };
         setStreamingMessage(message);
-        setActiveAssistantId(null);
+        setActiveAssistantId(nextId);
         return;
       }
 
       setStreamingMessage((prev) =>
-        prev && prev.id === currentId ? { ...prev, content: `${prev.content}${chunk}` } : prev
+        prev && prev.id === currentId
+          ? { ...prev, content: contentBufferRef.current }
+          : prev
       );
     },
     [options.taskSettings?.provider]
+  );
+
+  const applyThinkingChunk = useCallback(
+    (chunk: string) => {
+      if (!chunk) {
+        return;
+      }
+      thinkingBufferRef.current += chunk;
+      const currentId = streamingAssistantIdRef.current;
+      if (!currentId) {
+        const nextId =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `stream-${Date.now()}`;
+        streamingAssistantIdRef.current = nextId;
+        const message: ChatMessage = {
+          id: nextId,
+          role: 'assistant',
+          content: contentBufferRef.current,
+          thinking: thinkingBufferRef.current || undefined,
+          timestamp: Date.now(),
+          modelUsed: options.taskSettings?.provider
+        };
+        setStreamingMessage(message);
+        setActiveAssistantId(nextId);
+        return;
+      }
+
+      setStreamingMessage((prev) =>
+        prev && prev.id === currentId
+          ? { ...prev, thinking: thinkingBufferRef.current }
+          : prev
+      );
+    },
+    []
   );
 
   const sendMessage = useCallback(
@@ -137,6 +183,10 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
       setError(null);
       setIsLoading(true);
       setActiveAssistantId(null);
+      setStreamingMessage(null);
+      streamingAssistantIdRef.current = null;
+      contentBufferRef.current = '';
+      thinkingBufferRef.current = '';
       const startTime = Date.now();
       if (abortRef.current) {
         abortRef.current.abort();
@@ -173,7 +223,14 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
             onMessageReceived: (aiMessage: ChatMessage) => {
               const replaceId = streamingAssistantIdRef.current;
               streamingAssistantIdRef.current = null;
-              void appendAssistantMessage(aiMessage.content, aiMessage.modelUsed, replaceId);
+              contentBufferRef.current = '';
+              thinkingBufferRef.current = '';
+              void appendAssistantMessage(
+                aiMessage.content,
+                aiMessage.thinking,
+                aiMessage.modelUsed,
+                replaceId
+              );
             },
             onAnalysisSuggested: (suggestion: string) => {
               setAnalysisSuggestion(suggestion);
@@ -183,12 +240,15 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
               if (!controller.signal.aborted) {
                 const replaceId = streamingAssistantIdRef.current;
                 streamingAssistantIdRef.current = null;
+                contentBufferRef.current = '';
+                thinkingBufferRef.current = '';
                 setStreamingMessage((prev) => (prev && prev.id === replaceId ? null : prev));
                 setError(err.message);
                 void appendAssistantMessage(err.message);
               }
             },
-            onStreamChunk: applyStreamChunk
+            onStreamChunk: applyContentChunk,
+            onThinkingChunk: applyThinkingChunk
           },
           options.apiKeyPassphrase,
           controller.signal
@@ -210,7 +270,7 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
         setIsLoading(false);
       }
     },
-    [addChatMessage, appendAssistantMessage, applyStreamChunk, options, storedMessages]
+    [addChatMessage, appendAssistantMessage, applyContentChunk, applyThinkingChunk, options, storedMessages]
   );
 
   const cancelCurrent = useCallback(() => {
@@ -218,6 +278,9 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
       abortRef.current.abort();
       abortRef.current = null;
     }
+    streamingAssistantIdRef.current = null;
+    contentBufferRef.current = '';
+    thinkingBufferRef.current = '';
     setIsLoading(false);
   }, []);
 
@@ -234,6 +297,8 @@ export function useUploadChat(options: UseUploadChatOptions): UseUploadChatRetur
       const snapshot = storedMessages.slice(0, index + 1);
       setStreamingMessage(null);
       streamingAssistantIdRef.current = null;
+      contentBufferRef.current = '';
+      thinkingBufferRef.current = '';
       void setChatMessages(snapshot);
       setActiveAssistantId(null);
       setAnalysisSuggestion(null);

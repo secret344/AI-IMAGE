@@ -1,8 +1,20 @@
+/**
+ * 评估结果展示组件
+ * 职责：渲染评分、维度详情、EXIF 信息和导出操作
+ * 特点：国际化、可视化评分、支持异常恢复提示
+ */
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,15 +24,27 @@ import { ScoreRadar } from '@/components/ScoreRadar';
 import { COMMON_EXIF_KEYS_SET } from '@/config/exif-constants';
 
 interface EvaluationResultsProps {
+  /** AI 评估结果（可能为空） */
   evaluation: EvaluationResult | null;
+  /** EXIF 元数据 */
   exif: Record<string, string | number> | null;
+  /** 上次耗时（毫秒） */
   lastLatencyMs: number | null;
+  /** 是否正在处理 */
   isProcessing: boolean;
+  /** 当前处理阶段文案 */
   processingStage: string | null;
+  /** 下载 XMP 回调 */
   onDownloadXmp: () => void;
+  /** 保存到历史记录回调 */
   onSaveToHistory: () => void;
 }
 
+/**
+ * Evaluation results panel with score, EXIF, and retouch info
+ * @param {EvaluationResultsProps} props - Component properties
+ * @return {JSX.Element} Evaluation results panel
+ */
 export function EvaluationResults({
   evaluation,
   exif,
@@ -199,6 +223,12 @@ export function EvaluationResults({
 
   return (
     <div className="space-y-4">
+      {evaluation.parseRecovered && (
+        <Alert className="border-amber-500/40 bg-amber-500/10 text-amber-100">
+          <AlertTitle>{t('result.parseRecoveredTitle')}</AlertTitle>
+          <AlertDescription>{t('result.parseRecoveredDescription')}</AlertDescription>
+        </Alert>
+      )}
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -225,6 +255,7 @@ export function EvaluationResults({
         <DialogContent className="max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>{t('result.exifDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('result.exifDialogDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

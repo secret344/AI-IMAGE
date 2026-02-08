@@ -33,6 +33,7 @@ export interface EvaluationResult {
   dimensions: EvaluationDimension[];
   shootingTips: string[];
   retouchPlan: RetouchStep[];
+  parseRecovered?: boolean;
   raw?: unknown;
 }
 

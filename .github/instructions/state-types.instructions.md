@@ -1,5 +1,5 @@
 ---
-applyTo: "src/state/**/*.ts,src/types/**/*.ts"
+applyTo: 'src/state/**/*.ts,src/types/**/*.ts'
 ---
 
 # State & Type Definitions / 状态与类型定义
@@ -13,6 +13,7 @@ The app uses a **single Zustand store** in `src/state/useAppStore.ts`. All globa
 应用使用 **单一 Zustand store**（位于 `src/state/useAppStore.ts`）。所有全局状态都在这里。
 
 Structure:
+
 ```typescript
 // src/state/useAppStore.ts
 import { create } from 'zustand';
@@ -21,11 +22,11 @@ interface AppState {
   // Current task
   currentTask: Task | null;
   setCurrentTask: (task: Task) => void;
-  
+
   // Global settings
   globalProviderSettings: ProviderSettings;
   setProviderSettings: (settings: ProviderSettings) => void;
-  
+
   // UI state
   isLoading: boolean;
   error: string | null;
@@ -34,12 +35,12 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   currentTask: null,
   setCurrentTask: (task) => set({ currentTask: task }),
-  
+
   globalProviderSettings: {},
   setProviderSettings: (settings) => set({ globalProviderSettings: settings }),
-  
+
   isLoading: false,
-  error: null,
+  error: null
 }));
 ```
 
@@ -61,8 +62,8 @@ const store = useAppStore();
 
 ```typescript
 // Always use selector + fallback pattern
-const settings = 
-  useAppStore((state) => state.globalProviderSettings) 
+const settings =
+  useAppStore((state) => state.globalProviderSettings)
   ?? getDefaultProviderSettings();
 
 // Pass settings to components, don't access store directly
@@ -96,6 +97,7 @@ const toggleTheme = useThemeStore((state) => state.toggleTheme);
 ### File Organization / 文件组织
 
 All types live in `src/types/` with **PascalCase filenames**:
+
 - `src/types/evaluation.ts` - Evaluation, EvaluationResult
 - `src/types/agent.ts` - Agent, PersonaType
 - `src/types/storage.ts` - Task, ChatMessage
@@ -158,6 +160,7 @@ export interface ChatMessage {
 ### Strict Typing Rules / 严格类型规则
 
 Never use `any`:
+
 ```typescript
 // ❌ Bad
 function process(data: any) { ... }
@@ -182,10 +185,10 @@ Use `?` for optional fields sparingly:
 ```typescript
 // ✅ Good: clear required/optional
 interface Task {
-  id: string;                    // Required
-  description: string;          // Required
-  parentTaskId?: string;         // Optional (previous task reference)
-  notes?: string;                // Optional
+  id: string; // Required
+  description: string; // Required
+  parentTaskId?: string; // Optional (previous task reference)
+  notes?: string; // Optional
 }
 
 // Handle undefined properly
@@ -201,8 +204,8 @@ type TaskStatus = 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
 
 interface TaskState {
   status: TaskStatus;
-  progress?: number;        // Only when 'uploading' or 'processing'
-  error?: string;           // Only when 'error'
+  progress?: number; // Only when 'uploading' or 'processing'
+  error?: string; // Only when 'error'
 }
 
 // Use type guards when accessing optional fields
@@ -243,7 +246,7 @@ import type { EvaluationResult } from '@/types/evaluation';
 export function validate(data: unknown): EvaluationResult { ... }
 
 // components/ResultPanel.tsx
-import type { EvaluationResult } from '@/types/evaluation'; 
+import type { EvaluationResult } from '@/types/evaluation';
 import { useAppStore } from '@/state/useAppStore';
 
 export function ResultPanel() {
