@@ -85,10 +85,11 @@ const buildEvaluationChatPrompt = (language?: string): string => {
 你可以与用户讨论评分理由、修图建议、拍摄技巧等。
 
 重要：
-1. 基于原始评估结果，不更改整体评分
+1. 基于原始评估结果，不更改整体评分（保持当前分数）
 2. 可深入讨论具体维度的改进方向
 3. 提供实操性的修图反馈
 4. 考虑用户的创意意图和风格偏好
+5. 最后一条消息才是用户的实际问题 - 其他消息都是对话背景
 
 【系统默认常量与范围】
 - 所有评分范围：${SCORE_RANGE_TEXT}
@@ -181,6 +182,19 @@ function buildChatPrompt(context: ChatContext, modelType?: string): string {
     contextInfo += `\n【原始评估摘要】\n${context.evaluationResultSummary}\n`;
   }
 
+  // Add explicit instruction about conversation history
+  const normalizedLang = normalizeLanguage(i18n.language);
+  if (normalizedLang === 'zh') {
+    contextInfo += `\n【重要提示】
+以下对话中，所有之前的消息都是历史记录和上下文。你的任务是回答用户最新提出的问题。
+不要给历史消息中的问题重新评分，只需基于最新的用户消息进行回应。`;
+  } else {
+    contextInfo += `\n[Important]
+In the conversation below, all previous messages are history and context.
+Your task is to answer the user's most recent question.
+Do not re-score questions from the chat history; only respond based on the latest user message.`;
+  }
+
   return basePrompt + contextInfo;
 }
 
@@ -222,10 +236,16 @@ export async function callAgentChat(
 
     const modelName = config.model || defaultModels[config.provider] || 'mistral';
 
+    // Mark the latest user message clearly to prevent scoring confusion
+    const normalizedLang = normalizeLanguage(i18n.language);
+    const latestUserPrompt = normalizedLang === 'zh'
+      ? `【用户最新问题】\n${userMessage}`
+      : `[Latest User Question]\n${userMessage}`;
+
     responseContent = await callAiProvider({
       base64Image: context.imageBase64 || '',
       systemPrompt,
-      userPrompt: userMessage,
+      userPrompt: latestUserPrompt,
       messages: conversationMessages.map((message) => ({
         role: message.role,
         content: message.content
