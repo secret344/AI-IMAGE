@@ -134,6 +134,8 @@
   "result": {
     "title": "評価結果",
     "description": "AI 分析後に結果が表示されます。JSON のみ出力を強制します。",
+    "parseRecoveredTitle": "JSON の一部を復元しました",
+    "parseRecoveredDescription": "AI の応答に余分なテキストや重複が含まれていたため、最初の有効な JSON ブロックから結果を復元しました。",
     "offline": "オフラインモード：再接続まで AI 呼び出しは利用できません。",
     "activeAgent": "現在の写真家",
     "overallScore": "総合スコア",
@@ -146,6 +148,7 @@
     "noRetouchPlan": "レタッチ計画はありません。",
     "exifButton": "EXIF",
     "exifDialogTitle": "EXIF 詳細",
+    "exifDialogDescription": "画像の EXIF メタデータを確認し、フィルタできます。",
     "exifSearchPlaceholder": "EXIF のキーまたは値を検索",
     "exifCommonOnly": "一般的な項目のみ",
     "exifCopyJson": "JSON をコピー",

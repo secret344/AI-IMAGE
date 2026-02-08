@@ -20,7 +20,7 @@ For detailed, path-specific instructions, see `.github/instructions/` directory.
 - ✅ **Zero backend storage**: Browser-only (IndexedDB + localStorage)
 - ✅ **BYOK**: Client-side encrypted API keys (never sent to servers)
 - ✅ **Strict JSON**: Always validate AI responses with fallback
-- ✅ **i18n parity**: Keep en.json and zh.json synchronized
+- ✅ **i18n parity**: Keep en.json, zh.json, and ja.json synchronized
 - ✅ **Mobile-first**: Responsive design, max image 2048px edge
 - ✅ **shadcn/ui mandatory**: No native HTML for UI elements
 - ✅ **TypeScript strict**: No `any`, optional chaining, type safety
@@ -64,7 +64,7 @@ src/
 │   └── export/             # XMP generation
 ├── state/                  # Zustand store (useAppStore.ts)
 ├── types/                  # Type definitions
-├── i18n/                   # Translations (en.json, zh.json)
+├── i18n/                   # Translations (en.json, zh.json, ja.json)
 ├── config/                 # agents.ts, style-tags.ts
 └── utils/                  # Utilities (crypto, string, etc.)
 ```
@@ -113,7 +113,7 @@ src/
 
 - All user text via i18n (import `useTranslation()` from react-i18next)
 - Pattern: `namespace.key` (e.g., `upload.title`, `result.score`)
-- Update both en.json and zh.json together
+- Update en.json, zh.json, and ja.json together
 - No hardcoded strings in components
 
 ### Advanced Patterns
@@ -144,7 +144,7 @@ This repository includes detailed path-specific instructions in `.github/instruc
    - Zustand single store, type definitions, type safety patterns
 
 4. **i18n.instructions.md** (`src/i18n/**/*`)
-   - Translation structure, namespace organization, EN-ZH consistency
+   - Translation structure, namespace organization, EN-ZH-JA consistency
 
 ---
 

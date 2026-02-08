@@ -123,6 +123,8 @@
     "fileSizeExceed": "文件大小超过限制。请减少文件大小或在上传前进行压缩。",
     "networkError": "网络错误。请检查您的连接并重试。",
     "uploadFailed": "上传失败。",
+    "rawOutput": "AI 原始输出",
+    "rawOutputHint": "展示 AI 返回的全部字段，不做删减。",
     "maxFileSize": "最大 50MB · JPEG/PNG/WebP/HEIC",
     "selected": "已选择",
     "styleTags": "风格标签",
