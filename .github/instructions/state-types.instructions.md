@@ -57,7 +57,19 @@ const isLoading = useAppStore((state) => state.isLoading);
 const store = useAppStore();
 ```
 
-4. **Keep derived state computed** in components, not in store:
+4. **Application-level settings** should be fetched with fallback:
+
+```typescript
+// Always use selector + fallback pattern
+const settings = 
+  useAppStore((state) => state.globalProviderSettings) 
+  ?? getDefaultProviderSettings();
+
+// Pass settings to components, don't access store directly
+<ChildComponent settings={settings} isReady={!!settings} />
+```
+
+5. **Keep derived state computed** in components, not in store:
 
 ```typescript
 // Store: simple values only

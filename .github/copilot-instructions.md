@@ -77,6 +77,7 @@ src/
 - Absolute imports with `@/` alias
 - Early returns, optional chaining (`?.`), nullish coalescing (`??`)
 - Try/catch for async operations, avoid promise chains
+- JSDoc comments: File-level + Props interface + Export function
 
 ### UI & Styling
 - **ALL UI elements use shadcn/ui** (no native HTML tags for UI)
@@ -90,18 +91,33 @@ src/
 - Validate all external data (strict JSON from AI)
 - Safe EXIF serialization/deserialization
 
+### State Management
+- Use Zustand store with selectors (never subscribe to entire store)
+- Application settings: `useAppStore((s) => s.globalProviderSettings) ?? getDefaults()`
+- Track state changes with `useRef` to avoid duplicate updates
+- Pass settings to children via props, not store access
+
+### Error Handling & Analytics
+- Classify errors: timeout, network, canceled, unknown
+- Support both English & Chinese error detection
+- Record errors once per unique message (use `useRef` to track)
+- Return typed object: `{ category: 'timeout'|'network'|..., label: string|null }`
+
 ### Internationalization
 - All user text via i18n (import `useTranslation()` from react-i18next)
 - Pattern: `namespace.key` (e.g., `upload.title`, `result.score`)
 - Update both en.json and zh.json together
 - No hardcoded strings in components
 
-### Important Technical Details
-- Image limits: ≤50MB (recommended ≤10MB)
-- Canvas preprocessing: 4096px max, JPEG 0.85 quality
-- EXIF: Remove GPS/serial before processing
-- Agent execution: Clear temp files on completion
-- Settings: Load via SettingsModal → sync to globalProviderSettings
+### Advanced Patterns
+- **Checkpoint/Rollback**: Support rollback for multi-round conversations
+- **useRef for deduplication**: Detect state changes without causing re-renders
+- **API Key Passphrase**: Support encrypted key encryption with optional passphrase
+- **Important Technical Details**:
+  - Image limits: ≤50MB (recommended ≤10MB)
+  - Canvas preprocessing: 4096px max, JPEG 0.85 quality
+  - EXIF: Remove GPS/serial before processing
+  - Agent execution: Clear temp files on completion
 
 ---
 

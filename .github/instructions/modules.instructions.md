@@ -39,21 +39,47 @@ Always use try-catch for async operations. Never silently fail.
 
 始终对异步操作使用 try-catch。绝不静默失败。
 
+**Error Classification Pattern**:
+
 ```typescript
+// src/modules/storage/chatAnalytics.ts
+type ErrorCategory = 'timeout' | 'network' | 'canceled' | 'unknown';
+
+export function recordChatFailure(category: ErrorCategory, message: string): void {
+  // Analytics or logging
+  console.error(`Chat failure [${category}]:`, message);
+}
+
+// src/modules/ai/client.ts
 export async function callAiProvider(request: AIRequest): Promise<AIResponse> {
   try {
     const response = await fetch(...);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error('AI provider call failed:', error);
-    throw new Error('Failed to evaluate image', { cause: error });
+    // Classify error for analytics
+    let category: ErrorCategory = 'unknown';
+    const message = String(error).toLowerCase();
+    
+    if (message.includes('timeout')) {
+      category = 'timeout';
+    } else if (message.includes('network') || message.includes('fetch')) {
+      category = 'network';
+    } else if (message.includes('abort')) {
+      category = 'canceled';
+    }
+    
+    throw error; // Re-throw; component will classify & log
   }
 }
 ```
+
+✅ Return strong types to enable analytics tracking  
+✅ Support both EN & ZH error messages in classification  
+✅ Use `as const` for literal category types  
+✅ Components call `recordChatFailure()` with classified type
 
 ### Type Safety / 类型安全
 

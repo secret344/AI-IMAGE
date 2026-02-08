@@ -28,6 +28,47 @@ All React components are **functional components** using hooks. Never use class 
   }
   ```
 
+### JSDoc Documentation / JSDoc 文档
+
+**File-level JSDoc** (required for all components):
+
+```typescript
+/**
+ * 上传阶段的聊天包装组件
+ * 职责：整合聊天面板与上传流程的接口
+ * 特点：Material Design 3，完全国际化，自包含
+ */
+```
+
+**Props interface** (document each property):
+
+```typescript
+export interface UploadChatWrapperProps {
+  /** 聊天hook返回值 */
+  chatState: UseUploadChatReturn;
+  /** 图片文件名 */
+  imageName?: string;
+}
+```
+
+**Export function JSDoc**:
+
+```typescript
+/**
+ * Upload chat wrapper component encapsulating chat panel and upload process
+ * @param {UploadChatWrapperProps} props - Component properties
+ * @return {JSX.Element} Upload chat wrapper element
+ */
+export function UploadChatWrapper(props: UploadChatWrapperProps) {
+  // ...
+}
+```
+
+✅ Include file purpose, responsibilities, features  
+✅ Document Props interface properties with single-line comments  
+✅ Use `@param`, `@return` for exported functions  
+✅ Mix Chinese descriptions with English JSDoc tags
+
 ### UI Components / UI 组件
 
 **CRITICAL**: All UI elements MUST use shadcn/ui components imported from `@/components/ui/`.
@@ -114,6 +155,39 @@ useEffect(() => {
 }, []); // Empty array = mount/unmount only
 ```
 
+**Error Classification & Logging Pattern**:
+
+```typescript
+const classifyFailure = useCallback(
+  (message: string | null) => {
+    if (!message) {
+      return { category: 'unknown' as const, label: null };
+    }
+    const lower = message.toLowerCase();
+    if (lower.includes('timeout')) {
+      return { category: 'timeout' as const, label: t('error.timeout') };
+    }
+    if (lower.includes('network')) {
+      return { category: 'network' as const, label: t('error.network') };
+    }
+    return { category: 'unknown' as const, label: t('error.unknown') };
+  },
+  [t]
+);
+
+// Track and log once per unique error
+if (error && error !== lastErrorRef.current) {
+  const { category } = classifyFailure(error);
+  recordFailure(category, error);
+  lastErrorRef.current = error;
+}
+```
+
+✅ Return typed object with `category` (allows analytics/tracking)  
+✅ Support both EN & ZH error detection (`lower.includes()` + `message.includes()`)  
+✅ Use `as const` for literal types  
+✅ Use `useRef` to track and avoid duplicate logging
+
 ### TypeScript / TypeScript
 
 - Always define props interfaces
@@ -138,12 +212,34 @@ Responsive breakpoints:
 - `lg:` - tablet to desktop (~1024px)
 - `xl:` - large desktop (~1280px)
 
-### Performance / 性能
+### Performance & Checkpoint Management / 性能与检查点管理
 
 - Use `React.memo` for components that render with same props frequently
 - Use `useCallback` when passing handlers to child components
 - Use `useMemo` for expensive computations
 - Keep component focused; extract sub-components if logic is complex
+
+**Checkpoint/Rollback Pattern** (for multi-step processes):
+
+```typescript
+const handleRollback = useCallback(
+  (checkpointId: string | null) => {
+    if (!checkpointId) return;
+    chatState.rollbackToCheckpointAt(checkpointId);
+  },
+  [chatState]
+);
+
+<TaskChatPanel
+  // ...
+  onRollbackCheckpointAt={handleRollback}
+  // Multi-round conversation support
+/>
+```
+
+✅ Support checkpoint/rollback for conversation history  
+✅ Pass rollback handler via props (not store mutation)  
+✅ Use callback refs to track state changes
 
 ---
 
