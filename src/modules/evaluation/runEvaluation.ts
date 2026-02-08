@@ -52,13 +52,36 @@ export async function runEvaluation(input: RunEvaluationInput) {
     content: msg.content
   }));
 
+  // When there's conversation history as context, prepend a clarification to explain
+  // that the messages are background context and this is an independent evaluation
+  let userPrompt = assembled.user;
+  if (messages.length > 0) {
+    const contextClue =
+      input.language === 'zh'
+        ? `【重要说明】
+以下消息是与该图片相关的历史讨论内容（仅供参考）。这些讨论中的调整、建议或评论不适用于当前的新评估任务。
+你需要忽略历史消息中的任何评分或建议，针对该图片进行全新、独立的评估，返回严格的 JSON 格式结果。
+
+---
+
+`
+        : `【Important Note】
+The following messages are historical discussion content related to this image (for reference only). Any adjustments, suggestions, or comments in these discussions do not apply to the current new evaluation task.
+You must ignore any scores or suggestions in the historical messages and perform a fresh, independent evaluation of the image, returning strict JSON format results.
+
+---
+
+`;
+    userPrompt = contextClue + userPrompt;
+  }
+
   const response = await wrapMemorySafeAiCall(() =>
     callWithRetry(
       () =>
         callAiProvider({
           base64Image: input.processedImage.base64,
           systemPrompt: assembled.system,
-          userPrompt: assembled.user,
+          userPrompt,
           apiKey: input.apiKey,
           provider: input.provider,
           model: input.model,
