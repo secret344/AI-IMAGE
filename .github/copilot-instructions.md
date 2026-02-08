@@ -141,6 +141,8 @@ ai-image/
 - i18n JSON files must live ONLY in src/i18n/locales/_.json; do not create or keep duplicates in src/i18n/_.json
 - Mobile-first responsive; semantic Tailwind tokens (text-foreground, bg-card, border-border)
 - Zero backend storage; BYOK only; never log keys
+- **Documentation Sync**: When modifying README.md, must also update README_cn.md with equivalent Chinese content. Both files should stay in sync.
+- **文档同步**：修改 README.md 时，必须同步更新 README_cn.md 的对应中文内容。两个文件应保持同步。
 
 ---
 
