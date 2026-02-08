@@ -125,6 +125,7 @@ function MyComponent() {
 const { t } = useTranslation();
 
 return (
+
 <div>
 {/_ 自动返回当前语言的翻译 _/}
 <h2>{t('chat.title')}</h2> {/_ "Chat with Agent" 或 "与智能体讨论" _/}
@@ -274,6 +275,7 @@ chatState.confirmAnalysis();
 }, [chatState]);
 
 return (
+
 <div className="space-y-4">
 {/_ 上传区域 _/}
 <Card>

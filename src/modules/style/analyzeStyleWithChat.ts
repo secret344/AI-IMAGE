@@ -7,6 +7,7 @@
 import type { ChatMessage } from '@/types/conversation';
 import type { LanguageCode } from '@/config/i18n-config';
 import { recognizeStyle } from './recognizeStyle';
+import type { StyleRecognitionResult } from './recognizeStyle';
 
 export interface AnalyzeStyleOptions {
   base64Image: string;
@@ -16,7 +17,7 @@ export interface AnalyzeStyleOptions {
   providerSettings?: import('@/modules/storage/settings').ProviderSettings;
   onStart?: () => void;
   onProgress?: (stage: string) => void;
-  onSuccess?: (result: any) => void;
+  onSuccess?: (result: StyleRecognitionResult) => void;
   onError?: (error: Error) => void;
 }
 
@@ -24,7 +25,9 @@ export interface AnalyzeStyleOptions {
  * 执行风格分析
  * 支持多种触发方式：用户点击按钮、聊天中建议触发等
  */
-export async function analyzeStyleWithChat(options: AnalyzeStyleOptions): Promise<any> {
+export async function analyzeStyleWithChat(
+  options: AnalyzeStyleOptions
+): Promise<StyleRecognitionResult> {
   const {
     base64Image,
     userLanguage,

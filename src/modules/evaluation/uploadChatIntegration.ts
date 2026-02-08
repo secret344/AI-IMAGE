@@ -64,7 +64,7 @@ export async function handleUploadChatMessage(
 
     // 构建聊天配置（使用任务设置或全局设置，不使用缓存）
     const chatConfig: ChatRequestConfig = {
-      provider: settings.provider as any,
+      provider: settings.provider as 'openai' | 'gemini' | 'claude' | 'ollama',
       apiKey,
       model: settings.model,
       baseUrl: settings.baseUrl,

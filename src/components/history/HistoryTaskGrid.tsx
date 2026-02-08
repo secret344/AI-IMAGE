@@ -64,6 +64,7 @@ interface ThumbnailCardProps {
   onToggleSelected: (id: string, checked: boolean) => void;
   getAgentName: (agentId: string | null) => string | null;
   blobToDataUrl: (blob: Blob) => Promise<string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
 }
 

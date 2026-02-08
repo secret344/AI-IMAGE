@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { TaskRecord } from '@/modules/storage/db';
+import type { EvaluationDimension } from '@/types/evaluation';
 import { getAgentById } from '@/modules/agent/recommendAgents';
 import { resolveAgentLocale } from '@/config/agents';
 
@@ -36,7 +37,7 @@ export function HistoryComparePanel({ tasks }: HistoryComparePanelProps) {
               })()}
             </p>
             <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-              {(task.evaluationResult?.dimensions ?? []).map((dimension: any) => (
+              {(task.evaluationResult?.dimensions ?? []).map((dimension: EvaluationDimension) => (
                 <li
                   key={`${task.taskId}-${dimension.name}`}
                   className="flex items-center justify-between"
@@ -52,9 +53,9 @@ export function HistoryComparePanel({ tasks }: HistoryComparePanelProps) {
       <div className="mt-4 rounded-lg border border-border p-3">
         <p className="text-xs uppercase text-muted-foreground">{t('history.delta')}</p>
         <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-          {(first.evaluationResult?.dimensions ?? []).map((dimension: any) => {
+          {(first.evaluationResult?.dimensions ?? []).map((dimension: EvaluationDimension) => {
             const other = second.evaluationResult?.dimensions?.find(
-              (item: any) => item.name === dimension.name
+              (item: EvaluationDimension) => item.name === dimension.name
             );
             const delta = (other?.score ?? 0) - dimension.score;
             const sign = delta > 0 ? '+' : '';
