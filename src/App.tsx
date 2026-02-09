@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout';
 import { UploadPanel } from '@/components/UploadPanel';
 import { ResultPanel } from '@/components/ResultPanel';
 import { HistoryPanel } from '@/components/HistoryPanel';
+import { CustomAgentsPanel } from '@/components/CustomAgentsPanel';
 import { TaskTabsBar } from '@/components/layout/TaskTabsBar';
 import { useAppStore } from '@/state/useAppStore';
 import { TaskProvider } from '@/state/TaskContext';
@@ -157,17 +158,21 @@ function AppContent() {
           onAddNew={handleAddNewTask}
         />
 
-        {/* Task Content: Left (Upload + Result) | Right (Chat) */}
+        {/* Task Content: Left (Upload + Result + Custom Agents) | Right (Chat) */}
         <div className="grid min-w-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
-          {/* Left Column: Upload/Image Preview + Evaluation Results */}
+          {/* Left Column: Upload/Image Preview + Evaluation Results + Custom Agents */}
           <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
             {/* Upload/Preview takes majority of space */}
             <div className="flex-[2] min-h-0 overflow-y-auto">
               <UploadPanel uploadChat={uploadChat} />
             </div>
-            {/* Evaluation Results below */}
+            {/* Evaluation Results */}
             <div className="flex-1 min-h-0 overflow-y-auto">
               <ResultPanel />
+            </div>
+            {/* Custom Agents Panel */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <CustomAgentsPanel />
             </div>
           </div>
 
@@ -180,10 +185,6 @@ function AppContent() {
             />
           </div>
         </div>
-
-        {/* Custom Agents Panel - moved to bottom or can be in settings */}
-        {/* Temporarily hidden from main flow as per requirements */}
-        {/* <CustomAgentsPanel /> */}
       </div>
     </div>
   );
