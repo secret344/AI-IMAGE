@@ -143,9 +143,16 @@ function AppContent() {
 
   return (
     <div className="grid min-w-0 w-full h-full items-start gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] overflow-hidden">
-      {/* Left: History Panel */}
-      <div className="min-w-0 h-full overflow-hidden">
-        <HistoryPanel />
+      {/* Left: History Panel + Custom Agents (Global Settings) */}
+      <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
+        {/* History Panel */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <HistoryPanel />
+        </div>
+        {/* Custom Agents Panel - Global Settings */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <CustomAgentsPanel />
+        </div>
       </div>
 
       {/* Right: Task Detail Area with Tab Bar */}
@@ -158,9 +165,9 @@ function AppContent() {
           onAddNew={handleAddNewTask}
         />
 
-        {/* Task Content: Left (Upload + Result + Custom Agents) | Right (Chat) */}
+        {/* Task Content: Left (Upload + Result) | Right (Chat) */}
         <div className="grid min-w-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
-          {/* Left Column: Upload/Image Preview + Evaluation Results + Custom Agents */}
+          {/* Left Column: Upload/Image Preview + Evaluation Results */}
           <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
             {/* Upload/Preview takes majority of space */}
             <div className="flex-[2] min-h-0 overflow-y-auto">
@@ -169,10 +176,6 @@ function AppContent() {
             {/* Evaluation Results */}
             <div className="flex-1 min-h-0 overflow-y-auto">
               <ResultPanel />
-            </div>
-            {/* Custom Agents Panel */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <CustomAgentsPanel />
             </div>
           </div>
 
