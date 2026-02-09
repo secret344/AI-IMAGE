@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layout } from '@/components/Layout';
 import { UploadPanel } from '@/components/UploadPanel';
@@ -6,132 +6,47 @@ import { ResultPanel } from '@/components/ResultPanel';
 import { HistoryPanel } from '@/components/HistoryPanel';
 import { CustomAgentsPanel } from '@/components/CustomAgentsPanel';
 import { TaskTabsBar } from '@/components/layout/TaskTabsBar';
-import { useAppStore } from '@/state/useAppStore';
 import { TaskProvider } from '@/state/TaskContext';
 import { useTaskContext } from '@/state/TaskContext';
 import { useUploadChat } from '@/hooks/useUploadChat';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useAgentLocale } from '@/hooks/useAgentLocale';
+import { useTaskInitialization } from '@/hooks/useTaskInitialization';
+import { useTaskTabs } from '@/hooks/useTaskTabs';
 import { UploadChatWrapper } from '@/components/upload/UploadChatWrapper';
-import { getAgentById } from '@/modules/agent/recommendAgents';
-import { resolveAgentLocale } from '@/config/agents';
-import { listTasks } from '@/modules/storage/history';
-import type { TaskRecord } from '@/modules/storage/db';
 
 function AppContent() {
-  const { setIsOnline } = useAppStore();
-  const { currentTaskId, setCurrentTaskId, taskSettings, taskState, isHydrated, hasHistory } =
-    useTaskContext();
+  // Initialize network status tracking
+  useNetworkStatus();
+
+  // Get task context
+  const { currentTaskId, setCurrentTaskId, taskSettings, taskState } = useTaskContext();
+  const { t } = useTranslation();
+
+  // Generate local task ID once
   const [localTaskId] = useState<string>(() => `upload-${Date.now()}`);
   const effectiveTaskId = currentTaskId ?? localTaskId;
-  const [openTaskTabs, setOpenTaskTabs] = useState<string[]>(() => [effectiveTaskId]);
-  const [taskSummaries, setTaskSummaries] = useState<Record<string, TaskRecord>>({});
-  const { i18n, t } = useTranslation();
 
-  const agentLocale = useMemo(() => {
-    if (!taskState.selectedAgentId) {
-      return null;
-    }
-    const agent = getAgentById(taskState.selectedAgentId);
-    return agent ? resolveAgentLocale(agent, i18n.language) : null;
-  }, [i18n.language, taskState.selectedAgentId]);
+  // Initialize task if needed
+  const { isHydrated, hasHistory } = useTaskContext();
+  useTaskInitialization({
+    isHydrated,
+    hasHistory,
+    currentTaskId,
+    localTaskId,
+    onInitialize: setCurrentTaskId
+  });
 
-  useEffect(() => {
-    const update = () => setIsOnline(navigator.onLine);
-    update();
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
-    return () => {
-      window.removeEventListener('online', update);
-      window.removeEventListener('offline', update);
-    };
-  }, [setIsOnline]);
+  // Get agent locale for current selection
+  const agentLocale = useAgentLocale(taskState.selectedAgentId);
 
-  useEffect(() => {
-    if (!isHydrated || hasHistory) {
-      return;
-    }
-    if (!currentTaskId) {
-      setCurrentTaskId(localTaskId);
-    }
-  }, [currentTaskId, hasHistory, isHydrated, localTaskId, setCurrentTaskId]);
+  // Manage task tabs
+  const { tabs, handleSelectTab, handleCloseTab, handleAddNewTask } = useTaskTabs({
+    effectiveTaskId,
+    onTaskChange: setCurrentTaskId
+  });
 
-  const loadTaskSummaries = useCallback(async () => {
-    const tasks = await listTasks();
-    const next = tasks.reduce<Record<string, TaskRecord>>((acc, task) => {
-      acc[task.taskId] = task;
-      return acc;
-    }, {});
-    setTaskSummaries(next);
-  }, []);
-
-  useEffect(() => {
-    void loadTaskSummaries();
-    const handler = () => void loadTaskSummaries();
-    window.addEventListener('history-updated', handler);
-    return () => window.removeEventListener('history-updated', handler);
-  }, [loadTaskSummaries]);
-
-  useEffect(() => {
-    if (!effectiveTaskId) {
-      return;
-    }
-    setOpenTaskTabs((prev) =>
-      prev.includes(effectiveTaskId) ? prev : [...prev, effectiveTaskId]
-    );
-  }, [effectiveTaskId]);
-
-  const tabs = useMemo(() => {
-    // Generate better names for blank tasks
-    const untitledTasks: string[] = [];
-    return openTaskTabs.map((taskId) => {
-      const fileName = taskSummaries[taskId]?.fileName;
-      if (fileName) {
-        return { id: taskId, label: fileName };
-      }
-      // Tasks without file names: generate sequence numbers
-      untitledTasks.push(taskId);
-      const index = untitledTasks.length;
-      return {
-        id: taskId,
-        label: index === 1 ? t('history.untitled') : `${t('history.untitled')} ${index}`
-      };
-    });
-  }, [openTaskTabs, taskSummaries, t]);
-
-  const handleSelectTab = useCallback(
-    (taskId: string) => {
-      if (taskId === effectiveTaskId) {
-        return;
-      }
-      setCurrentTaskId(taskId);
-    },
-    [effectiveTaskId, setCurrentTaskId]
-  );
-
-  const handleCloseTab = useCallback(
-    (taskId: string) => {
-      setOpenTaskTabs((prev) => {
-        if (prev.length <= 1) {
-          return prev;
-        }
-        const next = prev.filter((id) => id !== taskId);
-        if (taskId === effectiveTaskId) {
-          const fallback = next[next.length - 1];
-          if (fallback) {
-            setCurrentTaskId(fallback);
-          }
-        }
-        return next;
-      });
-    },
-    [effectiveTaskId, setCurrentTaskId]
-  );
-
-  const handleAddNewTask = useCallback(() => {
-    const newTaskId = `upload-${Date.now()}`;
-    setOpenTaskTabs((prev) => [...prev, newTaskId]);
-    setCurrentTaskId(newTaskId);
-  }, [setCurrentTaskId]);
-
+  // Initialize upload chat
   const uploadChat = useUploadChat({
     taskId: effectiveTaskId,
     imageName: taskState.selectedFileName || 'untitled',
