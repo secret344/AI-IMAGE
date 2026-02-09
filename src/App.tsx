@@ -78,14 +78,23 @@ function AppContent() {
     );
   }, [effectiveTaskId]);
 
-  const tabs = useMemo(
-    () =>
-      openTaskTabs.map((taskId) => ({
+  const tabs = useMemo(() => {
+    // 为空白任务生成更好的名称
+    const untitledTasks: string[] = [];
+    return openTaskTabs.map((taskId) => {
+      const fileName = taskSummaries[taskId]?.fileName;
+      if (fileName) {
+        return { id: taskId, label: fileName };
+      }
+      // 没有文件名的任务，生成序号
+      untitledTasks.push(taskId);
+      const index = untitledTasks.length;
+      return {
         id: taskId,
-        label: taskSummaries[taskId]?.fileName ?? t('history.untitled')
-      })),
-    [openTaskTabs, taskSummaries, t]
-  );
+        label: index === 1 ? t('history.untitled') : `${t('history.untitled')} ${index}`
+      };
+    });
+  }, [openTaskTabs, taskSummaries, t]);
 
   const handleSelectTab = useCallback(
     (taskId: string) => {
@@ -116,6 +125,12 @@ function AppContent() {
     [effectiveTaskId, setCurrentTaskId]
   );
 
+  const handleAddNewTask = useCallback(() => {
+    const newTaskId = `upload-${Date.now()}`;
+    setOpenTaskTabs((prev) => [...prev, newTaskId]);
+    setCurrentTaskId(newTaskId);
+  }, [setCurrentTaskId]);
+
   const uploadChat = useUploadChat({
     taskId: effectiveTaskId,
     imageName: taskState.selectedFileName || 'untitled',
@@ -139,6 +154,7 @@ function AppContent() {
           activeId={effectiveTaskId}
           onSelect={handleSelectTab}
           onClose={handleCloseTab}
+          onAddNew={handleAddNewTask}
         />
 
         {/* Task Content: Left (Upload + Result) | Right (Chat) */}
