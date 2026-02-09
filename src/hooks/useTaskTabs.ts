@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listTasks } from '@/modules/storage/history';
 import type { TaskRecord } from '@/modules/storage/db';
@@ -19,45 +19,72 @@ const OPEN_TABS_STORAGE_KEY = 'ai-image:open-task-tabs';
  * Manages tab state for multi-task workflow
  * Handles: tab creation/deletion, task summaries loading, tab label generation
  * Persists and restores open tabs from localStorage
+ * Falls back to most recent history record if no cached tabs exist
  */
 export function useTaskTabs(options: UseTaskTabsOptions) {
   const { effectiveTaskId, onTaskChange } = options;
   const { t } = useTranslation();
   const [taskSummaries, setTaskSummaries] = useState<Record<string, TaskRecord>>({});
-  const hasInitializedRef = useRef(false);
+  const [openTaskTabs, setOpenTaskTabs] = useState<string[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize openTaskTabs from localStorage or fallback to effectiveTaskId
-  const [openTaskTabs, setOpenTaskTabs] = useState<string[]>(() => {
-    if (hasInitializedRef.current) {
-      return [effectiveTaskId];
-    }
-
-    try {
-      const stored = localStorage.getItem(OPEN_TABS_STORAGE_KEY);
-      if (stored) {
-        const parsed: string[] = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          hasInitializedRef.current = true;
-          return parsed;
-        }
-      }
-    } catch {
-      // Silently fail on parse error
-    }
-
-    // Fallback: use effectiveTaskId
-    hasInitializedRef.current = true;
-    return [effectiveTaskId];
-  });
-
-  // Persist openTaskTabs to localStorage whenever it changes
+  // Initialize openTaskTabs: cached > most recent history > default
   useEffect(() => {
+    if (isInitialized) {
+      return;
+    }
+
+    const initializeTabs = async () => {
+      try {
+        // Try to load cached tabs first
+        const stored = localStorage.getItem(OPEN_TABS_STORAGE_KEY);
+        if (stored) {
+          const parsed: string[] = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setOpenTaskTabs(parsed);
+            setIsInitialized(true);
+            return;
+          }
+        }
+      } catch {
+        // Silently fail on parse error
+      }
+
+      // No cached tabs, try to load most recent history record
+      try {
+        const tasks = await listTasks();
+        if (tasks.length > 0) {
+          const mostRecentTask = tasks[0]; // listTasks returns sorted by most recent first
+          setOpenTaskTabs([mostRecentTask.taskId]);
+          onTaskChange(mostRecentTask.taskId);
+          setIsInitialized(true);
+          return;
+        }
+      } catch {
+        // Silently fail on history load error
+      }
+
+      // Fallback: use effectiveTaskId as default
+      if (effectiveTaskId) {
+        setOpenTaskTabs([effectiveTaskId]);
+      }
+      setIsInitialized(true);
+    };
+
+    void initializeTabs();
+  }, [isInitialized, effectiveTaskId, onTaskChange]);
+
+  // Persist openTaskTabs to localStorage whenever it changes (after initialization)
+  useEffect(() => {
+    if (!isInitialized) {
+      return;
+    }
     try {
       localStorage.setItem(OPEN_TABS_STORAGE_KEY, JSON.stringify(openTaskTabs));
     } catch {
       // Silently fail on storage error
     }
-  }, [openTaskTabs]);
+  }, [openTaskTabs, isInitialized]);
 
   // Load task summaries from IndexedDB
   const loadTaskSummaries = useCallback(async () => {
@@ -77,21 +104,17 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
     return () => window.removeEventListener('history-updated', handler);
   }, [loadTaskSummaries]);
 
-  // Ensure effectiveTaskId is in openTaskTabs
-  // If all tabs were closed and now there's a new task, add it
+  // Ensure effectiveTaskId is in openTaskTabs if it changes after initialization
+  // This handles dynamic task ID changes but respects cached/restored tabs
   useEffect(() => {
-    if (!effectiveTaskId) {
+    if (!isInitialized || !effectiveTaskId || openTaskTabs.length === 0) {
       return;
     }
-    setOpenTaskTabs((prev) => {
-      if (prev.includes(effectiveTaskId)) {
-        return prev;
-      }
-      // Don't add default task if there are other tabs open
-      // Only add if this is the first time or all tabs were closed
-      return prev.length === 0 ? [effectiveTaskId] : prev;
-    });
-  }, [effectiveTaskId]);
+    // Only add if not already present, don't override existing tabs
+    if (!openTaskTabs.includes(effectiveTaskId)) {
+      setOpenTaskTabs((prev) => [...prev, effectiveTaskId]);
+    }
+  }, [effectiveTaskId, isInitialized]);
 
   // Generate tab display items with labels
   const tabs = useMemo(() => {
