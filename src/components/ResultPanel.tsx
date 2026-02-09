@@ -89,62 +89,60 @@ export function ResultPanel() {
   }, [setTaskState, styleResult, i18n.language]);
 
   return (
-    <div ref={sectionRef} className="h-full">
-      <Card className="border-border/50 bg-card/60 backdrop-blur-sm shadow-sm rounded-xl h-full flex flex-col">
-        <CardHeader className="pb-3 sm:pb-4">
-          <CardTitle className="text-lg sm:text-xl">{t('result.title')}</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground/80">
-            {t('result.description')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5 flex-1 overflow-y-auto">
-          {/* Status Messages */}
-          <StatusMessages
-            isOnline={isOnline}
-            runError={runError}
-            styleResult={!!styleResult}
-            evaluation={!!evaluation}
-            lastLatencyMs={lastLatencyMs}
+    <Card className="border-border/50 bg-card/60 backdrop-blur-sm shadow-sm rounded-xl h-full flex flex-col" ref={sectionRef}>
+      <CardHeader className="pb-3 sm:pb-4 flex-shrink-0">
+        <CardTitle className="text-lg sm:text-xl">{t('result.title')}</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground/80">
+          {t('result.description')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 flex-1 overflow-y-auto min-h-0">
+        {/* Status Messages */}
+        <StatusMessages
+          isOnline={isOnline}
+          runError={runError}
+          styleResult={!!styleResult}
+          evaluation={!!evaluation}
+          lastLatencyMs={lastLatencyMs}
+        />
+
+        {/* Active Agent Display */}
+        <ActiveAgentDisplay agent={agent} />
+
+        {/* Agent Selector */}
+        {!evaluation && styleResult && (
+          <AgentSelector
+            recommendedAgents={recommendedAgents}
+            selectedAgentId={selectedAgentId}
+            onSelectAgent={(id) => setTaskState({ selectedAgentId: id })}
+            isExpanded={isAgentSelectorExpanded}
+            onToggleExpand={setIsAgentSelectorExpanded}
           />
+        )}
 
-          {/* Active Agent Display */}
-          <ActiveAgentDisplay agent={agent} />
+        {/* Evaluation Results */}
+        <EvaluationResults
+          evaluation={evaluation}
+          exif={processedImage?.exif ?? null}
+          lastLatencyMs={lastLatencyMs}
+          isProcessing={isProcessing}
+          processingStage={processingStage}
+          onDownloadXmp={handleDownloadXmp}
+          onSaveToHistory={handleSaveHistory}
+        />
 
-          {/* Agent Selector */}
-          {!evaluation && styleResult && (
-            <AgentSelector
-              recommendedAgents={recommendedAgents}
-              selectedAgentId={selectedAgentId}
-              onSelectAgent={(id) => setTaskState({ selectedAgentId: id })}
-              isExpanded={isAgentSelectorExpanded}
-              onToggleExpand={setIsAgentSelectorExpanded}
-            />
-          )}
-
-          {/* Evaluation Results */}
-          <EvaluationResults
-            evaluation={evaluation}
-            exif={processedImage?.exif ?? null}
-            lastLatencyMs={lastLatencyMs}
-            isProcessing={isProcessing}
-            processingStage={processingStage}
-            onDownloadXmp={handleDownloadXmp}
-            onSaveToHistory={handleSaveHistory}
-          />
-
-          {/* Evaluation Controls */}
-          <EvaluationControls
-            styleResult={!!styleResult}
-            evaluation={!!evaluation}
-            isProcessing={isProcessing}
-            passphrase={passphrase}
-            highlightRun={highlightRun}
-            onChangePassphrase={setPassphrase}
-            onRun={handleRun}
-            onRunMock={handleRunMock}
-          />
-        </CardContent>
-      </Card>
-    </div>
+        {/* Evaluation Controls */}
+        <EvaluationControls
+          styleResult={!!styleResult}
+          evaluation={!!evaluation}
+          isProcessing={isProcessing}
+          passphrase={passphrase}
+          highlightRun={highlightRun}
+          onChangePassphrase={setPassphrase}
+          onRun={handleRun}
+          onRunMock={handleRunMock}
+        />
+      </CardContent>
+    </Card>
   );
 }
