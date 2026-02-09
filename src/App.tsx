@@ -141,7 +141,7 @@ function AppContent() {
   });
 
   return (
-    <div className="grid min-w-0 w-full h-[calc(100vh-8rem)] items-start gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+    <div className="grid min-w-0 w-full h-full items-start gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] overflow-hidden">
       {/* Left: History Panel */}
       <div className="min-w-0 h-full overflow-hidden">
         <HistoryPanel />
