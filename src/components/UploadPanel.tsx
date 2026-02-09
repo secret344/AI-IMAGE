@@ -50,7 +50,8 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
     globalProviderSettings,
     taskState,
     setTaskState,
-    setTaskStateForTask
+    setTaskStateForTask,
+    setTaskSettingsForTask
   } = useTaskContext();
 
   const {
