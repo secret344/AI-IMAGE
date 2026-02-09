@@ -79,14 +79,14 @@ function AppContent() {
   }, [effectiveTaskId]);
 
   const tabs = useMemo(() => {
-    // 为空白任务生成更好的名称
+    // Generate better names for blank tasks
     const untitledTasks: string[] = [];
     return openTaskTabs.map((taskId) => {
       const fileName = taskSummaries[taskId]?.fileName;
       if (fileName) {
         return { id: taskId, label: fileName };
       }
-      // 没有文件名的任务，生成序号
+      // Tasks without file names: generate sequence numbers
       untitledTasks.push(taskId);
       const index = untitledTasks.length;
       return {
