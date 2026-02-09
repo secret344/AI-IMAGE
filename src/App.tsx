@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Layout } from '@/components/Layout';
 import { UploadPanel } from '@/components/UploadPanel';
 import { ResultPanel } from '@/components/ResultPanel';
@@ -41,7 +43,7 @@ function AppContent() {
   const agentLocale = useAgentLocale(taskState.selectedAgentId);
 
   // Manage task tabs
-  const { tabs, handleSelectTab, handleCloseTab, handleAddNewTask } = useTaskTabs({
+  const { tabs, handleSelectTab, handleCloseTab, handleAddNewTask, handleAddExistingTask, handleReorderTabs } = useTaskTabs({
     effectiveTaskId,
     onTaskChange: setCurrentTaskId
   });
@@ -62,7 +64,7 @@ function AppContent() {
       <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
         {/* History Panel */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <HistoryPanel />
+          <HistoryPanel onOpenTask={handleAddExistingTask} />
         </div>
         {/* Custom Agents Panel - Global Settings */}
         <div className="flex-1 min-h-0 overflow-y-auto">
@@ -78,6 +80,7 @@ function AppContent() {
           onSelect={handleSelectTab}
           onClose={handleCloseTab}
           onAddNew={handleAddNewTask}
+          onReorder={handleReorderTabs}
         />
 
         {/* Task Content: Left (Upload + Result) | Right (Chat) */}
@@ -86,7 +89,7 @@ function AppContent() {
           <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
             {/* Upload/Preview takes majority of space */}
             <div className="flex-[2] min-h-0 overflow-y-auto">
-              <UploadPanel uploadChat={uploadChat} />
+              <UploadPanel uploadChat={uploadChat} onCreateNewTask={handleAddNewTask} />
             </div>
             {/* Evaluation Results */}
             <div className="flex-1 min-h-0 overflow-y-auto">
@@ -111,9 +114,11 @@ function AppContent() {
 export function App() {
   return (
     <Layout>
-      <TaskProvider>
-        <AppContent />
-      </TaskProvider>
+      <DndProvider backend={HTML5Backend}>
+        <TaskProvider>
+          <AppContent />
+        </TaskProvider>
+      </DndProvider>
     </Layout>
   );
 }

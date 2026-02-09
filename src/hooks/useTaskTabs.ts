@@ -168,9 +168,30 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
     },
     [effectiveTaskId, onTaskChange]
   );
+  // Handle adding existing history task to tabs
+  const handleAddExistingTask = useCallback(
+    (taskId: string) => {
+      setOpenTaskTabs((prev) => {
+        if (prev.includes(taskId)) {
+          // Task already in tabs, just switch to it
+          onTaskChange(taskId);
+          return prev;
+        }
+        // Add history task to tabs
+        return [...prev, taskId];
+      });
+      onTaskChange(taskId);
+    },
+    [onTaskChange]
+  );
+
+  // Handle reordering tabs
+  const handleReorderTabs = useCallback((newTabIds: string[]) => {
+    setOpenTaskTabs(newTabIds);
+  }, []);
 
   // Handle new task creation - remove old unnamed tab if exists
-  const handleAddNewTask = useCallback(() => {
+  const handleAddNewTask = useCallback((): string => {
     const newTaskId = `upload-${Date.now()}`;
     setOpenTaskTabs((prev) => {
       // Remove all unnamed tabs (tabs without fileName in taskSummaries or not in taskSummaries)
@@ -181,12 +202,15 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
       return [...namedTabs, newTaskId];
     });
     onTaskChange(newTaskId);
+    return newTaskId;
   }, [onTaskChange, taskSummaries]);
 
   return {
     tabs,
     handleSelectTab,
     handleCloseTab,
-    handleAddNewTask
+    handleAddNewTask,
+    handleAddExistingTask,
+    handleReorderTabs
   };
 }

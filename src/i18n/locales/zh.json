@@ -16,6 +16,7 @@
   },
   "settings": {
     "title": "AI 配置",
+    "buttonLabel": "设置",
     "description": "API密钥本地加密存储，不会发送到任何服务器。",
     "taskSettings": "任务设置",
     "taskSettingsDescription": "仅为当前任务配置 AI 模型参数。",

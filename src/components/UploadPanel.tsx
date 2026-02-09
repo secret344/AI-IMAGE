@@ -36,15 +36,15 @@ function getUploadErrorMessage(err: unknown, t: ReturnType<typeof useTranslation
 
 interface UploadPanelProps {
   uploadChat: UseUploadChatReturn;
+  onCreateNewTask?: () => string;
 }
 
-export function UploadPanel({ uploadChat }: UploadPanelProps) {
+export function UploadPanel({ uploadChat, onCreateNewTask }: UploadPanelProps) {
   const { t, i18n } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [passphrase] = useState('');
   const {
-    setCurrentTaskId,
     taskSettings,
     globalProviderSettings,
     taskState,
@@ -80,8 +80,8 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
       }
 
       setError(null);
-      // 新图片上传，生成新的任务 ID
-      const nextTaskId = `upload-${Date.now()}`;
+      // 新图片上传，通过 onCreateNewTask 创建新的任务 tab
+      const nextTaskId = onCreateNewTask?.() ?? `upload-${Date.now()}`;
       // 新任务继承全局设置，而不是当前任务的settings
       // 用户可以在新任务中自定义
       const nextSettings = globalProviderSettings;
@@ -94,7 +94,6 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
         recommendedAgents: [],
         selectedAgentId: null
       });
-      setCurrentTaskId(nextTaskId);
 
       try {
         assertFileSize(file, 50);
@@ -137,7 +136,7 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
     },
     [
       globalProviderSettings,
-      setCurrentTaskId,
+      onCreateNewTask,
       setTaskSettingsForTask,
       setTaskStateForTask,
       t

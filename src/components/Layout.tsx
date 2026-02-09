@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { PropsWithChildren } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/i18n/useLanguage';
 import { useThemeConfig } from '@/components/providers/ThemeProvider';
+import { useAppStore } from '@/state/useAppStore';
+import { hydrateProviderSettings } from '@/modules/storage/settings';
 import { SettingsPanel } from '@/components/SettingsPanel';
-import { loadProviderSettings } from '@/modules/storage/settings';
 import { Header } from '@/components/layout/Header';
 import { LanguageMenu } from '@/components/layout/LanguageMenu';
 import { ThemeMenu } from '@/components/layout/ThemeMenu';
@@ -15,23 +16,26 @@ export function Layout({ children }: PropsWithChildren) {
   const { currentLanguage, switchLanguage, availableLanguages } = useLanguage();
   const { theme, setTheme } = useThemeConfig();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const buildModelInfo = useCallback(() => {
-    const settings = loadProviderSettings();
-    const providerLabel = t(`settings.providers.${settings.provider}`);
-    const model = settings.model || t('settings.noModelsDetected');
+  const { globalProviderSettings, setGlobalProviderSettings } = useAppStore();
+  const isInitializedRef = useRef(false);
+  
+  // Initialize provider settings from localStorage on mount
+  useEffect(() => {
+    if (!isInitializedRef.current && !globalProviderSettings) {
+      isInitializedRef.current = true;
+      setGlobalProviderSettings(hydrateProviderSettings());
+    }
+  }, [globalProviderSettings, setGlobalProviderSettings]);
+  
+  // Use hydrated settings or fallback to localStorage
+  const effectiveSettings = globalProviderSettings ?? hydrateProviderSettings();
+  
+  // Memoize modelInfo calculation based on current settings and language
+  const modelInfo = useMemo(() => {
+    const providerLabel = t(`settings.providers.${effectiveSettings.provider}`);
+    const model = effectiveSettings.model || t('settings.noModelsDetected');
     return `${providerLabel}: ${model}`;
-  }, [t]);
-  const [modelInfo, setModelInfo] = useState(() => buildModelInfo());
-
-  useEffect(() => {
-    setModelInfo(buildModelInfo());
-  }, [buildModelInfo]);
-
-  useEffect(() => {
-    const handler = () => setModelInfo(buildModelInfo());
-    window.addEventListener('settings-updated', handler);
-    return () => window.removeEventListener('settings-updated', handler);
-  }, [buildModelInfo]);
+  }, [effectiveSettings, t]);
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
@@ -39,7 +43,7 @@ export function Layout({ children }: PropsWithChildren) {
         title={t('header.title')}
         subtitle={t('header.subtitle')}
         badge={t('header.badge')}
-        settingsLabel={t('settings.title')}
+        settingsLabel={t('settings.buttonLabel')}
         modelInfo={modelInfo}
         onOpenSettings={() => setIsSettingsOpen(true)}
         languageMenu={

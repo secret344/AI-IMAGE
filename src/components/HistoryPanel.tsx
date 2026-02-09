@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import type { TaskRecord } from '@/modules/storage/db';
 import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
-import { deleteTask, deleteTasks, listTasks } from '@/modules/storage/history';
+import { deleteTask, deleteTasks, listTasks, saveTaskDetail } from '@/modules/storage/history';
 import { getDefaultProviderSettings } from '@/modules/storage/settings';
 import { buildXmp } from '@/modules/export/xmp';
 import { getAgentById, recommendAgents } from '@/modules/agent/recommendAgents';
@@ -37,7 +37,7 @@ const buildTaskItemActions = (
   language: string,
   setTaskStateForTask: (taskId: string, partial: Partial<TaskState>) => void,
   globalProviderSettings: { topAgents: number },
-  setCurrentTaskId: (taskId: string) => void,
+  onOpenTask: ((taskId: string) => void) | undefined,
   setSkipCacheForTask: (taskId: string, skip: boolean) => void,
   setResetEvaluationForTask: (taskId: string, value: boolean) => void,
   deleteTask: (id: string) => Promise<void>,
@@ -103,25 +103,27 @@ const buildTaskItemActions = (
       label: t('history.view'),
       variant: 'default',
       handler: (task) => {
-        setCurrentTaskId(task.taskId);
+        onOpenTask?.(task.taskId);
         loadTaskToState(task, false);
       }
     },
     {
       label: t('history.reevaluate'),
       variant: 'primary',
-      handler: (task) => {
+      handler: async (task) => {
         // Set flags before switching tasks
         setResetEvaluationForTask(task.taskId, true);
         setSkipCacheForTask(task.taskId, true);
-        // Clear evaluation immediately to show run button
-        setTaskStateForTask(task.taskId, {
-          evaluation: null,
-          isProcessing: false,
-          processingStage: null
-        });
+        // Clear persisted evaluation to avoid stale score on hydration
+        await saveTaskDetail(task.taskId, { evaluationResult: null });
         // Switch to the task (will trigger hydration with flags applied)
-        setCurrentTaskId(task.taskId);
+        onOpenTask?.(task.taskId);
+        setTaskStateForTask(task.taskId, {
+          isProcessing: false,
+          processingStage: null,
+          evaluation: null,
+          lastLatencyMs: null
+        });
         // Highlight the run button
         window.dispatchEvent(new Event('highlight-run'));
       }
@@ -137,7 +139,8 @@ const buildTaskItemActions = (
   ];
 };
 
-export function HistoryPanel() {
+export function HistoryPanel(props: { onOpenTask?: (taskId: string) => void } = {}) {
+  const { onOpenTask } = props;
   const { t, i18n } = useTranslation();
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [query, setQuery] = useState('');
@@ -147,7 +150,7 @@ export function HistoryPanel() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  const { setSkipCacheForTask, setResetEvaluationForTask, setCurrentTaskId, setTaskStateForTask } =
+  const { setSkipCacheForTask, setResetEvaluationForTask, setTaskStateForTask } =
     useTaskContext();
   const globalProviderSettings =
     useAppStore((state) => state.globalProviderSettings) ?? getDefaultProviderSettings();
@@ -248,7 +251,7 @@ export function HistoryPanel() {
         i18n.language,
         setTaskStateForTask,
         globalProviderSettings,
-        setCurrentTaskId,
+        onOpenTask,
         setSkipCacheForTask,
         setResetEvaluationForTask,
         deleteTask,
@@ -259,7 +262,7 @@ export function HistoryPanel() {
       i18n.language,
       setTaskStateForTask,
       globalProviderSettings,
-      setCurrentTaskId,
+      onOpenTask,
       setSkipCacheForTask,
       setResetEvaluationForTask,
       deleteTask,

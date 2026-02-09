@@ -16,6 +16,7 @@
   },
   "settings": {
     "title": "AI Configuration",
+    "buttonLabel": "Settings",
     "description": "API keys are encrypted and stored locally. Nothing is sent to any server.",
     "taskSettings": "Task Settings",
     "taskSettingsDescription": "Configure AI model settings for this task only.",
