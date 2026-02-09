@@ -37,9 +37,10 @@ function getUploadErrorMessage(err: unknown, t: ReturnType<typeof useTranslation
 interface UploadPanelProps {
   uploadChat: UseUploadChatReturn;
   onCreateNewTask?: () => string;
+  onRemoveTabsByImageHash?: (imageHash: string, exceptTaskId?: string) => void;
 }
 
-export function UploadPanel({ uploadChat, onCreateNewTask }: UploadPanelProps) {
+export function UploadPanel({ uploadChat, onCreateNewTask, onRemoveTabsByImageHash }: UploadPanelProps) {
   const { t, i18n } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -98,7 +99,7 @@ export function UploadPanel({ uploadChat, onCreateNewTask }: UploadPanelProps) {
       try {
         assertFileSize(file, 50);
         const processed = await processImage(file);
-        await saveTaskSummary({
+        const savedSummary = await saveTaskSummary({
           taskId: nextTaskId,
           fileName: file.name,
           thumbnailBase64: processed.base64,
@@ -108,6 +109,12 @@ export function UploadPanel({ uploadChat, onCreateNewTask }: UploadPanelProps) {
             dimensions: processed.dimensions
           }
         });
+        
+        // Close all tabs with the same imageHash (except the new one)
+        if (savedSummary.imageHash && onRemoveTabsByImageHash) {
+          onRemoveTabsByImageHash(savedSummary.imageHash, nextTaskId);
+        }
+        
         await saveTaskDetail(nextTaskId, {
           processedImage: {
             base64: processed.base64,

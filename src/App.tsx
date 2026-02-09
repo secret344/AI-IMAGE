@@ -43,7 +43,7 @@ function AppContent() {
   const agentLocale = useAgentLocale(taskState.selectedAgentId);
 
   // Manage task tabs
-  const { tabs, handleSelectTab, handleCloseTab, handleAddNewTask, handleAddExistingTask, handleReorderTabs } = useTaskTabs({
+  const { tabs, handleSelectTab, handleCloseTab, handleAddNewTask, handleAddExistingTask, handleReorderTabs, removeTabsByImageHash } = useTaskTabs({
     effectiveTaskId,
     onTaskChange: setCurrentTaskId
   });
@@ -89,7 +89,11 @@ function AppContent() {
           <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
             {/* Upload/Preview takes majority of space */}
             <div className="flex-[2] min-h-0 overflow-y-auto">
-              <UploadPanel uploadChat={uploadChat} onCreateNewTask={handleAddNewTask} />
+              <UploadPanel 
+                uploadChat={uploadChat} 
+                onCreateNewTask={handleAddNewTask}
+                onRemoveTabsByImageHash={removeTabsByImageHash}
+              />
             </div>
             {/* Evaluation Results */}
             <div className="flex-1 min-h-0 overflow-y-auto">

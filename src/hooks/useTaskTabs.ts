@@ -177,18 +177,69 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
           onTaskChange(taskId);
           return prev;
         }
+
+        // Check if there's already a tab with the same imageHash
+        const taskToOpen = taskSummaries[taskId];
+        if (taskToOpen?.imageHash) {
+          // Find existing tab with same imageHash
+          const existingTabId = prev.find((id) => {
+            const summary = taskSummaries[id];
+            return summary?.imageHash === taskToOpen.imageHash;
+          });
+          
+          if (existingTabId) {
+            // Same image already open, just switch to it
+            onTaskChange(existingTabId);
+            return prev;
+          }
+        }
+
         // Add history task to tabs
         return [...prev, taskId];
       });
       onTaskChange(taskId);
     },
-    [onTaskChange]
+    [onTaskChange, taskSummaries]
   );
 
   // Handle reordering tabs
   const handleReorderTabs = useCallback((newTabIds: string[]) => {
     setOpenTaskTabs(newTabIds);
   }, []);
+
+  // Remove all tabs with the given imageHash (except optionally one taskId)
+  const removeTabsByImageHash = useCallback(
+    (imageHash: string, exceptTaskId?: string) => {
+      setOpenTaskTabs((prev) => {
+        const tabsToRemove = prev.filter((id) => {
+          if (exceptTaskId && id === exceptTaskId) {
+            return false; // Keep the exception
+          }
+          const summary = taskSummaries[id];
+          return summary?.imageHash === imageHash;
+        });
+
+        if (tabsToRemove.length === 0) {
+          return prev;
+        }
+
+        const next = prev.filter((id) => !tabsToRemove.includes(id));
+        
+        // If we removed the active task, switch to another tab
+        if (tabsToRemove.includes(effectiveTaskId) && next.length > 0) {
+          // Switch to the exception task if it exists, otherwise the last tab
+          if (exceptTaskId && next.includes(exceptTaskId)) {
+            onTaskChange(exceptTaskId);
+          } else {
+            onTaskChange(next[next.length - 1]);
+          }
+        }
+
+        return next;
+      });
+    },
+    [taskSummaries, effectiveTaskId, onTaskChange]
+  );
 
   // Handle new task creation - remove old unnamed tab if exists
   const handleAddNewTask = useCallback((): string => {
@@ -211,6 +262,7 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
     handleCloseTab,
     handleAddNewTask,
     handleAddExistingTask,
-    handleReorderTabs
+    handleReorderTabs,
+    removeTabsByImageHash
   };
 }
