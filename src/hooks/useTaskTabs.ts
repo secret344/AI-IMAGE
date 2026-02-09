@@ -42,6 +42,8 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
           const parsed: string[] = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setOpenTaskTabs(parsed);
+            // Switch to first cached tab to sync currentTaskId
+            onTaskChange(parsed[0]);
             setIsInitialized(true);
             return;
           }
@@ -104,18 +106,6 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
     return () => window.removeEventListener('history-updated', handler);
   }, [loadTaskSummaries]);
 
-  // Ensure effectiveTaskId is in openTaskTabs if it changes after initialization
-  // This handles dynamic task ID changes but respects cached/restored tabs
-  useEffect(() => {
-    if (!isInitialized || !effectiveTaskId || openTaskTabs.length === 0) {
-      return;
-    }
-    // Only add if not already present, don't override existing tabs
-    if (!openTaskTabs.includes(effectiveTaskId)) {
-      setOpenTaskTabs((prev) => [...prev, effectiveTaskId]);
-    }
-  }, [effectiveTaskId, isInitialized]);
-
   // Generate tab display items with labels
   const tabs = useMemo(() => {
     const untitledTasks: string[] = [];
@@ -140,6 +130,13 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
       if (taskId === effectiveTaskId) {
         return;
       }
+      // Ensure tab exists, add it if not present
+      setOpenTaskTabs((prev) => {
+        if (!prev.includes(taskId)) {
+          return [...prev, taskId];
+        }
+        return prev;
+      });
       onTaskChange(taskId);
     },
     [effectiveTaskId, onTaskChange]
