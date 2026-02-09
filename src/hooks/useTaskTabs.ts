@@ -147,30 +147,41 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
     (taskId: string) => {
       setOpenTaskTabs((prev) => {
         if (prev.length <= 1) {
-          // All tabs about to close, create a new default task as fallback
+          // All tabs about to close, create a new unnamed task as fallback
           const newDefaultTaskId = `upload-${Date.now()}`;
           onTaskChange(newDefaultTaskId);
           return [newDefaultTaskId];
         }
 
         const next = prev.filter((id) => id !== taskId);
+        
+        // Only switch tab if we're closing the currently active tab
         if (taskId === effectiveTaskId && next.length > 0) {
-          // Current tab closed, switch to last tab in list
+          // Switch to the last tab in the list
           const fallback = next[next.length - 1];
           onTaskChange(fallback);
         }
+        // If closing a non-current tab, keep displaying the current tab (don't change)
+
         return next;
       });
     },
     [effectiveTaskId, onTaskChange]
   );
 
-  // Handle new task creation
+  // Handle new task creation - remove old unnamed tab if exists
   const handleAddNewTask = useCallback(() => {
     const newTaskId = `upload-${Date.now()}`;
-    setOpenTaskTabs((prev) => [...prev, newTaskId]);
+    setOpenTaskTabs((prev) => {
+      // Remove all unnamed tabs (tabs without fileName in taskSummaries or not in taskSummaries)
+      const namedTabs = prev.filter((id) => {
+        const task = taskSummaries[id];
+        return task && task.fileName; // Keep only tabs with fileName
+      });
+      return [...namedTabs, newTaskId];
+    });
     onTaskChange(newTaskId);
-  }, [onTaskChange]);
+  }, [onTaskChange, taskSummaries]);
 
   return {
     tabs,
