@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listTasks } from '@/modules/storage/history';
 import type { TaskRecord } from '@/modules/storage/db';
@@ -13,15 +13,51 @@ export interface TaskTabItem {
   label: string;
 }
 
+const OPEN_TABS_STORAGE_KEY = 'ai-image:open-task-tabs';
+
 /**
  * Manages tab state for multi-task workflow
  * Handles: tab creation/deletion, task summaries loading, tab label generation
+ * Persists and restores open tabs from localStorage
  */
 export function useTaskTabs(options: UseTaskTabsOptions) {
   const { effectiveTaskId, onTaskChange } = options;
   const { t } = useTranslation();
-  const [openTaskTabs, setOpenTaskTabs] = useState<string[]>(() => [effectiveTaskId]);
   const [taskSummaries, setTaskSummaries] = useState<Record<string, TaskRecord>>({});
+  const hasInitializedRef = useRef(false);
+
+  // Initialize openTaskTabs from localStorage or fallback to effectiveTaskId
+  const [openTaskTabs, setOpenTaskTabs] = useState<string[]>(() => {
+    if (hasInitializedRef.current) {
+      return [effectiveTaskId];
+    }
+
+    try {
+      const stored = localStorage.getItem(OPEN_TABS_STORAGE_KEY);
+      if (stored) {
+        const parsed: string[] = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          hasInitializedRef.current = true;
+          return parsed;
+        }
+      }
+    } catch {
+      // Silently fail on parse error
+    }
+
+    // Fallback: use effectiveTaskId
+    hasInitializedRef.current = true;
+    return [effectiveTaskId];
+  });
+
+  // Persist openTaskTabs to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(OPEN_TABS_STORAGE_KEY, JSON.stringify(openTaskTabs));
+    } catch {
+      // Silently fail on storage error
+    }
+  }, [openTaskTabs]);
 
   // Load task summaries from IndexedDB
   const loadTaskSummaries = useCallback(async () => {
@@ -41,14 +77,20 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
     return () => window.removeEventListener('history-updated', handler);
   }, [loadTaskSummaries]);
 
-  // Auto-add tab when effectiveTaskId changes
+  // Ensure effectiveTaskId is in openTaskTabs
+  // If all tabs were closed and now there's a new task, add it
   useEffect(() => {
     if (!effectiveTaskId) {
       return;
     }
-    setOpenTaskTabs((prev) =>
-      prev.includes(effectiveTaskId) ? prev : [...prev, effectiveTaskId]
-    );
+    setOpenTaskTabs((prev) => {
+      if (prev.includes(effectiveTaskId)) {
+        return prev;
+      }
+      // Don't add default task if there are other tabs open
+      // Only add if this is the first time or all tabs were closed
+      return prev.length === 0 ? [effectiveTaskId] : prev;
+    });
   }, [effectiveTaskId]);
 
   // Generate tab display items with labels
@@ -85,14 +127,17 @@ export function useTaskTabs(options: UseTaskTabsOptions) {
     (taskId: string) => {
       setOpenTaskTabs((prev) => {
         if (prev.length <= 1) {
-          return prev;
+          // All tabs about to close, create a new default task as fallback
+          const newDefaultTaskId = `upload-${Date.now()}`;
+          onTaskChange(newDefaultTaskId);
+          return [newDefaultTaskId];
         }
+
         const next = prev.filter((id) => id !== taskId);
-        if (taskId === effectiveTaskId) {
+        if (taskId === effectiveTaskId && next.length > 0) {
+          // Current tab closed, switch to last tab in list
           const fallback = next[next.length - 1];
-          if (fallback) {
-            onTaskChange(fallback);
-          }
+          onTaskChange(fallback);
         }
         return next;
       });
