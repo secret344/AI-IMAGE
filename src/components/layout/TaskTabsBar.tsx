@@ -1,13 +1,13 @@
 /**
  * 任务标签栏组件
  * 职责：展示已打开的任务标签并支持切换/关闭
- * 特点：Lightroom 风格，横向滚动，轻量交互
+ * 特点：Lightroom 风格，使用 shadcn/ui Tabs 组件
  */
 
 import type { MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { X } from 'lucide-react';
 
 export interface TaskTabItem {
   /** 任务唯一 ID */
@@ -28,55 +28,43 @@ export interface TaskTabsBarProps {
 }
 
 /**
- * Task tabs bar with closeable tabs
+ * Task tabs bar with closeable tabs using shadcn/ui Tabs component
  * @param {TaskTabsBarProps} props - Component properties
  * @return {JSX.Element} Task tabs bar element
  */
 export function TaskTabsBar({ tabs, activeId, onSelect, onClose }: TaskTabsBarProps): JSX.Element {
   return (
-    <div className="rounded-xl border border-border/50 bg-card/60 shadow-sm">
-      <ScrollArea className="w-full">
-        <div className="flex items-center gap-2 px-3 py-2">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeId;
-            return (
-              <div
-                key={tab.id}
-                className={cn(
-                  'flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition',
-                  isActive
-                    ? 'border-primary/40 bg-primary/10 text-foreground'
-                    : 'border-border/60 bg-background/40 text-muted-foreground hover:text-foreground'
-                )}
+    <Tabs
+      value={activeId ?? undefined}
+      onValueChange={onSelect}
+      className="w-full"
+    >
+      <TabsList className="inline-flex h-auto w-full justify-start gap-1 rounded-xl border border-border/50 bg-card/60 p-1.5 shadow-sm">
+        {tabs.map((tab) => (
+          <TabsTrigger
+            key={tab.id}
+            value={tab.id}
+            className="relative rounded-lg px-3 py-1.5 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            <span className="pr-5">{tab.label}</span>
+            {tabs.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-1/2 h-5 w-5 -translate-y-1/2 p-0 hover:bg-destructive/20 hover:text-destructive"
+                onClick={(event: MouseEvent<HTMLButtonElement>) => {
+                  event.stopPropagation();
+                  onClose(tab.id);
+                }}
+                aria-label={`Close ${tab.label}`}
               >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-xs"
-                  onClick={() => onSelect(tab.id)}
-                >
-                  {tab.label}
-                </Button>
-                {tabs.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 px-0 text-xs"
-                    onClick={(event: MouseEvent<HTMLButtonElement>) => {
-                      event.stopPropagation();
-                      onClose(tab.id);
-                    }}
-                  >
-                    x
-                  </Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </ScrollArea>
-    </div>
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
