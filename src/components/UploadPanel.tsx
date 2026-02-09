@@ -83,8 +83,8 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
       setError(null);
       // 新图片上传，生成新的任务 ID
       const nextTaskId = `upload-${Date.now()}`;
-      setCurrentTaskId(nextTaskId);
-      uploadChat.clearMessages(); // 清除前一个图片的聊天记录
+      const nextSettings = taskSettings ?? globalProviderSettings;
+      setTaskSettingsForTask(nextTaskId, nextSettings);
       setTaskStateForTask(nextTaskId, {
         isProcessing: true,
         processingStage: t('upload.preprocessing'),
@@ -93,6 +93,7 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
         recommendedAgents: [],
         selectedAgentId: null
       });
+      setCurrentTaskId(nextTaskId);
 
       try {
         assertFileSize(file, 50);
@@ -112,7 +113,8 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
             base64: processed.base64,
             exif: processed.exif,
             dimensions: processed.dimensions
-          }
+          },
+          taskSettings: nextSettings
         });
         setTaskStateForTask(nextTaskId, {
           selectedFileName: file.name,
@@ -132,7 +134,14 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
         window.dispatchEvent(new Event('history-updated'));
       }
     },
-    [i18n.language, passphrase, setTaskState, setTaskStateForTask, t, uploadChat]
+    [
+      globalProviderSettings,
+      setCurrentTaskId,
+      setTaskSettingsForTask,
+      setTaskStateForTask,
+      t,
+      taskSettings
+    ]
   );
 
   /**
