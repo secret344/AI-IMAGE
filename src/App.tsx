@@ -4,7 +4,6 @@ import { Layout } from '@/components/Layout';
 import { UploadPanel } from '@/components/UploadPanel';
 import { ResultPanel } from '@/components/ResultPanel';
 import { HistoryPanel } from '@/components/HistoryPanel';
-import { CustomAgentsPanel } from '@/components/CustomAgentsPanel';
 import { TaskTabsBar } from '@/components/layout/TaskTabsBar';
 import { useAppStore } from '@/state/useAppStore';
 import { TaskProvider } from '@/state/TaskContext';
@@ -79,14 +78,23 @@ function AppContent() {
     );
   }, [effectiveTaskId]);
 
-  const tabs = useMemo(
-    () =>
-      openTaskTabs.map((taskId) => ({
+  const tabs = useMemo(() => {
+    // Generate better names for blank tasks
+    const untitledTasks: string[] = [];
+    return openTaskTabs.map((taskId) => {
+      const fileName = taskSummaries[taskId]?.fileName;
+      if (fileName) {
+        return { id: taskId, label: fileName };
+      }
+      // Tasks without file names: generate sequence numbers
+      untitledTasks.push(taskId);
+      const index = untitledTasks.length;
+      return {
         id: taskId,
-        label: taskSummaries[taskId]?.fileName ?? t('history.untitled')
-      })),
-    [openTaskTabs, taskSummaries, t]
-  );
+        label: index === 1 ? t('history.untitled') : `${t('history.untitled')} ${index}`
+      };
+    });
+  }, [openTaskTabs, taskSummaries, t]);
 
   const handleSelectTab = useCallback(
     (taskId: string) => {
@@ -117,6 +125,12 @@ function AppContent() {
     [effectiveTaskId, setCurrentTaskId]
   );
 
+  const handleAddNewTask = useCallback(() => {
+    const newTaskId = `upload-${Date.now()}`;
+    setOpenTaskTabs((prev) => [...prev, newTaskId]);
+    setCurrentTaskId(newTaskId);
+  }, [setCurrentTaskId]);
+
   const uploadChat = useUploadChat({
     taskId: effectiveTaskId,
     imageName: taskState.selectedFileName || 'untitled',
@@ -127,24 +141,38 @@ function AppContent() {
   });
 
   return (
-    <div className="grid min-w-0 w-full items-start gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-      <div className="min-w-0 space-y-6">
+    <div className="grid min-w-0 w-full h-[calc(100vh-8rem)] items-start gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+      {/* Left: History Panel */}
+      <div className="min-w-0 h-full overflow-hidden">
         <HistoryPanel />
       </div>
-      <div className="min-w-0 flex flex-col gap-4">
+
+      {/* Right: Task Detail Area with Tab Bar */}
+      <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
         <TaskTabsBar
           tabs={tabs}
           activeId={effectiveTaskId}
           onSelect={handleSelectTab}
           onClose={handleCloseTab}
+          onAddNew={handleAddNewTask}
         />
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
-          <div className="min-w-0 flex flex-col gap-4">
-            <UploadPanel uploadChat={uploadChat} />
-            <ResultPanel />
-            <CustomAgentsPanel />
+
+        {/* Task Content: Left (Upload + Result) | Right (Chat) */}
+        <div className="grid min-w-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
+          {/* Left Column: Upload/Image Preview + Evaluation Results */}
+          <div className="min-w-0 h-full flex flex-col gap-3 overflow-hidden">
+            {/* Upload/Preview takes majority of space */}
+            <div className="flex-[2] min-h-0 overflow-y-auto">
+              <UploadPanel uploadChat={uploadChat} />
+            </div>
+            {/* Evaluation Results below */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <ResultPanel />
+            </div>
           </div>
-          <div className="min-w-0">
+
+          {/* Right Column: Chat Component */}
+          <div className="min-w-0 h-full overflow-hidden">
             <UploadChatWrapper
               chatState={uploadChat}
               imageName={taskState.selectedFileName || t('history.untitled')}
@@ -152,6 +180,10 @@ function AppContent() {
             />
           </div>
         </div>
+
+        {/* Custom Agents Panel - moved to bottom or can be in settings */}
+        {/* Temporarily hidden from main flow as per requirements */}
+        {/* <CustomAgentsPanel /> */}
       </div>
     </div>
   );

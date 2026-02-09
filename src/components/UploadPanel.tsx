@@ -14,7 +14,6 @@ import { analyzeStyleWithChat } from '@/modules/style/analyzeStyleWithChat';
 import type { UseUploadChatReturn } from '@/hooks/useUploadChat';
 import { saveTaskDetail, saveTaskSummary } from '@/modules/storage/history';
 import { UploadDropzone } from '@/components/upload/UploadDropzone';
-import { UploadPreview } from '@/components/upload/UploadPreview';
 import { StyleTagsSummary } from '@/components/upload/StyleTagsSummary';
 import { RecommendedAgentsList } from '@/components/upload/RecommendedAgentsList';
 import { TaskSettingsPanel } from '@/components/upload/TaskSettingsPanel';
@@ -50,7 +49,8 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
     globalProviderSettings,
     taskState,
     setTaskState,
-    setTaskStateForTask
+    setTaskStateForTask,
+    setTaskSettingsForTask
   } = useTaskContext();
 
   const {
@@ -59,8 +59,7 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
     processingStage,
     styleResult,
     recommendedAgents,
-    processedImage,
-    previewImageBase64
+    processedImage
   } = taskState;
 
   const applyRecommendations = useCallback(
@@ -242,22 +241,23 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      {/* 左侧：上传和预览区域 */}
-      <Card className="border-border/50 bg-card/60 backdrop-blur-sm flex flex-col shadow-sm rounded-xl">
-        <CardHeader className="pb-3 sm:pb-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <CardTitle className="text-lg sm:text-xl">{t('upload.title')}</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground/80">
-                {t('upload.description')}
-              </CardDescription>
-            </div>
-            {/* 任务级 AI 设置按钮 */}
-            <TaskSettingsPanel />
+    <Card className="border-border/50 bg-card/60 backdrop-blur-sm flex flex-col shadow-sm rounded-xl h-full">
+      <CardHeader className="pb-3 sm:pb-4 flex-shrink-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <CardTitle className="text-lg sm:text-xl">{t('upload.title')}</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground/80">
+              {t('upload.description')}
+            </CardDescription>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-5 flex-1 flex flex-col overflow-y-auto">
+          {/* 任务级 AI 设置按钮 */}
+          <TaskSettingsPanel />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 flex-1 flex flex-col overflow-y-auto">
+        {/* 上传区域或图片预览 - 根据是否有图片决定显示哪个 */}
+        {!processedImage ? (
+          // 没有图片时显示上传区域
           <UploadDropzone
             isProcessing={isProcessing}
             processingStage={processingStage}
@@ -267,66 +267,77 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
             onDrop={handleDrop}
             onFileChange={handleFileChange}
           />
-          {selectedFileName && (
-            <p className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-              ✓ {t('upload.selected')}: {selectedFileName}
-            </p>
-          )}
-          <UploadPreview
-            processedImageBase64={processedImage?.base64 ?? null}
-            previewImageBase64={previewImageBase64}
-          />
-
-          {/* 分析按钮 - 只在图片上传后且未分析时显示 */}
-          {processedImage && !styleResult && (
-            <Button
-              onClick={handleAnalyzeStyle}
-              disabled={isProcessing || uploadChat.isLoading}
-              className="w-full"
-              size="lg"
-              variant={uploadChat.shouldShowAnalysisSuggestion ? 'default' : 'outline'}
-            >
-              {isProcessing ? processingStage || t('upload.processing') : '分析图片风格'}
-            </Button>
-          )}
-
-          {/* AI分析建议 */}
-          {uploadChat.shouldShowAnalysisSuggestion && uploadChat.analysisSuggestion && (
-            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-              <AlertDescription className="text-sm">
-                <div className="space-y-2">
-                  <p className="text-blue-900 dark:text-blue-100">
-                    {uploadChat.analysisSuggestion}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        uploadChat.confirmAnalysis();
-                        await handleAnalyzeStyle();
-                      }}
-                      disabled={isProcessing}
-                    >
-                      确认分析
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={uploadChat.confirmAnalysis}>
-                      稍后再说
-                    </Button>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <StyleTagsSummary styleResult={styleResult} />
-          <RecommendedAgentsList agents={recommendedAgents} />
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs sm:text-sm text-destructive font-medium">
-              ⚠️ {error}
+        ) : (
+          // 有图片时显示预览（占据大部分空间）
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            <div className="flex-1 min-h-0 relative">
+              <Card className="border-border/60 bg-card/40 h-full">
+                <CardContent className="p-2 h-full flex items-center justify-center">
+                  <img
+                    src={processedImage.base64}
+                    alt={selectedFileName || t('upload.previewAlt')}
+                    className="max-w-full max-h-full rounded-md border border-border/50 object-contain"
+                  />
+                </CardContent>
+              </Card>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            {selectedFileName && (
+              <p className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-medium flex-shrink-0">
+                ✓ {t('upload.selected')}: {selectedFileName}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* 分析按钮 - 只在图片上传后且未分析时显示 */}
+        {processedImage && !styleResult && (
+          <Button
+            onClick={handleAnalyzeStyle}
+            disabled={isProcessing || uploadChat.isLoading}
+            className="w-full flex-shrink-0"
+            size="lg"
+            variant={uploadChat.shouldShowAnalysisSuggestion ? 'default' : 'outline'}
+          >
+            {isProcessing ? processingStage || t('upload.processing') : '分析图片风格'}
+          </Button>
+        )}
+
+        {/* AI分析建议 */}
+        {uploadChat.shouldShowAnalysisSuggestion && uploadChat.analysisSuggestion && (
+          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800 flex-shrink-0">
+            <AlertDescription className="text-sm">
+              <div className="space-y-2">
+                <p className="text-blue-900 dark:text-blue-100">
+                  {uploadChat.analysisSuggestion}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      uploadChat.confirmAnalysis();
+                      await handleAnalyzeStyle();
+                    }}
+                    disabled={isProcessing}
+                  >
+                    确认分析
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={uploadChat.confirmAnalysis}>
+                    稍后再说
+                  </Button>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <StyleTagsSummary styleResult={styleResult} />
+        <RecommendedAgentsList agents={recommendedAgents} />
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs sm:text-sm text-destructive font-medium flex-shrink-0">
+            ⚠️ {error}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
