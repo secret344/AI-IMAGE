@@ -82,7 +82,9 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
       setError(null);
       // 新图片上传，生成新的任务 ID
       const nextTaskId = `upload-${Date.now()}`;
-      const nextSettings = taskSettings ?? globalProviderSettings;
+      // 新任务继承全局设置，而不是当前任务的settings
+      // 用户可以在新任务中自定义
+      const nextSettings = globalProviderSettings;
       setTaskSettingsForTask(nextTaskId, nextSettings);
       setTaskStateForTask(nextTaskId, {
         isProcessing: true,
@@ -138,8 +140,7 @@ export function UploadPanel({ uploadChat }: UploadPanelProps) {
       setCurrentTaskId,
       setTaskSettingsForTask,
       setTaskStateForTask,
-      t,
-      taskSettings
+      t
     ]
   );
 

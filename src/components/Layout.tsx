@@ -18,9 +18,10 @@ export function Layout({ children }: PropsWithChildren) {
   const buildModelInfo = useCallback(() => {
     const settings = loadProviderSettings();
     const providerLabel = t(`settings.providers.${settings.provider}`);
-    return `${providerLabel}: ${settings.model}`;
+    const model = settings.model || t('settings.noModelsDetected');
+    return `${providerLabel}: ${model}`;
   }, [t]);
-  const [modelInfo, setModelInfo] = useState(buildModelInfo);
+  const [modelInfo, setModelInfo] = useState(() => buildModelInfo());
 
   useEffect(() => {
     setModelInfo(buildModelInfo());
