@@ -12,7 +12,8 @@ import { recommendAgents } from '@/modules/agent/recommendAgents';
 import { assertFileSize } from '@/utils/file';
 import { analyzeStyleWithChat } from '@/modules/style/analyzeStyleWithChat';
 import type { UseUploadChatReturn } from '@/hooks/useUploadChat';
-import { saveTaskDetail, saveTaskSummary } from '@/modules/storage/history';
+import { saveTaskDetail, saveTaskSummary, computeImageHash } from '@/modules/storage/history';
+import type { StyleRecognitionResult } from '@/modules/style/recognizeStyle';
 import { UploadDropzone } from '@/components/upload/UploadDropzone';
 import { StyleTagsSummary } from '@/components/upload/StyleTagsSummary';
 import { RecommendedAgentsList } from '@/components/upload/RecommendedAgentsList';
@@ -37,10 +38,11 @@ function getUploadErrorMessage(err: unknown, t: ReturnType<typeof useTranslation
 interface UploadPanelProps {
   uploadChat: UseUploadChatReturn;
   onCreateNewTask?: () => string;
+  onOpenExistingTask?: (taskId: string) => void;
   onRemoveTabsByImageHash?: (imageHash: string, exceptTaskId?: string) => void;
 }
 
-export function UploadPanel({ uploadChat, onCreateNewTask, onRemoveTabsByImageHash }: UploadPanelProps) {
+export function UploadPanel({ uploadChat, onCreateNewTask, onOpenExistingTask, onRemoveTabsByImageHash }: UploadPanelProps) {
   const { t, i18n } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -81,71 +83,143 @@ export function UploadPanel({ uploadChat, onCreateNewTask, onRemoveTabsByImageHa
       }
 
       setError(null);
-      // 新图片上传，通过 onCreateNewTask 创建新的任务 tab
-      const nextTaskId = onCreateNewTask?.() ?? `upload-${Date.now()}`;
-      // 新任务继承全局设置，而不是当前任务的settings
-      // 用户可以在新任务中自定义
-      const nextSettings = globalProviderSettings;
-      setTaskSettingsForTask(nextTaskId, nextSettings);
-      setTaskStateForTask(nextTaskId, {
+      
+      // Show processing indicator temporarily
+      setTaskState({
         isProcessing: true,
-        processingStage: t('upload.preprocessing'),
-        evaluation: null,
-        styleResult: null,
-        recommendedAgents: [],
-        selectedAgentId: null
+        processingStage: t('upload.preprocessing')
       });
 
       try {
         assertFileSize(file, 50);
         const processed = await processImage(file);
-        const savedSummary = await saveTaskSummary({
-          taskId: nextTaskId,
-          fileName: file.name,
-          thumbnailBase64: processed.base64,
-          processedImage: {
-            base64: processed.base64,
-            exif: processed.exif,
-            dimensions: processed.dimensions
-          }
-        });
+        const imageHash = await computeImageHash(processed.base64);
         
-        // Close all tabs with the same imageHash (except the new one)
-        if (savedSummary.imageHash && onRemoveTabsByImageHash) {
-          onRemoveTabsByImageHash(savedSummary.imageHash, nextTaskId);
+        // Check if this image already exists in history
+        let existingTask = null;
+        if (imageHash) {
+          const { listTasks } = await import('@/modules/storage/history');
+          const allTasks = await listTasks();
+          existingTask = allTasks.find(task => task.imageHash === imageHash);
         }
         
-        await saveTaskDetail(nextTaskId, {
-          processedImage: {
+        let nextTaskId: string;
+        
+        if (existingTask) {
+          // Reuse existing task from history
+          console.log('📦 [UploadPanel] Found existing task in history, reusing:', existingTask.taskId);
+          nextTaskId = existingTask.taskId;
+          
+          // Close all other tabs with the same imageHash
+          if (imageHash && onRemoveTabsByImageHash) {
+            onRemoveTabsByImageHash(imageHash, nextTaskId);
+          }
+          
+          // Load existing task data into state
+          const hydratedImage = {
+            originalName: file.name,
+            processedBlob: new Blob([], { type: 'image/jpeg' }),
             base64: processed.base64,
             exif: processed.exif,
             dimensions: processed.dimensions
-          },
-          taskSettings: nextSettings
-        });
-        setTaskStateForTask(nextTaskId, {
-          selectedFileName: file.name,
-          processedImage: processed,
-          previewImageBase64: processed.base64
-        });
-
-        // 不再自动进行风格识别
-        // 等待用户通过聊天或点击"分析"按钮手动触发
+          };
+          
+          // Build style result from existing styleTags
+          let styleResult: StyleRecognitionResult | null = null;
+          if (existingTask.styleTags && existingTask.styleTags.length > 0) {
+            styleResult = {
+              styleTags: existingTask.styleTags as StyleTagScore[],
+              styleDescription: '',
+              inferenceTime: 0,
+              modelUsed: 'history-recovery'
+            };
+          }
+          
+          const recommendedAgentsFromHistory = styleResult 
+            ? recommendAgents(styleResult.styleTags, { limit: globalProviderSettings.topAgents })
+            : [];
+          
+          setTaskStateForTask(nextTaskId, {
+            evaluation: existingTask.evaluationResult ?? null,
+            selectedAgentId: existingTask.selectedAgent ?? null,
+            styleResult,
+            selectedFileName: file.name,
+            previewImageBase64: processed.base64,
+            processedImage: hydratedImage,
+            recommendedAgents: recommendedAgentsFromHistory,
+            isProcessing: false,
+            processingStage: null
+          });
+          
+          // Ensure task settings are loaded
+          if (existingTask.taskSettings) {
+            setTaskSettingsForTask(nextTaskId, existingTask.taskSettings);
+          }
+          
+          // Open the existing task tab
+          if (onOpenExistingTask) {
+            onOpenExistingTask(nextTaskId);
+          }
+        } else {
+          // Create new task for new image
+          console.log('📝 [UploadPanel] New image, creating new task');
+          nextTaskId = onCreateNewTask?.() ?? `upload-${Date.now()}`;
+          
+          const nextSettings = globalProviderSettings;
+          setTaskSettingsForTask(nextTaskId, nextSettings);
+          
+          const savedSummary = await saveTaskSummary({
+            taskId: nextTaskId,
+            fileName: file.name,
+            thumbnailBase64: processed.base64,
+            processedImage: {
+              base64: processed.base64,
+              exif: processed.exif,
+              dimensions: processed.dimensions
+            }
+          });
+          
+          // Close all tabs with the same imageHash (should be none for new image)
+          if (savedSummary.imageHash && onRemoveTabsByImageHash) {
+            onRemoveTabsByImageHash(savedSummary.imageHash, nextTaskId);
+          }
+          
+          await saveTaskDetail(nextTaskId, {
+            processedImage: {
+              base64: processed.base64,
+              exif: processed.exif,
+              dimensions: processed.dimensions
+            },
+            taskSettings: nextSettings
+          });
+          
+          setTaskStateForTask(nextTaskId, {
+            selectedFileName: file.name,
+            processedImage: processed,
+            previewImageBase64: processed.base64,
+            isProcessing: false,
+            processingStage: null
+          });
+        }
+        
+        window.dispatchEvent(new Event('history-updated'));
       } catch (err) {
         setError(getUploadErrorMessage(err, t));
       } finally {
-        setTaskStateForTask(nextTaskId, {
+        setTaskState({
           processingStage: null,
           isProcessing: false
         });
-        window.dispatchEvent(new Event('history-updated'));
       }
     },
     [
       globalProviderSettings,
       onCreateNewTask,
+      onOpenExistingTask,
+      onRemoveTabsByImageHash,
       setTaskSettingsForTask,
       setTaskStateForTask,
+      setTaskState,
       t
     ]
   );

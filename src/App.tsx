@@ -92,6 +92,7 @@ function AppContent() {
               <UploadPanel 
                 uploadChat={uploadChat} 
                 onCreateNewTask={handleAddNewTask}
+                onOpenExistingTask={handleAddExistingTask}
                 onRemoveTabsByImageHash={removeTabsByImageHash}
               />
             </div>
