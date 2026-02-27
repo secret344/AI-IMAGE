@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "languageCode": "zh",
+    "displayName": "中文",
+    "promptLanguageLabel": "Simplified Chinese"
+  },
+  "host": {
+    "actions": {
+      "openInCurrentWindow": "当前窗口打开",
+      "openInNewWindow": "新窗口打开",
+      "openWindowFailed": "无法打开新的子应用窗口",
+      "backToLauncher": "返回基座启动台"
+    },
+    "launcher": {
+      "title": "基座启动台",
+      "description": "选择子应用后，可在当前窗口或新窗口打开。",
+      "loadedAppsCount": "已加载子应用：{{count}}",
+      "manifestDiagnostics": {
+        "title": "Manifest 诊断",
+        "skippedCount": "已跳过的 Manifest：{{count}}",
+        "uniqueIssueCount": "去重后的问题组：{{count}}",
+        "issueOccurrences": "出现 {{count}} 次",
+        "unknownManifest": "未知 Manifest",
+        "unknownVersion": "未知版本",
+        "actions": {
+          "exportJson": "导出 JSON"
+        },
+        "reasons": {
+          "invalidShape": "某个 Manifest 因结构不合法被忽略。",
+          "disabled": "{{manifestId}} 已被禁用。",
+          "versionIncompatible": "{{manifestId}} 需要 Host 版本 {{minHostVersion}} 或更高。"
+        }
+      }
+    },
+    "diagnostics": {
+      "title": "内核诊断",
+      "subtitle": "{{appId}} 的内核事件遥测",
+      "empty": "暂无内核事件记录。",
+      "itemMeta": "应用：{{appId}} · 状态：{{status}}",
+      "actions": {
+        "refresh": "刷新",
+        "clear": "清空"
+      },
+      "metrics": {
+        "total": "总事件",
+        "success": "成功",
+        "failure": "失败",
+        "avgMs": "平均毫秒"
+      },
+      "status": {
+        "success": "成功",
+        "failure": "失败"
+      }
+    },
+    "apps": {
+      "imageStudio": {
+        "title": "图像工作台",
+        "description": "当前图像质量分析工具，已作为基座子应用运行。"
+      },
+      "investment": {
+        "title": "投资分析",
+        "description": "投资分析工作区，已作为基座子应用嵌入。"
+      }
+    }
+  },
+  "investment": {
+    "title": "投资分析工作区",
+    "description": "在这里构建新闻与基本面分析能力。",
+    "placeholder": "该模块已完成骨架，可由独立团队继续功能开发。",
+    "previewTitle": "服务预览",
+    "previewEmpty": "尚未加载预览数据。",
+    "nav": {
+      "dashboard": "首页",
+      "dashboardDescription": "大盘快照与总览",
+      "news": "新闻",
+      "newsDescription": "资讯预览与信号",
+      "strategy": "策略",
+      "strategyDescription": "策略模板与状态",
+      "portfolio": "组合",
+      "portfolioDescription": "自选与持仓概览",
+      "settings": "设置",
+      "settingsDescription": "数据源与刷新偏好"
+    },
+    "dashboard": {
+      "title": "市场首页",
+      "description": "非实时大盘快照，每 15 分钟自动刷新一次。",
+      "loading": "正在加载大盘快照...",
+      "empty": "暂无可用的大盘快照。",
+      "updatedAt": "最近更新：{{time}}",
+      "marketSource": {
+        "remote": "数据来源：公开市场 API 快照",
+        "cache": "数据来源：本地缓存回退",
+        "fallback": "数据来源：内置回退数据"
+      },
+      "errorCategory": {
+        "timeout": "请求超时，已展示回退数据。",
+        "network": "网络不可用，已展示回退数据。",
+        "unknown": "拉取异常，已展示回退数据。"
+      },
+      "actions": {
+        "refresh": "刷新快照",
+        "refreshCompleted": "大盘快照已刷新"
+      }
+    },
+    "news": {
+      "title": "资讯流",
+      "description": "加载宏观与行业信号的预览列表。",
+      "actions": {
+        "loadPreview": "加载资讯预览"
+      }
+    },
+    "strategy": {
+      "title": "策略实验室",
+      "description": "展示策略模板与当前推进状态。",
+      "items": {
+        "factorRotation": {
+          "title": "因子轮动",
+          "status": "状态：预览",
+          "description": "跟踪大小盘与价值成长轮动机会。"
+        },
+        "eventDriven": {
+          "title": "事件驱动",
+          "status": "状态：规划中",
+          "description": "围绕财报与政策窗口组织催化清单。"
+        },
+        "trendFollowing": {
+          "title": "趋势跟随",
+          "status": "状态：预览",
+          "description": "以周级趋势一致性结合风险预算控制仓位。"
+        }
+      }
+    },
+    "portfolio": {
+      "title": "投资组合",
+      "description": "在本地工作区管理自选与配置快照。",
+      "placeholder": "组合模拟功能正在分阶段建设，当前页面用于结构演示。",
+      "watchListTitle": "A股自选标的",
+      "clickToView": "点击查看K线图"
+    },
+    "settings": {
+      "title": "投资设置",
+      "description": "配置本地草稿与数据刷新策略。",
+      "placeholder": "更多设置项将在下一迭代补充。"
+    },
+    "actions": {
+      "saveDraft": "保存草稿配置",
+      "saved": "草稿配置已保存",
+      "loadPreview": "加载预览",
+      "previewLoaded": "预览已加载"
+    },
+    "kline": {
+      "loading": "正在加载 K 线数据...",
+      "empty": "暂无 K 线数据。",
+      "error": "K 线数据加载失败。",
+      "period": {
+        "intraday": "分时",
+        "daily":   "日",
+        "weekly":  "周",
+        "monthly": "月",
+        "60m":     "60分",
+        "30m":     "30分",
+        "15m":     "15分",
+        "5m":      "5分",
+        "1m":      "1分"
+      },
+      "intraday": {
+        "loading":           "正在加载分时数据...",
+        "empty":             "暂无分时数据。",
+        "error":             "分时数据加载失败。",
+        "waitingTradingDay": "正在获取最新交易日..."
+      },
+      "actions": {
+        "refresh": "刷新",
+        "retry":   "重试"
+      }
+    },
+    "marketDetail": {
+      "back": "返回",
+      "chartTitle": "{{name}} K 线图",
+      "fundamentals": {
+        "title": "基本面",
+        "placeholder": "基本面数据面板即将上线。"
+      },
+      "news": {
+        "title": "相关资讯",
+        "placeholder": "该标的资讯流即将上线。"
+      }
+    }
+  }
+}

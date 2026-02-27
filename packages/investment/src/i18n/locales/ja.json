@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "languageCode": "ja",
+    "displayName": "日本語",
+    "promptLanguageLabel": "Japanese"
+  },
+  "host": {
+    "actions": {
+      "openInCurrentWindow": "現在のウィンドウで開く",
+      "openInNewWindow": "新しいウィンドウで開く",
+      "openWindowFailed": "新しいサブアプリウィンドウを開けませんでした",
+      "backToLauncher": "ホストランチャーに戻る"
+    },
+    "launcher": {
+      "title": "ホストランチャー",
+      "description": "サブアプリを選択して、現在のウィンドウまたは新しいウィンドウで開きます。",
+      "loadedAppsCount": "読み込まれたサブアプリ: {{count}}",
+      "manifestDiagnostics": {
+        "title": "マニフェスト診断",
+        "skippedCount": "スキップされたマニフェスト: {{count}}",
+        "uniqueIssueCount": "重複排除後の問題グループ: {{count}}",
+        "issueOccurrences": "{{count}} 件",
+        "unknownManifest": "不明なマニフェスト",
+        "unknownVersion": "不明なバージョン",
+        "actions": {
+          "exportJson": "JSON をエクスポート"
+        },
+        "reasons": {
+          "invalidShape": "無効なスキーマのため、あるマニフェストが無視されました。",
+          "disabled": "{{manifestId}} は無効化されています。",
+          "versionIncompatible": "{{manifestId}} はホストバージョン {{minHostVersion}} 以上が必要です。"
+        }
+      }
+    },
+    "diagnostics": {
+      "title": "カーネル診断",
+      "subtitle": "{{appId}} のカーネルイベントテレメトリ",
+      "empty": "カーネルイベントの記録はまだありません。",
+      "itemMeta": "アプリ: {{appId}} · 状態: {{status}}",
+      "actions": {
+        "refresh": "更新",
+        "clear": "クリア"
+      },
+      "metrics": {
+        "total": "総イベント",
+        "success": "成功",
+        "failure": "失敗",
+        "avgMs": "平均 ms"
+      },
+      "status": {
+        "success": "成功",
+        "failure": "失敗"
+      }
+    },
+    "apps": {
+      "imageStudio": {
+        "title": "イメージスタジオ",
+        "description": "現在の画像品質分析ツールを、ホスト配下のサブアプリとして実行します。"
+      },
+      "investment": {
+        "title": "投資分析",
+        "description": "投資分析ワークスペースを、ホスト配下のサブアプリとして実行します。"
+      }
+    }
+  },
+  "investment": {
+    "title": "投資分析ワークスペース",
+    "description": "ニュースとファンダメンタル分析機能をここで構築します。",
+    "placeholder": "このモジュールは骨組み実装済みで、独立開発を開始できます。",
+    "previewTitle": "サービスプレビュー",
+    "previewEmpty": "まだプレビューデータが読み込まれていません。",
+    "nav": {
+      "dashboard": "ホーム",
+      "dashboardDescription": "市場スナップショットと概要",
+      "news": "ニュース",
+      "newsDescription": "見出しプレビューとシグナル",
+      "strategy": "戦略",
+      "strategyDescription": "戦略テンプレートと状態",
+      "portfolio": "ポートフォリオ",
+      "portfolioDescription": "ウォッチリストと配分概要",
+      "settings": "設定",
+      "settingsDescription": "データソースと更新設定"
+    },
+    "dashboard": {
+      "title": "マーケットダッシュボード",
+      "description": "非リアルタイムの市場スナップショットです。15 分ごとに自動更新します。",
+      "loading": "市場スナップショットを読み込み中...",
+      "empty": "利用可能な市場スナップショットはありません。",
+      "updatedAt": "最終更新: {{time}}",
+      "marketSource": {
+        "remote": "データソース: 公開マーケット API スナップショット",
+        "cache": "データソース: ローカルキャッシュ",
+        "fallback": "データソース: 内蔵フォールバック"
+      },
+      "errorCategory": {
+        "timeout": "タイムアウトのため、フォールバックデータを表示しています。",
+        "network": "ネットワーク不可のため、フォールバックデータを表示しています。",
+        "unknown": "取得エラーのため、フォールバックデータを表示しています。"
+      },
+      "actions": {
+        "refresh": "スナップショット更新",
+        "refreshCompleted": "市場スナップショットを更新しました"
+      }
+    },
+    "news": {
+      "title": "ニュースフィード",
+      "description": "マクロとセクターシグナルのプレビュー一覧を読み込みます。",
+      "actions": {
+        "loadPreview": "ニュースプレビューを読み込む"
+      }
+    },
+    "strategy": {
+      "title": "戦略ラボ",
+      "description": "戦略テンプレートと現在の展開状況を表示します。",
+      "items": {
+        "factorRotation": {
+          "title": "ファクターローテーション",
+          "status": "ステータス: プレビュー",
+          "description": "大型/小型株とバリュー/グロースの回転機会を追跡します。"
+        },
+        "eventDriven": {
+          "title": "イベントドリブン",
+          "status": "ステータス: 計画中",
+          "description": "決算や政策イベントの時間窓で触媒チェックリストを構築します。"
+        },
+        "trendFollowing": {
+          "title": "トレンドフォロー",
+          "status": "ステータス: プレビュー",
+          "description": "週次トレンド整合とリスク予算でポジションを管理します。"
+        }
+      }
+    },
+    "portfolio": {
+      "title": "ポートフォリオ",
+      "description": "ローカル環境でウォッチリストと配分スナップショットを管理します。",
+      "placeholder": "ポートフォリオシミュレーションは段階的に実装中です。現在は構成デモです。",
+      "watchListTitle": "A株ウォッチリスト",
+      "clickToView": "クリックしてチャートを表示"
+    },
+    "settings": {
+      "title": "投資設定",
+      "description": "ローカルドラフトとデータ更新方針を設定します。",
+      "placeholder": "追加設定は次のイテレーションで実装します。"
+    },
+    "actions": {
+      "saveDraft": "ドラフト設定を保存",
+      "saved": "ドラフト設定を保存しました",
+      "loadPreview": "プレビューを読み込む",
+      "previewLoaded": "プレビューを読み込みました"
+    },
+    "kline": {
+      "loading": "チャートデータを読み込み中...",
+      "empty": "K線データがありません。",
+      "error": "チャートデータの読み込みに失敗しました。",
+      "period": {
+        "intraday": "分時",
+        "daily":   "日",
+        "weekly":  "週",
+        "monthly": "月",
+        "60m":     "60分",
+        "30m":     "30分",
+        "15m":     "15分",
+        "5m":      "5分",
+        "1m":      "1分"
+      },
+      "intraday": {
+        "loading":           "分時データを読み込み中...",
+        "empty":             "分時データがありません。",
+        "error":             "分時データの読み込みに失敗しました。",
+        "waitingTradingDay": "最新の取引日を待機中..."
+      },
+      "actions": {
+        "refresh": "更新",
+        "retry":   "再試行"
+      }
+    },
+    "marketDetail": {
+      "back": "戻る",
+      "chartTitle": "{{name}} K線チャート",
+      "fundamentals": {
+        "title": "ファンダメンタル",
+        "placeholder": "ファンダメンタルデータパネルは間もなく公開予定です。"
+      },
+      "news": {
+        "title": "関連ニュース",
+        "placeholder": "この銃柄のニュースフィードは間もなく公開予定です。"
+      }
+    }
+  }
+}

@@ -19,8 +19,22 @@
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/tsconfig.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
+      "@ai-image/contracts": ["packages/contracts/src/index.ts"],
+      "@ai-image/contracts/*": ["packages/contracts/src/*"],
+      "@host/*": ["packages/host/src/*"],
+      "@investment/*": ["packages/investment/src/*"],
+      "@image-studio/*": ["packages/image-studio/src/*"],
+      "@ui/*": ["packages/ui/src/*"],
+      "@/components/*": ["packages/image-studio/src/components/*"],
+      "@/config/*": ["packages/image-studio/src/config/*"],
+      "@/hooks/*": ["packages/image-studio/src/hooks/*"],
+      "@/lib/*": ["packages/image-studio/src/lib/*"],
+      "@/modules/*": ["packages/image-studio/src/modules/*"],
+      "@/state/*": ["packages/image-studio/src/state/*"],
+      "@/types/*": ["packages/image-studio/src/types/*"],
+      "@/utils/*": ["packages/image-studio/src/utils/*"],
       "@/*": ["src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "packages"]
 }

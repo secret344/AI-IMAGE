@@ -1,5 +1,5 @@
 ---
-applyTo: 'src/modules/**/*.ts,src/modules/**/*.tsx'
+applyTo: 'src/modules/**/*.ts,src/modules/**/*.tsx,packages/*/src/modules/**/*.ts,packages/*/src/modules/**/*.tsx'
 ---
 
 # Business Logic Modules / 业务逻辑模块

@@ -14,6 +14,78 @@
     "badge": "Zero backend storage · BYOK",
     "footerText": "Local processing only. Images never persist on servers."
   },
+  "host": {
+    "actions": {
+      "openInCurrentWindow": "Open In Current Window",
+      "openInNewWindow": "Open In New Window",
+      "openWindowFailed": "Unable to open a new sub-application window",
+      "backToLauncher": "Back to Host Launcher"
+    },
+    "launcher": {
+      "title": "Host Launcher",
+      "description": "Select a sub-application and open it in current window or a new window.",
+      "loadedAppsCount": "Loaded sub-apps: {{count}}",
+      "manifestDiagnostics": {
+        "title": "Manifest diagnostics",
+        "skippedCount": "Skipped manifests: {{count}}",
+        "uniqueIssueCount": "Unique issue groups: {{count}}",
+        "issueOccurrences": "{{count}} occurrences",
+        "unknownManifest": "unknown manifest",
+        "unknownVersion": "unknown version",
+        "actions": {
+          "exportJson": "Export JSON"
+        },
+        "reasons": {
+          "invalidShape": "A manifest was ignored because it has an invalid schema.",
+          "disabled": "{{manifestId}} is disabled.",
+          "versionIncompatible": "{{manifestId}} requires host version {{minHostVersion}} or newer."
+        }
+      }
+    },
+    "diagnostics": {
+      "title": "Kernel Diagnostics",
+      "subtitle": "Kernel event telemetry for {{appId}}",
+      "empty": "No kernel events recorded yet.",
+      "itemMeta": "App: {{appId}} · Status: {{status}}",
+      "actions": {
+        "refresh": "Refresh",
+        "clear": "Clear"
+      },
+      "metrics": {
+        "total": "Total events",
+        "success": "Success",
+        "failure": "Failure",
+        "avgMs": "Avg ms"
+      },
+      "status": {
+        "success": "Success",
+        "failure": "Failure"
+      }
+    },
+    "apps": {
+      "imageStudio": {
+        "title": "Image Studio",
+        "description": "Current image quality analysis tool running as a host sub-application."
+      },
+      "investment": {
+        "title": "Investment",
+        "description": "Investment analysis workspace embedded as a host sub-application."
+      }
+    }
+  },
+  "investment": {
+    "title": "Investment Workspace",
+    "description": "Build your news + fundamentals pipeline here.",
+    "placeholder": "This module is scaffolded and ready for independent feature development.",
+    "previewTitle": "Service Preview",
+    "previewEmpty": "No preview data loaded yet.",
+    "actions": {
+      "saveDraft": "Save Draft Setting",
+      "saved": "Draft setting saved",
+      "loadPreview": "Load Preview",
+      "previewLoaded": "Preview loaded"
+    }
+  },
   "settings": {
     "title": "AI Configuration",
     "buttonLabel": "Settings",

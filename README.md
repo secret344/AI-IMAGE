@@ -88,11 +88,34 @@ npm install
 # Start development server
 npm run dev
 
+# Subpackage independent development
+npm run dev:host
+npm run dev:image-studio
+npm run dev:investment
+
+# True subpackage workspace development
+npm run dev:host:pkg
+npm run dev:image-studio:pkg
+npm run dev:investment:pkg
+
+# Start all subpackages in parallel
+npm run dev:packages
+
+# Preferred subpackage ports (auto-fallback if occupied)
+# host: 5173, image-studio: 5174, investment: 5175
+# No browser auto-open; access manually via /packages/host/index.html / /packages/image-studio/index.html / /packages/investment/index.html
+
 # Build for production
 npm run build
 
 # Run type checking
 npm run type-check
+npm run lint
+npm run build
+
+# Electron host (desktop shell)
+npm run electron:dev
+npm run electron:start
 ```
 
 ### Configuration

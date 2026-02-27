@@ -14,6 +14,78 @@
     "badge": "バックエンド保存なし · BYOK",
     "footerText": "ローカル処理のみ。画像はサーバーに保存されません。"
   },
+  "host": {
+    "actions": {
+      "openInCurrentWindow": "現在のウィンドウで開く",
+      "openInNewWindow": "新しいウィンドウで開く",
+      "openWindowFailed": "新しいサブアプリウィンドウを開けませんでした",
+      "backToLauncher": "ホストランチャーに戻る"
+    },
+    "launcher": {
+      "title": "ホストランチャー",
+      "description": "サブアプリを選択して、現在のウィンドウまたは新しいウィンドウで開きます。",
+      "loadedAppsCount": "読み込まれたサブアプリ: {{count}}",
+      "manifestDiagnostics": {
+        "title": "マニフェスト診断",
+        "skippedCount": "スキップされたマニフェスト: {{count}}",
+        "uniqueIssueCount": "重複排除後の問題グループ: {{count}}",
+        "issueOccurrences": "{{count}} 件",
+        "unknownManifest": "不明なマニフェスト",
+        "unknownVersion": "不明なバージョン",
+        "actions": {
+          "exportJson": "JSON をエクスポート"
+        },
+        "reasons": {
+          "invalidShape": "無効なスキーマのため、あるマニフェストが無視されました。",
+          "disabled": "{{manifestId}} は無効化されています。",
+          "versionIncompatible": "{{manifestId}} はホストバージョン {{minHostVersion}} 以上が必要です。"
+        }
+      }
+    },
+    "diagnostics": {
+      "title": "カーネル診断",
+      "subtitle": "{{appId}} のカーネルイベントテレメトリ",
+      "empty": "カーネルイベントの記録はまだありません。",
+      "itemMeta": "アプリ: {{appId}} · 状態: {{status}}",
+      "actions": {
+        "refresh": "更新",
+        "clear": "クリア"
+      },
+      "metrics": {
+        "total": "総イベント",
+        "success": "成功",
+        "failure": "失敗",
+        "avgMs": "平均 ms"
+      },
+      "status": {
+        "success": "成功",
+        "failure": "失敗"
+      }
+    },
+    "apps": {
+      "imageStudio": {
+        "title": "イメージスタジオ",
+        "description": "現在の画像品質分析ツールを、ホスト配下のサブアプリとして実行します。"
+      },
+      "investment": {
+        "title": "投資分析",
+        "description": "投資分析ワークスペースを、ホスト配下のサブアプリとして実行します。"
+      }
+    }
+  },
+  "investment": {
+    "title": "投資分析ワークスペース",
+    "description": "ニュースとファンダメンタル分析機能をここで構築します。",
+    "placeholder": "このモジュールは骨組み実装済みで、独立開発を開始できます。",
+    "previewTitle": "サービスプレビュー",
+    "previewEmpty": "まだプレビューデータが読み込まれていません。",
+    "actions": {
+      "saveDraft": "ドラフト設定を保存",
+      "saved": "ドラフト設定を保存しました",
+      "loadPreview": "プレビューを読み込む",
+      "previewLoaded": "プレビューを読み込みました"
+    }
+  },
   "settings": {
     "title": "AI 設定",
     "buttonLabel": "設定",

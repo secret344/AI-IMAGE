@@ -1,7 +1,16 @@
+const path = require('node:path');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ['class'],
-  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  content: [
+    path.resolve(__dirname, './index.html'),
+    path.resolve(__dirname, './packages/host/index.html'),
+    path.resolve(__dirname, './packages/image-studio/index.html'),
+    path.resolve(__dirname, './packages/investment/index.html'),
+    path.resolve(__dirname, './src/**/*.{ts,tsx}'),
+    path.resolve(__dirname, './packages/**/*.{ts,tsx}')
+  ],
   theme: {
     extend: {
       colors: {

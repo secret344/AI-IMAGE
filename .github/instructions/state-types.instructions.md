@@ -1,5 +1,5 @@
 ---
-applyTo: 'src/state/**/*.ts,src/types/**/*.ts'
+applyTo: 'src/state/**/*.ts,src/types/**/*.ts,packages/*/src/state/**/*.ts,packages/*/src/types/**/*.ts'
 ---
 
 # State & Type Definitions / 状态与类型定义

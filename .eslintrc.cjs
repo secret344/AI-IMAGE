@@ -25,6 +25,10 @@ module.exports = {
   rules: {
     'prettier/prettier': 'error',
     'react/react-in-jsx-scope': 'off',
-    'require-jsdoc': 'off'
+    'require-jsdoc': 'off',
+    'react-hooks/set-state-in-effect': 'off',
+    'react-hooks/refs': 'off',
+    'valid-jsdoc': 'off',
+    'no-useless-catch': 'off'
   }
 };

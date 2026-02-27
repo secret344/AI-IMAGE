@@ -9,6 +9,18 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const i18nDir = path.join(__dirname, '../src/i18n/locales');
+const packageI18nDirs = [
+  {
+    name: 'investment',
+    dir: path.join(__dirname, '../packages/investment/src/i18n/locales'),
+    allowedTopLevel: new Set(['meta', 'host', 'investment'])
+  },
+  {
+    name: 'image-studio',
+    dir: path.join(__dirname, '../packages/image-studio/src/i18n/locales'),
+    blockedTopLevel: new Set(['investment'])
+  }
+];
 
 function getKeys(obj, prefix = '') {
   const keys = [];
@@ -42,35 +54,73 @@ function validateI18n() {
 
   let hasErrors = false;
 
-  // 检查中文中存在但英文中不存在的键
-  for (const key of zhSet) {
-    if (!enSet.has(key)) {
-      console.error(`❌ 中文中存在，但英文中不存在: ${key}`);
-      hasErrors = true;
+  function validateParity(localeDir, scopeName) {
+    const zhPath = path.join(localeDir, 'zh.json');
+    const enPath = path.join(localeDir, 'en.json');
+    const jaPath = path.join(localeDir, 'ja.json');
+
+    const zh = JSON.parse(fs.readFileSync(zhPath, 'utf-8'));
+    const en = JSON.parse(fs.readFileSync(enPath, 'utf-8'));
+    const ja = JSON.parse(fs.readFileSync(jaPath, 'utf-8'));
+
+    const zhKeys = getKeys(zh).sort();
+    const enKeys = getKeys(en).sort();
+    const jaKeys = getKeys(ja).sort();
+
+    const zhSet = new Set(zhKeys);
+    const enSet = new Set(enKeys);
+    const jaSet = new Set(jaKeys);
+
+    for (const key of zhSet) {
+      if (!enSet.has(key)) {
+        console.error(`❌ [${scopeName}] 中文中存在，但英文中不存在: ${key}`);
+        hasErrors = true;
+      }
     }
+
+    for (const key of jaSet) {
+      if (!enSet.has(key)) {
+        console.error(`❌ [${scopeName}] 日语中存在，但英文中不存在: ${key}`);
+        hasErrors = true;
+      }
+    }
+
+    for (const key of enSet) {
+      if (!zhSet.has(key)) {
+        console.error(`❌ [${scopeName}] 英文中存在，但中文中不存在: ${key}`);
+        hasErrors = true;
+      }
+      if (!jaSet.has(key)) {
+        console.error(`❌ [${scopeName}] 英文中存在，但日语中不存在: ${key}`);
+        hasErrors = true;
+      }
+    }
+
+    return { en, enKeys };
   }
 
-  // 检查日语中存在但英文中不存在的键
-  for (const key of jaSet) {
-    if (!enSet.has(key)) {
-      console.error(`❌ 日语中存在，但英文中不存在: ${key}`);
-      hasErrors = true;
-    }
-  }
+  validateParity(i18nDir, 'root');
 
-  // 检查英文中存在但中文中不存在的键
-  for (const key of enSet) {
-    if (!zhSet.has(key)) {
-      console.error(`❌ 英文中存在，但中文中不存在: ${key}`);
-      hasErrors = true;
-    }
-  }
+  for (const pkg of packageI18nDirs) {
+    const { en: packageEn } = validateParity(pkg.dir, pkg.name);
+    const topLevelKeys = Object.keys(packageEn);
 
-  // 检查英文中存在但日语中不存在的键
-  for (const key of enSet) {
-    if (!jaSet.has(key)) {
-      console.error(`❌ 英文中存在，但日语中不存在: ${key}`);
-      hasErrors = true;
+    if (pkg.allowedTopLevel) {
+      for (const key of topLevelKeys) {
+        if (!pkg.allowedTopLevel.has(key)) {
+          console.error(`❌ [${pkg.name}] 存在不允许的顶层命名空间: ${key}`);
+          hasErrors = true;
+        }
+      }
+    }
+
+    if (pkg.blockedTopLevel) {
+      for (const key of topLevelKeys) {
+        if (pkg.blockedTopLevel.has(key)) {
+          console.error(`❌ [${pkg.name}] 存在不应出现的顶层命名空间: ${key}`);
+          hasErrors = true;
+        }
+      }
     }
   }
 

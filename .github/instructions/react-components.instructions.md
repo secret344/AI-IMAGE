@@ -1,5 +1,5 @@
 ---
-applyTo: 'src/components/**/*.tsx'
+applyTo: 'src/components/**/*.tsx,packages/*/src/components/**/*.tsx'
 ---
 
 # React Components Guidelines / React 组件指南

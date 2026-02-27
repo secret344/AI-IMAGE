@@ -14,6 +14,78 @@
     "badge": "零后端存储 · 自带密钥",
     "footerText": "本地处理，图片不落服务器"
   },
+  "host": {
+    "actions": {
+      "openInCurrentWindow": "当前窗口打开",
+      "openInNewWindow": "新窗口打开",
+      "openWindowFailed": "无法打开新的子应用窗口",
+      "backToLauncher": "返回基座启动台"
+    },
+    "launcher": {
+      "title": "基座启动台",
+      "description": "选择子应用后，可在当前窗口或新窗口打开。",
+      "loadedAppsCount": "已加载子应用：{{count}}",
+      "manifestDiagnostics": {
+        "title": "Manifest 诊断",
+        "skippedCount": "已跳过的 Manifest：{{count}}",
+        "uniqueIssueCount": "去重后的问题组：{{count}}",
+        "issueOccurrences": "出现 {{count}} 次",
+        "unknownManifest": "未知 Manifest",
+        "unknownVersion": "未知版本",
+        "actions": {
+          "exportJson": "导出 JSON"
+        },
+        "reasons": {
+          "invalidShape": "某个 Manifest 因结构不合法被忽略。",
+          "disabled": "{{manifestId}} 已被禁用。",
+          "versionIncompatible": "{{manifestId}} 需要 Host 版本 {{minHostVersion}} 或更高。"
+        }
+      }
+    },
+    "diagnostics": {
+      "title": "内核诊断",
+      "subtitle": "{{appId}} 的内核事件遥测",
+      "empty": "暂无内核事件记录。",
+      "itemMeta": "应用：{{appId}} · 状态：{{status}}",
+      "actions": {
+        "refresh": "刷新",
+        "clear": "清空"
+      },
+      "metrics": {
+        "total": "总事件",
+        "success": "成功",
+        "failure": "失败",
+        "avgMs": "平均毫秒"
+      },
+      "status": {
+        "success": "成功",
+        "failure": "失败"
+      }
+    },
+    "apps": {
+      "imageStudio": {
+        "title": "图像工作台",
+        "description": "当前图像质量分析工具，已作为基座子应用运行。"
+      },
+      "investment": {
+        "title": "投资分析",
+        "description": "投资分析工作区，已作为基座子应用嵌入。"
+      }
+    }
+  },
+  "investment": {
+    "title": "投资分析工作区",
+    "description": "在这里构建新闻与基本面分析能力。",
+    "placeholder": "该模块已完成骨架，可由独立团队继续功能开发。",
+    "previewTitle": "服务预览",
+    "previewEmpty": "尚未加载预览数据。",
+    "actions": {
+      "saveDraft": "保存草稿配置",
+      "saved": "草稿配置已保存",
+      "loadPreview": "加载预览",
+      "previewLoaded": "预览已加载"
+    }
+  },
   "settings": {
     "title": "AI 配置",
     "buttonLabel": "设置",

@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "languageCode": "en",
+    "displayName": "English",
+    "promptLanguageLabel": "English"
+  },
+  "host": {
+    "actions": {
+      "openInCurrentWindow": "Open In Current Window",
+      "openInNewWindow": "Open In New Window",
+      "openWindowFailed": "Unable to open a new sub-application window",
+      "backToLauncher": "Back to Host Launcher"
+    },
+    "launcher": {
+      "title": "Host Launcher",
+      "description": "Select a sub-application and open it in current window or a new window.",
+      "loadedAppsCount": "Loaded sub-apps: {{count}}",
+      "manifestDiagnostics": {
+        "title": "Manifest diagnostics",
+        "skippedCount": "Skipped manifests: {{count}}",
+        "uniqueIssueCount": "Unique issue groups: {{count}}",
+        "issueOccurrences": "{{count}} occurrences",
+        "unknownManifest": "unknown manifest",
+        "unknownVersion": "unknown version",
+        "actions": {
+          "exportJson": "Export JSON"
+        },
+        "reasons": {
+          "invalidShape": "A manifest was ignored because it has an invalid schema.",
+          "disabled": "{{manifestId}} is disabled.",
+          "versionIncompatible": "{{manifestId}} requires host version {{minHostVersion}} or newer."
+        }
+      }
+    },
+    "diagnostics": {
+      "title": "Kernel Diagnostics",
+      "subtitle": "Kernel event telemetry for {{appId}}",
+      "empty": "No kernel events recorded yet.",
+      "itemMeta": "App: {{appId}} · Status: {{status}}",
+      "actions": {
+        "refresh": "Refresh",
+        "clear": "Clear"
+      },
+      "metrics": {
+        "total": "Total events",
+        "success": "Success",
+        "failure": "Failure",
+        "avgMs": "Avg ms"
+      },
+      "status": {
+        "success": "Success",
+        "failure": "Failure"
+      }
+    },
+    "apps": {
+      "imageStudio": {
+        "title": "Image Studio",
+        "description": "Current image quality analysis tool running as a host sub-application."
+      },
+      "investment": {
+        "title": "Investment",
+        "description": "Investment analysis workspace embedded as a host sub-application."
+      }
+    }
+  },
+  "investment": {
+    "title": "Investment Workspace",
+    "description": "Build your news + fundamentals pipeline here.",
+    "placeholder": "This module is scaffolded and ready for independent feature development.",
+    "previewTitle": "Service Preview",
+    "previewEmpty": "No preview data loaded yet.",
+    "nav": {
+      "dashboard": "Dashboard",
+      "dashboardDescription": "Market snapshot and quick view",
+      "news": "News",
+      "newsDescription": "Headline feed and preview",
+      "strategy": "Strategy Lab",
+      "strategyDescription": "Strategy cards and status",
+      "portfolio": "Portfolio",
+      "portfolioDescription": "Watchlist and holdings overview",
+      "settings": "Settings",
+      "settingsDescription": "Data source and refresh preferences"
+    },
+    "dashboard": {
+      "title": "Market Dashboard",
+      "description": "Non-realtime market snapshot. Auto refreshes every 15 minutes.",
+      "loading": "Loading market snapshot...",
+      "empty": "No market snapshot available.",
+      "updatedAt": "Last update: {{time}}",
+      "marketSource": {
+        "remote": "Source: public market API snapshot",
+        "cache": "Source: local cache fallback",
+        "fallback": "Source: built-in fallback data"
+      },
+      "errorCategory": {
+        "timeout": "Network timeout. Showing fallback data.",
+        "network": "Network unavailable. Showing fallback data.",
+        "unknown": "Unknown fetch error. Showing fallback data."
+      },
+      "actions": {
+        "refresh": "Refresh Snapshot",
+        "refreshCompleted": "Market snapshot refreshed"
+      }
+    },
+    "news": {
+      "title": "News Feed",
+      "description": "Load a preview list for macro and sector signals.",
+      "actions": {
+        "loadPreview": "Load News Preview"
+      }
+    },
+    "strategy": {
+      "title": "Strategy Lab",
+      "description": "Display strategy templates and current rollout status.",
+      "items": {
+        "factorRotation": {
+          "title": "Factor Rotation",
+          "status": "Status: preview",
+          "description": "Track large/small cap and value/growth rotation opportunities."
+        },
+        "eventDriven": {
+          "title": "Event Driven",
+          "status": "Status: planning",
+          "description": "Structure catalyst checklists around earnings and policy windows."
+        },
+        "trendFollowing": {
+          "title": "Trend Following",
+          "status": "Status: preview",
+          "description": "Use weekly trend alignment with risk budget limits."
+        }
+      }
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "description": "Manage watchlist and allocation snapshots in local workspace.",
+      "placeholder": "Portfolio simulation is staged. Current view is for structure demo.",
+      "watchListTitle": "A-share Watchlist",
+      "clickToView": "Click to view K-line chart"
+    },
+    "settings": {
+      "title": "Investment Settings",
+      "description": "Configure local draft and data refresh strategy.",
+      "placeholder": "More settings will be added in the next iteration."
+    },
+    "actions": {
+      "saveDraft": "Save Draft Setting",
+      "saved": "Draft setting saved",
+      "loadPreview": "Load Preview",
+      "previewLoaded": "Preview loaded"
+    },
+    "kline": {
+      "loading": "Loading chart data...",
+      "empty": "No K-line data available.",
+      "error": "Failed to load chart data.",
+      "period": {
+        "intraday": "Intraday",
+        "daily":   "Day",
+        "weekly":  "Week",
+        "monthly": "Month",
+        "60m":     "60m",
+        "30m":     "30m",
+        "15m":     "15m",
+        "5m":      "5m",
+        "1m":      "1m"
+      },
+      "intraday": {
+        "loading":           "Loading intraday data...",
+        "empty":             "No intraday data available.",
+        "error":             "Failed to load intraday data.",
+        "waitingTradingDay": "Waiting for latest trading day..."
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "retry":   "Retry"
+      }
+    },
+    "marketDetail": {
+      "back": "Back",
+      "chartTitle": "{{name}} K-Line Chart",
+      "fundamentals": {
+        "title": "Fundamentals",
+        "placeholder": "Fundamental data panel coming soon."
+      },
+      "news": {
+        "title": "Related News",
+        "placeholder": "News feed for this symbol coming soon."
+      }
+    }
+  }
+}
