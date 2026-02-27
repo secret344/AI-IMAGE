@@ -1,219 +1,113 @@
-# AI Image Quality Analyzer - V1
+# AI-IMAGE Monorepo
 
 [中文版 README](README_cn.md)
 
 ## Overview
 
-**AI Image Quality Analyzer** is a privacy-first browser tool for photographers to assess and improve their work through AI analysis. It features zero-backend storage, multi-persona evaluation from 5 photographer styles, and detailed scoring across 4 dimensions (composition, lighting, color, subject).
+AI-IMAGE is a privacy-first, frontend-focused monorepo with a **host + subapps** architecture.
 
-**Supported Languages**: English, Simplified Chinese, Japanese
+Current primary packages:
 
-**Key Features:**
+- `packages/host`: host launcher and micro-kernel runtime
+- `packages/image-studio`: AI image quality evaluation app
+- `packages/investment`: A-share market analysis app (AKShare via Electron bridge)
+- `packages/contracts`: shared typed contracts across host and subapps
+- `packages/ui`: shared shadcn/ui wrapper components
 
-- 🔐 **Privacy-First**: All processing in-browser; images never upload to servers
-- 🎯 **5 Photographer Personas**: Cartier-Bresson, Ansel Adams, Fan Ho, Peter Lindbergh, Kodak Portra
-- 📊 **4-Dimension Scoring**: Composition, Lighting, Color, Subject (0-100 scale)
-- 💬 **AI-Powered Discussion**: Chat with evaluation results for deeper analysis
-- 🖼️ **XMP Export**: Direct Lightroom integration
-- 🔑 **BYOK Model**: Bring your own API keys (no subscriptions)
+Supported languages: **English (en), Simplified Chinese (zh), Japanese (ja)**
 
----
+## Core Principles
+
+- **Zero backend storage**: browser-only persistence (IndexedDB/localStorage)
+- **BYOK**: API keys are encrypted client-side (Web Crypto AES-GCM)
+- **Strict JSON validation**: AI outputs are validated with fallback strategy
+- **Host-first i18n**: host language has priority when running subapps in host
+- **Mobile-first UI**: responsive layouts and constrained image preprocessing
+
+## Repository Structure
+
+```text
+packages/
+   host/          # Host launcher/runtime
+   image-studio/  # AI image evaluation subapp
+   investment/    # Investment/news analysis subapp
+   contracts/     # Shared contracts and schemas
+   ui/            # Shared UI components
+
+electron/
+   main.cjs
+   preload.cjs
+   akshare_query.py
+
+src/
+   entries/       # Root entries for host/subapps
+   i18n/          # Root i18n resources
+```
 
 ## Quick Start
 
-1. **Upload** → Drag & drop JPEG, PNG, WebP (≤50MB recommended ≤10MB)
-2. **Wait** → Auto style recognition (~1-2s)
-3. **Review** → Select photographer style and view AI scores
-4. **Discuss** → Chat with the agent to explore deeper insights
-5. **Export** → Download Lightroom XMP sidecar file
-
----
-
-## Features
-
-### Core Workflow
-
-- **Image Upload**: Drag-drop or click; auto Canvas compression (4096px max, 0.85 quality)
-- **Style Recognition**: Rule engine classification into 16 style categories
-- **AI Evaluation**: Multi-persona scoring with dimension-specific reasoning
-- **Result Discussion**: Chat with AI to explore feedback and ask follow-up questions
-- **Smart History**: IndexedDB storage of last 10 evaluations with one-click re-evaluation
-- **XMP Export**: Generate Lightroom-compatible sidecar files
-
-### Photographer Styles
-
-| Style            | Photographer    | Focus                             |
-| :--------------- | :-------------- | :-------------------------------- |
-| Street Narrative | Cartier-Bresson | Decisive moments, composition     |
-| Landscape Epic   | Ansel Adams     | Tonal range, depth                |
-| Urban Geometry   | Fan Ho          | Light/shadow geometry, minimalism |
-| Portrait Texture | Peter Lindbergh | Texture, eye light, naturalness   |
-| Film Color       | Kodak Portra    | Soft tones, color richness        |
-
-### Privacy & Security
-
-- **EXIF Cleanup**: Remove GPS, device S/N; keep exposure data
-- **Key Encryption**: AES-GCM 256-bit local storage
-- **Offline Processing**: No backend needed
-- **GDPR Compliant**: No tracking, one-button data clear
-
----
-
-## Technology Stack
-
-| Component      | Technology            | Purpose           |
-| :------------- | :-------------------- | :---------------- |
-| **Build**      | Vite 5.0+             | Fast bundling     |
-| **Framework**  | React 18 + TypeScript | UI & logic        |
-| **Styling**    | Tailwind + ShadcnUI   | Design system     |
-| **State**      | Zustand               | Global state      |
-| **Storage**    | IndexedDB (Dexie)     | Task history      |
-| **Crypto**     | Web Crypto API        | AES-GCM keys      |
-| **i18n**       | react-i18next         | EN/ZH/JP support  |
-| **AI**         | OpenAI/Gemini/Claude  | Evaluation engine |
-| **Deployment** | Vercel/Netlify        | Static hosting    |
-
----
-
-## Installation & Setup
-
 ```bash
-# Clone repository
-git clone <repository-url>
-cd ai-image
-
-# Install dependencies
 npm install
 
-# Start development server
+# Root app dev
 npm run dev
 
-# Subpackage independent development
-npm run dev:host
-npm run dev:image-studio
-npm run dev:investment
-
-# True subpackage workspace development
+# Package-level dev
 npm run dev:host:pkg
 npm run dev:image-studio:pkg
 npm run dev:investment:pkg
 
-# Start all subpackages in parallel
+# Run host + subapps together
 npm run dev:packages
-
-# Preferred subpackage ports (auto-fallback if occupied)
-# host: 5173, image-studio: 5174, investment: 5175
-# No browser auto-open; access manually via /packages/host/index.html / /packages/image-studio/index.html / /packages/investment/index.html
-
-# Build for production
-npm run build
-
-# Run type checking
-npm run type-check
-npm run lint
-npm run build
-
-# Electron host (desktop shell)
-npm run electron:dev
-npm run electron:start
 ```
 
-### Configuration
+## Scripts
 
-1. **Add API Keys** in Settings panel:
-   - OpenAI Vision: https://platform.openai.com/api-keys
-   - Google Gemini: https://aistudio.google.com/app/apikey
-   - Claude: https://console.anthropic.com (for testing)
+- `npm run dev`: root Vite development server
+- `npm run dev:host:pkg`: run `@ai-image/host`
+- `npm run dev:image-studio:pkg`: run `@ai-image/image-studio`
+- `npm run dev:investment:pkg`: run `@ai-image/investment`
+- `npm run dev:packages`: run all package dev servers in parallel
+- `npm run electron:dev`: start Vite + Electron desktop shell flow
+- `npm run electron:start`: launch Electron directly
+- `npm run type-check`: TypeScript project references check
+- `npm run lint`: ESLint over workspace
+- `npm run build`: production build
+- `npm run test:contracts`: run contracts package tests
+- `npm run i18n:validate`: validate EN/ZH/JA key parity
 
-2. **Keys are encrypted locally** (AES-GCM) and never sent to third parties
+## Technology Stack
 
-3. **For local development with Ollama**:
-   - Install Ollama: https://ollama.ai
-   - Pull a vision model: `ollama pull llama2-vision`
-   - No API key needed
+- React 19 + TypeScript
+- Vite 7
+- Zustand
+- shadcn/ui + Tailwind CSS
+- react-i18next
+- IndexedDB + Web Crypto (AES-GCM)
+- Electron (desktop host bridge)
 
----
+## Documentation
 
-## Design Principles
-
-### 🔐 Privacy First
-
-- Images never uploaded to servers
-- All computation in-browser
-- EXIF data auto-cleaned (GPS, serial numbers removed)
-- API keys encrypted locally (AES-GCM 256-bit)
-
-### 💰 BYOK Model (Bring Your Own Key)
-
-- No account required
-- No subscriptions
-- Full cost transparency
-- Users control their API spending
-
-### ⚡ Zero Backend
-
-- Static deployment only (Vercel/Netlify/GitHub Pages)
-- No server maintenance
-- Global CDN support
-- Optional CORS proxy for API calls
-
----
-
-## API Cost Guidelines
-
-| Provider        | Per-Image Cost | Notes                        |
-| :-------------- | :------------- | :--------------------------- |
-| OpenAI Vision   | ~$0.01-0.03    | Based on image size + prompt |
-| Google Gemini   | ~$0.005-0.01   | Character-based billing      |
-| Claude 3 Vision | ~$0.01-0.02    | Input/output tokens          |
-
-**Cost Tips**:
-
-- Use Ollama for local, free evaluation
-- Re-evaluate same image with same agent = zero cost (cached)
-- Message history is automatically limited to prevent token bloat
-
----
-
-## Security & Privacy
-
-### Data Protection
-
-- **EXIF Cleanup**: Removes GPS coordinates, device serial numbers
-- **Key Encryption**: AES-GCM 256-bit encryption for all API keys
-- **Local Only**: Images stored only in IndexedDB; never transmitted
-- **No Tracking**: Zero third-party analytics or cookies
-
-### GDPR Compliant
-
-- Data minimization (images not persisted on servers)
-- One-click "Clear All Data" option
-- No personal data collection
-- Optional encrypted passphrase for key storage
-
----
-
-## Documentation & Support
-
-- 📖 **Technical Specification**: [V1_TECHNICAL_SPEC_EN.md](V1_TECHNICAL_SPEC_EN.md)
-- 🌐 **中文 README**: [README_cn.md](README_cn.md)
-- ✅ **Completion Checklist**: [COMPLETION_CHECKLIST.md](COMPLETION_CHECKLIST.md)
-- 🔄 **Sync Status**: [SYNC_STATUS.md](SYNC_STATUS.md)
+- [README_cn.md](README_cn.md)
+- [V1_TECHNICAL_SPEC_EN.md](V1_TECHNICAL_SPEC_EN.md)
+- [V1_TECHNICAL_SPEC_CN.md](V1_TECHNICAL_SPEC_CN.md)
+- [docs/micro_kernel_architecture.md](docs/micro_kernel_architecture.md)
+- [docs/a股市场接口.md](docs/a股市场接口.md)
+- [MIGRATION_DRILL.md](MIGRATION_DRILL.md)
+- [SYNC_STATUS.md](SYNC_STATUS.md)
 
 ## Contributing
 
-We welcome contributions! Please:
-
 1. Fork the repository
 2. Create a feature branch
-3. Submit a pull request with clear description
+3. Open a pull request with a clear scope and test notes
 
 ## License
 
-MIT License - See LICENSE file
+MIT License. See [LICENSE](LICENSE).
 
 ---
 
-**Version**: 1.0.0  
-**Status**: ✅ Active Development  
-**Last Updated**: 2026-02-08
+**Version**: 0.1.0  
+**Status**: Active Development  
+**Last Updated**: 2026-02-27
